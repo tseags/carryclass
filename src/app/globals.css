@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fafafa;
   --foreground: #171717;
+  --navy: #1c2331;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Ensure page content is visible (Webflow export used opacity:0 for animations) */
+.page-wrapper {
+  opacity: 1 !important;
+}
+
+/* Hero images: subtle float on scroll (slight movement) */
+.hero-float-image {
+  animation: hero-float 6s ease-in-out infinite;
+  transition: transform 0.3s ease-out;
+}
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* County cards horizontal scroll - 4 visible at a time; padding so hover keeps rounded corners */
+.county-cards-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 16px 12px 12px 12px;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.county-cards-scroll::-webkit-scrollbar {
+  display: none;
+}
+/* Wrapper is not a card — no background, border, or padding */
+.county-card {
+  flex: 0 0 calc((100% - 60px) / 4);
+  min-width: calc((100% - 60px) / 4);
+  scroll-snap-align: start;
+  transition: transform 0.25s ease;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+.county-card:hover {
+  transform: translateY(-4px);
+}
+.county-card:hover .county-card-image-only {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+}
+/* Only the image is the card: rounded corners and shadow only here */
+.county-card-image-only {
+  transition: box-shadow 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-radius: 12px;
+}
+/* County name: darker gray, bigger, bold, left-aligned with image */
+.county-name-floating {
+  display: block;
+  margin-top: 16px;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  text-align: left;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.3;
+}
+/* Room for hover lift so section overflow doesn’t clip rounded corners */
+.county-scroll-wrapper {
+  padding-top: 12px;
+}
+
+/* County section arrows: same style for both — white + black arrow default, dark + white arrow on hover */
+.county-scroll-wrapper .county-scroll-arrow {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+}
+.county-scroll-wrapper .county-scroll-arrow:hover {
+  background-color: #111 !important;
+  color: #fff !important;
+  border-color: #111 !important;
+}
+.county-scroll-wrapper .county-scroll-arrow .line-rounded-icon {
+  color: inherit;
+}
+
+@media (max-width: 991px) {
+  .county-card { flex: 0 0 calc((100% - 20px) / 2); min-width: calc((100% - 20px) / 2); }
+}
+@media (max-width: 576px) {
+  .county-card { flex: 0 0 100%; min-width: 100%; }
+}
+
+/* Explore by category - tight 6 grid (2 rows x 3 cols), icon left + text right */
+.category-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+/* Explore by category: default = barely visible border, hover = darker visible border */
+.category-grid-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  text-decoration: none;
+  color: inherit;
+  min-height: 72px;
+  background: #fff;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.category-grid-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  border-color: rgba(0, 0, 0, 0.25) !important;
+}
+.category-card-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+@media (max-width: 768px) {
+  .category-grid-6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Vendor card hover */
+.vendor-card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  height: 100%;
+}
+.vendor-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+}
+
+/* Blog article card hover */
+.article-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+}
+
+/* Line clamp utility for truncating text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

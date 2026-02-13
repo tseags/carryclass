@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CCW Training Directory
+
+A directory and marketplace for CCW (Concealed Carry Weapon) training and related services. Built with Next.js for scale, filtering, and future product features.
+
+## Features
+
+- **Location-first navigation**: Browse by State → County → Vendors
+- **SEO-friendly structure**: Static county pages, dynamic vendor profiles, sitemap
+- **Filtering**: County, city, class type (initial/renewal), format (in-person/online/hybrid), price
+- **Vendor profiles**: Rich detail pages with CTAs
+- **Mobile-friendly**: Responsive, utility-first UI
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS
+- **Data**: In-memory (JSON) — ready to migrate to Supabase/Postgres
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── ca/                 # California state + county pages
+│   │   └── [county]/       # County vendor listings
+│   ├── vendors/            # All vendors + profile pages
+│   │   └── [slug]/
+│   ├── sitemap.ts
+│   └── robots.ts
+├── components/
+├── data/                   # Seed data (vendors, counties)
+├── lib/                    # Filtering, utilities
+└── types/
+```
 
-## Learn More
+## Data Model
 
-To learn more about Next.js, take a look at the following resources:
+- **Vendor**: name, location, counties served, class types, formats, pricing, contact
+- **County**: slug, display name (CA’s 58 counties)
+- Filters are URL-driven for shareable, bookmarkable results
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Migration Path to Supabase
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create `vendors` and `counties` tables in Supabase
+2. Replace `data/vendors.ts` and `data/counties.ts` with API calls or server components that query Supabase
+3. Add auth (Supabase Auth) for vendor dashboards
+4. Add payments (Stripe) for featured listings
 
-## Deploy on Vercel
+## Adding New States
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Add state slug + counties to `data/counties.ts` (or DB)
+2. Create `/app/[state]/page.tsx` and `/app/[state]/[county]/page.tsx`
+3. Update sitemap and navigation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+Private / All rights reserved
