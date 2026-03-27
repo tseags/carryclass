@@ -14,6 +14,7 @@ import { filterVendors } from "@/lib/filter-vendors";
 import { COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { CALIFORNIA_COUNTIES } from "@/data/counties";
 import { getCountyImageUrl } from "@/data/county-images";
+import { CountyStatsSection } from "@/components/CountyStatsSection";
 
 interface PageProps {
   params: Promise<{ county: string }>;
@@ -69,68 +70,77 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-zinc-50">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        <nav className="mb-8 text-sm text-zinc-500">
-          <Link href="/" className="hover:text-zinc-700">
-            Home
-          </Link>
-          <span className="mx-2">/</span>
-          <Link href="/ca" className="hover:text-zinc-700">
-            Counties
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-zinc-900">{displayName} County</span>
-        </nav>
+      <main>
+        <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-12">
+          <nav className="mb-8 text-sm text-zinc-500">
+            <Link href="/" className="hover:text-zinc-700">
+              Home
+            </Link>
+            <span className="mx-2">/</span>
+            <Link href="/ca" className="hover:text-zinc-700">
+              Counties
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-zinc-900">{displayName} County</span>
+          </nav>
 
-        <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
-              CCW Training in {displayName} County
-            </h1>
-            <p className="mt-2 text-zinc-600">
-              {vendors.length} {vendors.length === 1 ? "instructor" : "instructors"}{" "}
-              serving {displayName} County. Use filters to narrow your search.
-            </p>
-          </div>
-          {countyImage && (
-            <div className="relative h-24 w-40 shrink-0 overflow-hidden rounded-lg">
-              <Image
-                src={countyImage}
-                alt={displayName}
-                fill
-                className="object-cover"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="mb-8">
-          <FilterBar
-            countySlug={county}
-            counties={countyOptions}
-            cities={cities}
-          />
-        </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {vendors.length > 0 ? (
-            vendors.map((vendor) => (
-              <VendorCard key={vendor.id} vendor={vendor} />
-            ))
-          ) : (
-            <div className="col-span-full rounded-lg border border-zinc-200 bg-white p-8 text-center">
-              <p className="text-zinc-600">
-                No instructors match your filters. Try adjusting your criteria or{" "}
-                <Link href={`/ca/${county}`} className="font-medium text-zinc-900 hover:underline">
-                  clear filters
-                </Link>
-                .
+          <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+                CCW Training in {displayName} County
+              </h1>
+              <p className="mt-2 text-zinc-600">
+                {vendors.length} {vendors.length === 1 ? "instructor" : "instructors"}{" "}
+                serving {displayName} County. Use filters to narrow your search.
               </p>
             </div>
-          )}
+            {countyImage && (
+              <div className="relative h-24 w-40 shrink-0 overflow-hidden rounded-lg">
+                <Image
+                  src={countyImage}
+                  alt={displayName}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        <Footer />
+        <CountyStatsSection
+          vendors={allVendors}
+          countyDisplayName={displayName}
+        />
+
+        <div className="mx-auto max-w-6xl px-4 pb-8 pt-10 sm:px-6 sm:pb-12 sm:pt-12">
+          <div className="mb-8">
+            <FilterBar
+              countySlug={county}
+              counties={countyOptions}
+              cities={cities}
+            />
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {vendors.length > 0 ? (
+              vendors.map((vendor) => (
+                <VendorCard key={vendor.id} vendor={vendor} />
+              ))
+            ) : (
+              <div className="col-span-full rounded-lg border border-zinc-200 bg-white p-8 text-center">
+                <p className="text-zinc-600">
+                  No instructors match your filters. Try adjusting your criteria or{" "}
+                  <Link href={`/ca/${county}`} className="font-medium text-zinc-900 hover:underline">
+                    clear filters
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Footer />
+        </div>
       </main>
     </div>
   );
