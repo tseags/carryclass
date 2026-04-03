@@ -3,24 +3,46 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
-    "build": "next build",
+    "dev": "next dev -p 3001 --webpack",
+    "sync:county-images": "node scripts/sync-county-images.mjs",
+    "pull:county-images": "node scripts/copy-county-images-from-source.mjs && node scripts/sync-county-images.mjs",
+    "build": "node scripts/copy-county-images-from-source.mjs && node scripts/sync-county-images.mjs && prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "worktree:audit": "bash scripts/worktree-audit.sh"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.4",
+    "@clerk/themes": "^2.4.57",
+    "@prisma/client": "6.19.0",
+    "dotenv": "^17.3.1",
+    "leaflet": "^1.9.4",
     "next": "16.1.6",
+    "paapi5-nodejs-sdk": "^1.1.0",
+    "prisma": "6.19.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-leaflet": "^5.0.0",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

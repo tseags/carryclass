@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SmoothScrollTo } from "@/components/SmoothScrollTo";
-import { VendorCard } from "@/components/VendorCard";
+import { VendorCardWebflow } from "@/components/VendorCardWebflow";
 import {
   getCountyDisplayName,
   isValidCountySlug,
   CALIFORNIA_COUNTIES,
 } from "@/data/counties";
-import { getVendorsByCounty } from "@/data/vendors";
+import { getVendorsByCounty } from "@/lib/vendors-db";
 import { filterVendors } from "@/lib/filter-vendors";
 import { getCountyImageUrl } from "@/data/county-images";
 import { GearCtaSection } from "@/components/GearCtaSection";
@@ -46,7 +46,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   }
 
   const displayName = getCountyDisplayName(county);
-  const allVendors = getVendorsByCounty(county);
+  const allVendors = await getVendorsByCounty(county);
 
   const filters = {
     county,
@@ -84,7 +84,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                 <strong>concealed carry training vendors</strong> in {displayName} County. All
                 instructors listed below are approved by the{" "}
                 <strong>County Sheriff&apos;s Office</strong> to provide valid training
-                certificates for new applicants and renewals.                 Compare pricing, locations, and
+                certificates for new applicants and renewals. Compare pricing, locations, and
                 course options.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -148,7 +148,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
             {popularVendors.length > 0 ? (
               <div role="list" className="grid-2-columns _1-col-tablet w-dyn-items">
                 {popularVendors.map((vendor) => (
-                  <VendorCard key={vendor.id} vendor={vendor} />
+                  <VendorCardWebflow key={vendor.id} vendor={vendor} />
                 ))}
               </div>
             ) : (
@@ -170,7 +170,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
             {vendors.length > 0 ? (
               <div role="list" className="vendors-grid grid-3-columns w-dyn-items">
                 {vendors.map((vendor) => (
-                  <VendorCard key={vendor.id} vendor={vendor} />
+                  <VendorCardWebflow key={vendor.id} vendor={vendor} />
                 ))}
               </div>
             ) : (

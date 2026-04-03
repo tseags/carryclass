@@ -3,7 +3,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroImages } from "@/components/HeroImages";
 import { CountyScrollSection } from "@/components/CountyScrollSection";
-import { VENDORS } from "@/data/vendors";
+import { GearCtaSection } from "@/components/GearCtaSection";
+import { getAllVendors } from "@/lib/vendors-db";
 import { getCountyDisplayName } from "@/data/counties";
 
 export const metadata = {
@@ -12,11 +13,6 @@ export const metadata = {
     "Find CCW (Concealed Carry Weapon) training classes and certified instructors in California. Browse by county, compare prices, and get your permit.",
 };
 
-// Featured vendors (featured first, then first 6)
-const featuredVendors = [...VENDORS]
-  .filter((v) => v.featured)
-  .concat(VENDORS.filter((v) => !v.featured))
-  .slice(0, 6);
 
 // Placeholder blog articles
 const PLACEHOLDER_ARTICLES = [
@@ -40,7 +36,13 @@ const PLACEHOLDER_ARTICLES = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const vendors = await getAllVendors();
+  const featuredVendors = [...vendors]
+    .filter((v) => v.featured)
+    .concat(vendors.filter((v) => !v.featured))
+    .slice(0, 6);
+
   return (
     <>
       <Header />
@@ -56,9 +58,8 @@ export default function HomePage() {
               </div>
               <div className="inner-container _414px _100-tablet">
                 <p className="mg-bottom-24px">
-                  Browse approved CCW instructors across California. Compare
-                  class options, prices, reviews, and availability — all in one
-                  place.
+                  Browse approved CCW instructors across California. Compare class options, prices,
+                  reviews, and availability — all in one place, no account required.
                 </p>
               </div>
               <div className="buttons-row">
@@ -174,44 +175,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Gear CTA - dark section */}
-      <div className="cta-section old">
-        <div className="container-default position-relative---z-index-1 w-container">
-          <div className="grid-3-columns top-section---grid-right">
-            <div className="top-section-grid-right---column first">
-              <div className="grid-1-column gap-row-20px gap-row-12px-mbl">
-                <img src="/images/jeferson-santu-2AZz7FXD3qI-unsplash.jpg" loading="lazy" alt="" className="border-radius-8px" />
-                <img src="/images/artem-zhukov-08M4vqU_Q-k-unsplash.jpg" loading="lazy" alt="" className="border-radius-8px" />
-              </div>
-            </div>
-            <div className="top-section-grid-right---column second">
-              <div className="grid-1-column gap-row-20px gap-row-12px-mbl">
-                <img src="/images/Screen-Shot-2025-10-29-at-8.45.33-AM.png" loading="lazy" alt="" className="border-radius-8px" />
-                <img src="/images/jeferson-santu-HmK7MVxlo9M-unsplash.jpg" loading="lazy" alt="" className="border-radius-8px" />
-                <img src="/images/joel-moysuh-wJMzCNY7ZkM-unsplash.jpg" loading="lazy" alt="" className="border-radius-8px" />
-              </div>
-            </div>
-            <div className="top-section-grid-right---column third">
-              <div className="grid-1-column gap-row-20px gap-row-12px-mbl">
-                <img src="/images/jay-rembert-LcAaVZXDTkI-unsplash.jpg" loading="lazy" alt="" className="border-radius-8px" />
-                <img src="/images/Screen-Shot-2025-10-29-at-8.44.49-AM.png" loading="lazy" alt="" className="border-radius-8px" />
-              </div>
-            </div>
-          </div>
-          <div className="inner-container _470px _100-tablet">
-            <h2 className="display-2 color-neutral-100 mg-bottom-12px">
-              Find the Best Gear for CCW Training &amp; Everyday Carry
-            </h2>
-            <p className="paragraph-small color-neutral-300 mg-bottom-24px">
-              View the best holsters, belts, PPE, safes, and more — trusted by
-              CCW holders across California.
-            </p>
-            <Link href="/gear" className="btn-primary button-row gear-button w-button">
-              View Gear
-            </Link>
-          </div>
-        </div>
-      </div>
+      <GearCtaSection />
 
       {/* Newsletter CTA */}
       <div id="subscribe" className="overflow-hidden newsletter-cta">
@@ -376,15 +340,15 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="grid-3-columns _1-col-tablet" style={{ gap: "24px" }}>
+          <div className="grid-3-columns _1-col-tablet article-cards-grid" style={{ gap: "24px" }}>
             {PLACEHOLDER_ARTICLES.map((article) => (
               <Link
                 key={article.slug}
                 href={`/blog#${article.slug}`}
                 className="article-card card-link-image-top---main-container w-inline-block"
-                style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}
               >
-                <div className="link-item---image-wrapper border-radius-12px" style={{ aspectRatio: "16/10", overflow: "hidden", marginBottom: "16px" }}>
+                <div className="link-item---image-wrapper article-card-image" style={{ aspectRatio: "16/10", overflow: "hidden", marginBottom: 0, flexShrink: 0 }}>
                   <img
                     src={article.image}
                     loading="lazy"
@@ -393,13 +357,14 @@ export default function HomePage() {
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>
-                <div className="card-link-image-top---text-container pd-26px---34px---52px" style={{ paddingTop: 0 }}>
+                <div className="card-link-image-top---text-container pd-26px---34px---52px article-card-text">
                   <h3 className="link-item-text---hover-secondary-2 heading-h4-size mg-bottom-12px">
                     {article.title}
                   </h3>
-                  <p className="color-neutral-600 line-clamp-2 mg-bottom-0">
+                  <p className="color-neutral-600 article-card-description mg-bottom-16px" style={{ textAlign: "left" }}>
                     {article.description}
                   </p>
+                  <span className="article-card-read-now">Read now</span>
                 </div>
               </Link>
             ))}

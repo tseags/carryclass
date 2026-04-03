@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { VendorCard } from "@/components/VendorCard";
-import { VENDORS } from "@/data/vendors";
+import type { Vendor } from "@/types";
 
-export function PopularVendors() {
-  const popularVendors = VENDORS.slice(0, 3);
+interface PopularVendorsProps {
+  vendors: Vendor[];
+}
 
+export function PopularVendors({ vendors }: PopularVendorsProps) {
   return (
     <section className="py-12">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -19,7 +21,7 @@ export function PopularVendors() {
         </Link>
       </div>
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {popularVendors.map((vendor) => (
+        {vendors.map((vendor) => (
           <VendorCard key={vendor.id} vendor={vendor} />
         ))}
       </div>

@@ -23,6 +23,14 @@ export const VENDORS: Vendor[] = [
     website: "https://example.com",
     phone: "(559) 555-0101",
     description: "Professional CCW training serving the Central Valley. We offer both initial and renewal classes with flexible scheduling. NRA-certified instructors with 15+ years experience.",
+    photos: [
+      "https://images.unsplash.com/photo-1544532396-cd7b2dc7f390?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1574241479097-b15c2c6f1d19?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1596438155102-5652a1608f84?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1600334089648-773287727c0e?w=800&h=600&fit=crop",
+    ],
     featured: true,
     createdAt: "2024-01-15",
   },
@@ -47,6 +55,10 @@ export const VENDORS: Vendor[] = [
     website: "https://example.com",
     phone: "(916) 555-0202",
     description: "Sacramento's leading CCW training provider. Weekend classes available. Same-day certificate processing.",
+    photos: [
+      "https://images.unsplash.com/photo-1544532396-cd7b2dc7f390?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800&h=600&fit=crop",
+    ],
     featured: true,
     createdAt: "2024-02-01",
   },
@@ -209,6 +221,47 @@ export const VENDORS: Vendor[] = [
     featured: false,
     createdAt: "2024-02-28",
   },
+  {
+    id: "11",
+    slug: "central-valley-ccw-placeholder",
+    name: "Central Valley CCW Training Co",
+    type: "company",
+    city: "Bakersfield",
+    county: "kern",
+    state: "CA",
+    countiesServed: ["kern", "fresno", "tulare"],
+    classTypes: ["both"],
+    formats: ["in-person"],
+    priceMin: 85,
+    priceMax: 150,
+    priceInitial: 150,
+    priceRenewal: 85,
+    website: "https://example.com",
+    phone: "(661) 555-0808",
+    description: "Kern County CCW classes. Weekend and weekday options.",
+    featured: false,
+    createdAt: "2024-03-15",
+  },
+  {
+    id: "12",
+    slug: "inland-empire-training-placeholder",
+    name: "Inland Empire Training Group",
+    type: "instructor",
+    city: "Riverside",
+    county: "riverside",
+    state: "CA",
+    countiesServed: ["riverside", "san-bernardino", "orange"],
+    classTypes: ["both"],
+    formats: ["in-person", "hybrid"],
+    priceMin: 79,
+    priceMax: 139,
+    priceInitial: 139,
+    priceRenewal: 79,
+    website: "https://example.com",
+    description: "Riverside area CCW instruction. Flexible scheduling.",
+    featured: false,
+    createdAt: "2024-03-20",
+  },
 ];
 
 export function getVendorBySlug(slug: string): Vendor | undefined {
@@ -237,5 +290,11 @@ export function getVendorsByCity(city: string, countySlug?: string): Vendor[] {
 export function getUniqueCitiesInCounty(countySlug: string): string[] {
   const vendors = getVendorsByCounty(countySlug);
   const cities = new Set(vendors.map((v) => v.city));
+  return Array.from(cities).sort();
+}
+
+/** All unique cities across all vendors (for site-wide city filter). */
+export function getAllUniqueCities(): string[] {
+  const cities = new Set(VENDORS.map((v) => v.city));
   return Array.from(cities).sort();
 }

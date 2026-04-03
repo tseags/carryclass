@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { getCountyDisplayName } from "@/data/counties";
-import { getVendorsByCounty } from "@/data/vendors";
 
 interface CountyGridProps {
   counties: string[];
+  vendorCounts?: Record<string, number>;
 }
 
-export function CountyGrid({ counties }: CountyGridProps) {
+export function CountyGrid({ counties, vendorCounts = {} }: CountyGridProps) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {counties.map((slug) => {
-        const vendorCount = getVendorsByCounty(slug).length;
+        const vendorCount = vendorCounts[slug] ?? 0;
         const displayName = getCountyDisplayName(slug);
         return (
           <Link

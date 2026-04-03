@@ -376,3 +376,9 @@ img.county-hero-image-fill {
 .ccw-timeline-submit-modal-root .btn-primary:hover {
   transform: none !important;
 }
+.ccw-timeline-section .ccw-timeline-heading {
+  color: #18181b !important;
+  font-weight: 700 !important;
+  font-size: clamp(1.25rem, 2.2vw, 2.25rem) !important;
+  line-height: 1.2 !important;
+}

@@ -24,9 +24,13 @@ export interface Vendor {
   email?: string;
   description?: string;
   imageUrl?: string;
+  /** Optional gallery photos for "About the Experience". Section hidden if empty. */
+  photos?: string[];
   googleReviewsUrl?: string;
   googlePlaceId?: string;
   featured?: boolean;
+  /** When true, hero shows Book Now and /vendors/[slug]/book is available */
+  acceptsBookings?: boolean;
   createdAt: string;
 }
 

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getCountyDisplayName } from "@/data/counties";
-import { getVendorsByCounty } from "@/data/vendors";
 import { getCountyImageUrl } from "@/data/county-images";
 
 const FEATURED_COUNTIES = [
@@ -13,7 +12,11 @@ const FEATURED_COUNTIES = [
   "san-bernardino",
 ] as const;
 
-export function CountyCarousel() {
+interface CountyCarouselProps {
+  vendorCounts?: Record<string, number>;
+}
+
+export function CountyCarousel({ vendorCounts = {} }: CountyCarouselProps) {
   return (
     <section className="py-12">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -32,7 +35,7 @@ export function CountyCarousel() {
           {FEATURED_COUNTIES.map((slug) => {
             const name = getCountyDisplayName(slug);
             const imageUrl = getCountyImageUrl(slug);
-            const vendorCount = getVendorsByCounty(slug).length;
+            const vendorCount = vendorCounts[slug] ?? 0;
 
             return (
               <Link
@@ -40,7 +43,7 @@ export function CountyCarousel() {
                 href={`/ca/${slug}`}
                 className="group flex min-w-[200px] shrink-0 flex-col sm:min-w-[240px]"
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-zinc-200">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-zinc-200">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
