@@ -4,12 +4,28 @@
   --background: #fafafa;
   --foreground: #171717;
   --navy: #1c2331;
+  /* Space for fixed header / anchor scroll (county pages, in-page links) */
+  --header-offset: 120px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hero “View Vendors” → #Popular-Vendors; offset so heading clears sticky header */
+#Popular-Vendors {
+  scroll-margin-top: var(--header-offset);
+}
+
+/* Hero “Current Wait Times” → #ccw-timeline; extra room above section title below nav */
+#ccw-timeline {
+  scroll-margin-top: calc(var(--header-offset) + 1.5rem);
 }
 
 body {
@@ -21,6 +37,85 @@ body {
 /* Ensure page content is visible (Webflow export used opacity:0 for animations) */
 .page-wrapper {
   opacity: 1 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* County page hero (/ca/[county]) — row layout + text (not in Webflow export) */
+/* Without this, Next/Image `fill` can expand and hide headline/copy.         */
+/* -------------------------------------------------------------------------- */
+.top-section.county-page {
+  background-color: #fafafa;
+  /* Same value in public/css/ccw-directory.webflow.css (loads after this bundle) */
+  padding-bottom: 90px !important;
+}
+.top-section.county-page .county-hero-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 3.5rem;
+  width: 100%;
+}
+.county-hero-content {
+  flex: 0 1 480px;
+  min-width: 260px;
+  max-width: 480px;
+  position: relative;
+  z-index: 2;
+}
+.county-h1 {
+  color: #111827 !important;
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 0.75rem;
+}
+.county-sub-heading {
+  color: #4b5563 !important;
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 0 0 1.25rem;
+}
+/* Same footprint as adjacent .btn-primary.small (View Vendors) — Webflow .btn-secondary.small uses 16px type */
+.top-section.county-page a.county-hero-timeline-btn.btn-secondary.small {
+  font-size: 14px;
+  line-height: 16px;
+  font-weight: 700;
+}
+.county-hero-image {
+  flex: 0 1 min(540px, 48vw);
+  min-width: 260px;
+  max-width: 620px;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+.county-hero-image-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  min-height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+img.county-hero-image-fill {
+  object-fit: cover !important;
+}
+@media (max-width: 991px) {
+  .top-section.county-page .county-hero-row {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .county-hero-content {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+  .county-hero-image {
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 /* Hero images: subtle float on scroll (slight movement) */
@@ -178,4 +273,106 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Gear CTA (src/components/GearCtaSection.tsx) — not in Webflow export       */
+/* -------------------------------------------------------------------------- */
+.gear-cta-section {
+  background-color: var(--accent--primary-1, #111828);
+  min-height: 380px;
+  padding: 48px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.gear-cta-section__inner {
+  width: 100%;
+  max-width: 1304px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.gear-cta-section__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.gear-cta-section__copy {
+  flex: 1 1 320px;
+  min-width: 280px;
+  max-width: 560px;
+}
+.gear-cta-section__image-wrap {
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 480px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.gear-cta-section__image {
+  width: 100%;
+  height: auto;
+  max-width: 420px;
+  border-radius: 12px;
+  object-fit: contain;
+  display: block;
+}
+@media (max-width: 991px) {
+  .gear-cta-section__row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .gear-cta-section {
+    min-height: auto;
+    padding: 40px 0 48px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* County page: stats + timeline (scoped — does not affect home hero)          */
+/* -------------------------------------------------------------------------- */
+.county-stats-section {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+  background-color: #09090b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+.county-stats-section .county-stats-section-heading {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: clamp(0.95rem, 2.6vw + 0.35rem, 4rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-align: center;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+  white-space: nowrap;
+}
+.ccw-timeline-section {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+}
+/* Webflow .btn-primary:hover uses scale3d(1.06) — overflow parents clip the CTA */
+.ccw-timeline-section a.btn-primary:hover,
+.ccw-timeline-section button.btn-primary:hover {
+  transform: none !important;
+}
+/* Submit modal is portaled to body — same hover scale fix */
+.ccw-timeline-submit-modal-root .btn-primary:hover {
+  transform: none !important;
 }

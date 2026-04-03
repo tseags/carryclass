@@ -45,72 +45,63 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   }));
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <>
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        <nav className="mb-8 text-sm text-zinc-500">
-          <Link href="/" className="hover:text-zinc-700">
-            Home
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-zinc-900">Find CCW Courses</span>
-        </nav>
-
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
-          Find California CCW Instructors & Approved Training Vendors
-        </h1>
-        <p className="mt-2 max-w-2xl text-zinc-600">
-          Browse all sheriff-approved CCW instructors in California. Filter by
-          county, class type, pricing, availability, or in-person/virtual options
-          to find the right instructor for your initial or renewal training.
-        </p>
-
-        <div className="mt-6">
+      <section className="section-3">
+        <div className="w-layout-blockcontainer container-2 w-container">
+          <div className="div-block-10">
+            <nav className="vendors-hero-breadcrumb mg-bottom-12px text-sm">
+              <Link href="/" className="hover:underline">
+                Home
+              </Link>
+              <span className="mx-2">/</span>
+              <span className="text-zinc-900">Find CCW Courses</span>
+            </nav>
+            <h1 className="mg-bottom-12px">Find California CCW Instructors &amp; Approved Training Vendors</h1>
+            <p className="paragraph-5">
+              Browse all sheriff-approved CCW instructors in California. Filter by county, class type,
+              pricing, availability, or in-person/virtual options to find the right instructor for your
+              initial or renewal training.
+            </p>
+          </div>
           <VendorsSearchBar counties={countyOptions} />
         </div>
+      </section>
 
-        {/* Map placeholder */}
-        <div className="mt-8 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
-          <div className="flex h-48 items-center justify-center text-zinc-500">
-            <div className="text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                />
-              </svg>
-              <p className="mt-2 text-sm">Map preview</p>
-              <p className="text-xs text-zinc-400">
-                Interactive map coming soon
-              </p>
+      <section className="section-4">
+        <div className="w-layout-blockcontainer container-3 w-container">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+            <div className="flex h-48 items-center justify-center text-zinc-500">
+              <div className="text-center">
+                <p className="text-sm font-medium">Map preview</p>
+                <p className="text-xs text-zinc-400">Interactive map coming soon</p>
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Vendor grid */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {vendors.length > 0 ? (
-            vendors.map((vendor) => (
-              <VendorCard key={vendor.id} vendor={vendor} />
-            ))
-          ) : (
-            <div className="col-span-full rounded-lg border border-zinc-200 bg-white p-8 text-center">
-              <p className="text-zinc-600">
-                No instructors match your search. Try adjusting your filters.
-              </p>
-            </div>
-          )}
+      <div className="section bg-neutral-200">
+        <div className="container-default w-container">
+          <div className="w-dyn-list">
+            {vendors.length > 0 ? (
+              <div role="list" className="grid-3-columns w-dyn-items">
+                {vendors.map((vendor) => (
+                  <div key={vendor.id} role="listitem" className="w-dyn-item">
+                    <VendorCard vendor={vendor} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state w-dyn-empty">
+                <div>No instructors match your search. Try adjusting your filters.</div>
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
-        <Footer />
-      </main>
-    </div>
+      <Footer />
+    </>
   );
 }
