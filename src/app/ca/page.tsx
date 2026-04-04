@@ -13,6 +13,11 @@ export const metadata = {
     "Browse all California counties to find approved CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
 };
 
+/** One-line blurb under each county name */
+function countyCardBlurb(displayName: string): string {
+  return `Sheriff-approved CCW classes, renewals, and instructors in ${displayName} County.`;
+}
+
 export default async function CaliforniaPage({
   searchParams,
 }: {
@@ -35,14 +40,7 @@ export default async function CaliforniaPage({
       <Header />
       <section className="section-3 counties-hero">
         <div className="container-default w-container">
-          <nav className="vendors-hero-breadcrumb text-sm">
-            <Link href="/" className="hover:underline">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <span>Counties</span>
-          </nav>
-          <div className="text-center mg-bottom-32px pricing-page">
+          <div className="counties-hero-title-block text-center mg-bottom-32px pricing-page">
             <div className="inner-container _550px center">
               <h1 className="mg-bottom-6px">Find CCW Training by County in California</h1>
               <p className="mg-bottom-0 main-description">
@@ -52,7 +50,18 @@ export default async function CaliforniaPage({
               </p>
             </div>
           </div>
-          <div className="inner-container _1040px center">
+
+          <div className="counties-hero-breadcrumb-row">
+            <nav className="vendors-hero-breadcrumb text-sm" aria-label="Breadcrumb">
+              <Link href="/" className="hover:underline">
+                Home
+              </Link>
+              <span className="mx-2">/</span>
+              <span>Counties</span>
+            </nav>
+          </div>
+
+          <div className="inner-container _1040px center mg-top-40px">
             <div className="card pd-44px---32px county-search counties-hero-search">
               <div className="grid-3-columns filters-grid county-page">
                 <form
@@ -96,7 +105,7 @@ export default async function CaliforniaPage({
           <div className="inner-container _1120px center">
             <div className="w-dyn-list">
               {counties.length > 0 ? (
-                <div role="list" className="grid-2-columns w-dyn-items county-collection-grid">
+                <div role="list" className="county-cards-grid-polished w-dyn-items county-collection-grid">
                   {counties.map((slug) => {
                     const name = getCountyDisplayName(slug);
                     const imageUrl = getCountyImageUrl(slug);
@@ -118,7 +127,7 @@ export default async function CaliforniaPage({
                                   alt={name}
                                   fill
                                   className="image-3"
-                                  sizes="(max-width: 767px) 100vw, 50vw"
+                                  sizes="(max-width: 576px) 100vw, (max-width: 991px) 50vw, 33vw"
                                 />
                               </div>
                             ) : (
@@ -132,8 +141,7 @@ export default async function CaliforniaPage({
                               </h2>
                             </div>
                             <p className="color-neutral-600 mg-bottom-0">
-                              Find approved CCW training and renewal courses in{" "}
-                              <strong>{name}</strong> County.
+                              {countyCardBlurb(name)}
                             </p>
                           </div>
                         </Link>

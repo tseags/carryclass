@@ -1,0 +1,403 @@
+/* Loaded last from layout.tsx — wins over Webflow ccw-directory.webflow.css */
+
+/* -------------------------------------------------------------------------- */
+/* Dark blue textured hero — Counties (/ca) + Find CCW Courses (/vendors)     */
+/* -------------------------------------------------------------------------- */
+.section-3.vendors-hero,
+.section-3.counties-hero {
+  position: relative;
+  overflow: hidden;
+  background-color: #0c1528 !important;
+  background-image:
+    linear-gradient(180deg, rgba(15, 35, 75, 0.55) 0%, rgba(8, 18, 40, 0.92) 100%),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 3px
+    ),
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.15), transparent 55%),
+    linear-gradient(165deg, #152a52 0%, #0a1628 45%, #060d18 100%) !important;
+  background-size: auto, 10px 10px, 100% 100%, 100% 100% !important;
+  padding-top: 72px !important;
+  padding-bottom: 48px !important;
+}
+
+.section-3.vendors-hero::before,
+.section-3.counties-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.section-3.vendors-hero > *,
+.section-3.counties-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.section-3.counties-hero .container-default,
+.section-3.vendors-hero .container-2 {
+  max-width: 1100px;
+}
+
+/* Hero typography on dark */
+.section-3.counties-hero h1,
+.section-3.vendors-hero .vendors-hero-title,
+.section-3.vendors-hero h1 {
+  color: #f8fafc !important;
+}
+
+/* Vendors hero H1 font-size: defined in src/app/globals.css (after Tailwind) so it wins cascade */
+
+.section-3.vendors-hero .vendors-hero-title {
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-3.counties-hero .main-description,
+.section-3.counties-hero .pricing-page p,
+.section-3.vendors-hero .vendors-hero-description,
+.section-3.vendors-hero .paragraph-5 {
+  color: rgba(226, 232, 240, 0.92) !important;
+}
+
+/* Breadcrumb: centered */
+.counties-hero-breadcrumb-row,
+.vendors-hero-breadcrumb-row {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  margin-top: 1.75rem;
+  margin-bottom: 0;
+}
+
+/* Vendors: breadcrumb above H1 — spacing in src/app/globals.css (.vendors-hero-breadcrumb-row--above-title) */
+
+.counties-hero-breadcrumb-row .vendors-hero-breadcrumb,
+.vendors-hero-breadcrumb-row .vendors-hero-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  color: rgba(203, 213, 225, 0.95) !important;
+}
+
+/* Current page label (e.g. Find CCW Courses on /vendors) — final authority in src/app/globals.css */
+.vendors-hero-breadcrumb-row .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Match separator to link tone on vendors hero */
+.vendors-hero-content .vendors-hero-breadcrumb-row span.mx-2 {
+  color: #e2e8f0 !important;
+}
+
+.counties-hero-breadcrumb-row a,
+.vendors-hero-breadcrumb-row a {
+  color: #e2e8f0 !important;
+  text-decoration: none;
+}
+
+.counties-hero-breadcrumb-row a:hover,
+.vendors-hero-breadcrumb-row a:hover {
+  color: #fff !important;
+  text-decoration: underline;
+}
+
+.counties-hero-breadcrumb-row span.mx-2,
+.vendors-hero-breadcrumb-row span.mx-2 {
+  color: rgba(148, 163, 184, 0.9) !important;
+}
+
+/* Title block first — extra spacing before breadcrumb row */
+.counties-hero-title-block {
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.vendors-hero .vendors-hero-content {
+  text-align: center;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/*
+  Two-line hero: explicit <br /> + full-width inline-block lines so each phrase is one row.
+  nowrap keeps each line from splitting into a 3rd visual line; br guarantees exactly two rows.
+*/
+.section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap !important;
+  vertical-align: top;
+}
+.section-3.vendors-hero .vendors-hero-title br {
+  line-height: 0;
+}
+.section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line + br + .vendors-hero-title-line {
+  margin-top: 0.15em;
+}
+
+/* Very narrow: allow wrap so text isn’t clipped */
+@media screen and (max-width: 379px) {
+  .section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+    white-space: normal !important;
+  }
+}
+
+/* Hero subcopy: two short lines + br; from 768px nowrap each line so first span can’t wrap to a 3rd row */
+.section-3.vendors-hero .vendors-hero-description--two-lines {
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center !important;
+  width: 100%;
+}
+.section-3.vendors-hero .vendors-hero-description-line {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  vertical-align: top;
+}
+.section-3.vendors-hero .vendors-hero-description--two-lines br {
+  line-height: 0;
+}
+@media screen and (min-width: 768px) {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 767px) {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+    white-space: normal;
+  }
+}
+
+/* Search / filter card on hero — crisp on dark */
+.section-3.counties-hero .county-search,
+.section-3.vendors-hero .filter-bar {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* /vendors filter row: drop Webflow 876px cap; search column uses full card width to the left */
+.section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  grid-template-columns: minmax(0, 3.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+
+.section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page > form.w-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.section-3.vendors-hero .filter-bar form .flex-horizontal {
+  width: 100%;
+}
+
+.section-3.vendors-hero .filter-bar form .flex-horizontal .input.icon-left-inside.search-btn-inside {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto;
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 991px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Counties list — 3 columns, square images, equal cards                      */
+/* -------------------------------------------------------------------------- */
+.county-cards-grid-polished {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.5rem !important;
+  align-items: stretch;
+}
+
+@media (max-width: 991px) {
+  .county-cards-grid-polished {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .county-cards-grid-polished {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.county-cards-grid-polished .county-card .div-block-7 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.county-cards-grid-polished .county-card-image-wrap {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  position: relative !important;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.county-cards-grid-polished .county-card-image-wrap img.image-3 {
+  object-fit: cover !important;
+}
+
+.county-cards-grid-polished .link-item-text---hover-secondary-2 {
+  margin-top: 1rem !important;
+  text-align: left;
+  font-size: 1.125rem !important;
+}
+
+.county-cards-grid-polished .color-neutral-600 {
+  font-size: 0.9rem !important;
+  line-height: 1.45 !important;
+  margin-top: 0.35rem !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendors list — 3 columns, square-forward cards, spacing                  */
+/* -------------------------------------------------------------------------- */
+.vendors-list-section .vendors-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.5rem !important;
+  align-items: stretch;
+}
+
+@media (max-width: 991px) {
+  .vendors-list-section .vendors-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .vendors-list-section .vendors-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.vendors-grid .vendor-card-webflow-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.vendors-grid .vendor-card-webflow-root > a {
+  flex: 1;
+  min-height: 0;
+}
+
+.mg-top-40px {
+  margin-top: 2.5rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendors page — map (Leaflet needs explicit height or tiles show as blank) */
+/* -------------------------------------------------------------------------- */
+/* Flex + gap prevents margin-collapse and guarantees space between map and cards */
+.vendors-page-content {
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.section-4.vendors-map-section {
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.section-4.vendors-map-section .container-3 {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/*
+  Webflow’s .w-widget-map { height: 400px } (webflow.css) was shorter than our
+  Leaflet wrapper (min(52vh, 520px)), so tiles/attribution painted below the
+  layout box while the card grid started after only 400px — visible overlap.
+*/
+.section-4.vendors-map-section .map-3.w-widget-map {
+  height: auto !important;
+  min-height: min(52vh, 520px);
+}
+
+.vendors-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: min(52vh, 520px);
+  min-height: 360px;
+  margin-bottom: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #e8eef5;
+}
+
+.vendors-map-wrapper.vendors-map-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  color: #64748b;
+}
+
+.vendors-map-container.leaflet-container,
+.vendors-map-wrapper .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 20px;
+  z-index: 0;
+}
+
+.vendors-map-popup-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  text-decoration: underline;
+}
+
+.vendors-map-popup-link:hover {
+  color: #0f172a;
+}
+
+.section.vendors-list-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}

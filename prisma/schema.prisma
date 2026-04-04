@@ -1,0 +1,108 @@
+// Prisma schema for CCW Directory
+// Database: PostgreSQL (Supabase)
+// https://supabase.com/docs/guides/database/connecting-to-postgres
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  type           String   // "instructor" | "company"
+  city           String
+  county         String
+  state          String
+  countiesServed String[] // County slugs
+  classTypes     String[] // "initial" | "renewal" | "both"
+  formats        String[] // "in-person" | "online" | "hybrid"
+  priceMin       Int?
+  priceMax       Int?
+  priceInitial   Int?
+  priceRenewal   Int?
+  priceAddGun    Int?
+  address        String?
+  discountInfo   String?
+  website        String?
+  phone          String?
+  email          String?
+  description    String?
+  imageUrl       String?
+  photos         String[] // Gallery URLs
+  googleReviewsUrl String?
+  googlePlaceId  String?
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  /** When true, vendor profile shows Book Now and /vendors/[slug]/book is enabled */
+  acceptsBookings Boolean @default(false)
+  /** Stripe Connect account id (acct_...) — required to run Checkout with application fee */
+  stripeConnectAccountId String?
+
+  classSessions ClassSession[]
+  bookings      Booking[]
+
+  @@index([county])
+  @@index([slug])
+  @@index([featured])
+}
+
+model ClassSession {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  startsAt   DateTime
+  endsAt     DateTime?
+  title      String?
+  classType  String // "initial" | "renewal"
+  priceCents Int // Class tuition portion (USD cents)
+  capacity   Int      @default(12)
+  enrolled   Int      @default(0)
+  timezone   String   @default("America/Los_Angeles")
+  createdAt  DateTime @default(now())
+
+  bookings Booking[]
+
+  @@index([vendorId, startsAt])
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+model Booking {
+  id        String @id @default(cuid())
+  vendorId  String
+  vendor    Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  classSessionId String
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId   String?
+
+  customerEmail String
+  customerName  String
+  clerkUserId   String?
+
+  classAmountCents   Int
+  serviceFeeCents    Int @default(700)
+  totalAmountCents   Int
+
+  status BookingStatus @default(PENDING)
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([classSessionId])
+  @@index([status])
+}

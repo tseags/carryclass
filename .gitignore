@@ -39,6 +39,11 @@ yarn-error.log*
 # local worktree audit output
 /worktree-audit.log
 
+# local debug / accidental empty files
+/vendors-debug.log
+/7.5.0
+/ccw-directory@0.1.0
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

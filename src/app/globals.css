@@ -382,3 +382,39 @@ img.county-hero-image-fill {
   font-size: clamp(1.25rem, 2.2vw, 2.25rem) !important;
   line-height: 1.2 !important;
 }
+
+/*
+  /vendors “Find CCW Courses” hero H1 — must match /ca counties hero (ccw-directory.webflow.css h1).
+  Placed at end of this file so rules load after Tailwind; linked app-overrides.css alone can lose cascade.
+*/
+.section-3.vendors-hero h1.vendors-hero-title {
+  font-size: 48px !important;
+  font-weight: 700 !important;
+  line-height: 1.208em !important;
+  letter-spacing: normal !important;
+}
+
+@media screen and (max-width: 767px) {
+  .section-3.vendors-hero h1.vendors-hero-title {
+    font-size: 38px !important;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .section-3.vendors-hero h1.vendors-hero-title {
+    font-size: 32px !important;
+  }
+}
+
+/* Vendors hero breadcrumb — active segment must stay white + bold (nav + Tailwind can override app-overrides) */
+.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Breadcrumb above H1 — globals/Tailwind were overriding app-overrides margins (runtime: gapPx 0, rowMarginBottom 0) */
+.section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title {
+  margin-top: 0 !important;
+  margin-bottom: 3rem !important;
+}
+

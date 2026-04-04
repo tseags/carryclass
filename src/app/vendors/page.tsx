@@ -50,25 +50,40 @@ export default async function VendorsPage({ searchParams }: PageProps) {
       <Header />
       <section className="section-3 vendors-hero">
         <div className="w-layout-blockcontainer container-2 w-container">
-          <nav className="vendors-hero-breadcrumb mg-bottom-12px text-sm">
-            <Link href="/" className="hover:underline">Home</Link>
-            <span className="mx-2">/</span>
-            <span>Find CCW Courses</span>
-          </nav>
           <div className="div-block-10 vendors-hero-content">
+            <div className="vendors-hero-breadcrumb-row vendors-hero-breadcrumb-row--above-title">
+              <nav className="vendors-hero-breadcrumb text-sm" aria-label="Breadcrumb">
+                <Link href="/" className="hover:underline">Home</Link>
+                <span className="mx-2" aria-hidden="true">/</span>
+                <span className="vendors-hero-breadcrumb-current" aria-current="page">
+                  Find CCW Courses
+                </span>
+              </nav>
+            </div>
             <h1 className="mg-bottom-12px vendors-hero-title">
-              Find California CCW Instructors &amp; Approved Training Vendors
+              <span className="vendors-hero-title-line">Find California CCW Instructors</span>
+              <br aria-hidden="true" />
+              <span className="vendors-hero-title-line">&amp; Approved Training Vendors</span>
             </h1>
-            <p className="paragraph-5 vendors-hero-description">
-              Browse all sheriff-approved CCW instructors in California. Filter by county, class type, pricing, availability, or in-person/virtual options to find the right instructor for your initial or renewal training.
+            <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
+              <span className="vendors-hero-description-line">
+                Browse sheriff-approved CCW instructors statewide. Filter by county, class type, price, format,
+              </span>
+              <br aria-hidden="true" />
+              <span className="vendors-hero-description-line">
+                and availability. Find the right instructor for your initial or renewal training.
+              </span>
             </p>
           </div>
-          <VendorsFilterBarWebflow allCities={allCities} />
+
+          <div className="mg-top-40px">
+            <VendorsFilterBarWebflow allCities={allCities} />
+          </div>
         </div>
       </section>
 
       <div className="vendors-page-content">
-        <section className="section-4" aria-label="Vendor locations map">
+        <section className="section-4 vendors-map-section" aria-label="Vendor locations map">
           <div className="w-layout-blockcontainer container-3 w-container">
             <div className="map-3 w-widget w-widget-map" role="region" title="Vendor locations">
               <VendorsMapDynamic vendors={vendors} hasFilter={!!(resolved.county || resolved.city)} />
