@@ -4,7 +4,7 @@
 /* Dark blue textured hero — background + noise: src/app/globals.css        */
 /* -------------------------------------------------------------------------- */
 
-.section-3.counties-hero .container-default,
+.section-3.counties-hero .container-2,
 .section-3.vendors-hero .container-2 {
   max-width: 1100px;
 }
@@ -16,9 +16,10 @@
   color: #f8fafc !important;
 }
 
-/* Vendors hero H1 font-size: defined in src/app/globals.css (after Tailwind) so it wins cascade */
+/* Vendors + /ca counties hero H1 font-size: src/app/globals.css */
 
-.section-3.vendors-hero .vendors-hero-title {
+.section-3.vendors-hero .vendors-hero-title,
+.section-3.counties-hero .vendors-hero-title {
   max-width: 52rem;
   margin-left: auto;
   margin-right: auto;
@@ -31,8 +32,9 @@
   color: rgba(226, 232, 240, 0.92) !important;
 }
 
-/* Breadcrumb: centered */
-.counties-hero-breadcrumb-row,
+/* /ca hero subtext white — see src/app/globals.css (.section-3.counties-hero .vendors-hero-description) */
+
+/* Breadcrumb: centered (below-title rows only; --above-title spacing in globals.css) */
 .vendors-hero-breadcrumb-row {
   display: flex;
   justify-content: center;
@@ -41,9 +43,6 @@
   margin-bottom: 0;
 }
 
-/* Vendors: breadcrumb above H1 — spacing in src/app/globals.css (.vendors-hero-breadcrumb-row--above-title) */
-
-.counties-hero-breadcrumb-row .vendors-hero-breadcrumb,
 .vendors-hero-breadcrumb-row .vendors-hero-breadcrumb {
   display: inline-flex;
   align-items: center;
@@ -66,29 +65,21 @@
   color: #e2e8f0 !important;
 }
 
-.counties-hero-breadcrumb-row a,
 .vendors-hero-breadcrumb-row a {
   color: #e2e8f0 !important;
   text-decoration: none;
 }
 
-.counties-hero-breadcrumb-row a:hover,
 .vendors-hero-breadcrumb-row a:hover {
   color: #fff !important;
   text-decoration: underline;
 }
 
-.counties-hero-breadcrumb-row span.mx-2,
 .vendors-hero-breadcrumb-row span.mx-2 {
   color: rgba(148, 163, 184, 0.9) !important;
 }
 
-/* Title block first — extra spacing before breadcrumb row */
-.counties-hero-title-block {
-  text-align: center;
-  margin-bottom: 0;
-}
-
+.section-3.counties-hero .vendors-hero-content,
 .vendors-hero .vendors-hero-content {
   text-align: center;
   max-width: 52rem;
@@ -122,35 +113,39 @@
 }
 
 /* Hero subcopy: two short lines + br; from 768px nowrap each line so first span can’t wrap to a 3rd row */
-.section-3.vendors-hero .vendors-hero-description--two-lines {
+.section-3.vendors-hero .vendors-hero-description--two-lines,
+.section-3.counties-hero .vendors-hero-description--two-lines {
   max-width: 44rem;
   margin-left: auto;
   margin-right: auto;
   text-align: center !important;
   width: 100%;
 }
-.section-3.vendors-hero .vendors-hero-description-line {
+.section-3.vendors-hero .vendors-hero-description-line,
+.section-3.counties-hero .vendors-hero-description-line {
   display: inline-block;
   width: 100%;
   text-align: center;
   vertical-align: top;
 }
-.section-3.vendors-hero .vendors-hero-description--two-lines br {
+.section-3.vendors-hero .vendors-hero-description--two-lines br,
+.section-3.counties-hero .vendors-hero-description--two-lines br {
   line-height: 0;
 }
 @media screen and (min-width: 768px) {
-  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line,
+  .section-3.counties-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
     white-space: nowrap;
   }
 }
 @media screen and (max-width: 767px) {
-  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line,
+  .section-3.counties-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
     white-space: normal;
   }
 }
 
-/* Search / filter card on hero — crisp on dark */
-.section-3.counties-hero .county-search,
+/* Search / filter card on hero — /vendors: light card on dark navy (see globals for white shell) */
 .section-3.vendors-hero .filter-bar {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.12);

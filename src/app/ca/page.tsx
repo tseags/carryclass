@@ -39,30 +39,37 @@ export default async function CaliforniaPage({
     <>
       <Header />
       <section className="section-3 counties-hero">
-        <div className="container-default w-container">
-          <div className="counties-hero-title-block text-center mg-bottom-32px pricing-page">
-            <div className="inner-container _550px center">
-              <h1 className="mg-bottom-6px">Find CCW Training by County in California</h1>
-              <p className="mg-bottom-0 main-description">
-                Browse all California counties to find approved CCW instructors
-                and training vendors near you. Each county below links to its own
-                sheriff-approved vendor list and renewal information.
-              </p>
+        <div className="w-layout-blockcontainer container-2 w-container">
+          <div className="div-block-10 vendors-hero-content">
+            <div className="vendors-hero-breadcrumb-row vendors-hero-breadcrumb-row--above-title">
+              <nav className="vendors-hero-breadcrumb text-sm" aria-label="Breadcrumb">
+                <Link href="/" className="hover:underline">
+                  Home
+                </Link>
+                <span className="mx-2" aria-hidden="true">
+                  /
+                </span>
+                <span className="vendors-hero-breadcrumb-current" aria-current="page">
+                  Counties
+                </span>
+              </nav>
             </div>
+            <h1 className="mg-bottom-12px vendors-hero-title">
+              Find CCW Training by County in California
+            </h1>
+            <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
+              <span className="vendors-hero-description-line">
+                Browse all California counties to find approved CCW instructors and training vendors near you.
+              </span>
+              <br aria-hidden="true" />
+              <span className="vendors-hero-description-line">
+                Each county below links to its own sheriff-approved vendor list and renewal information.
+              </span>
+            </p>
           </div>
 
-          <div className="counties-hero-breadcrumb-row">
-            <nav className="vendors-hero-breadcrumb text-sm" aria-label="Breadcrumb">
-              <Link href="/" className="hover:underline">
-                Home
-              </Link>
-              <span className="mx-2">/</span>
-              <span>Counties</span>
-            </nav>
-          </div>
-
-          <div className="inner-container _1040px center mg-top-40px">
-            <div className="card pd-44px---32px county-search counties-hero-search">
+          <div className="mg-top-40px">
+            <div className="card pd-44px---32px filter-bar county-search counties-hero-search vendors-filter-bar-shell">
               <div className="grid-3-columns filters-grid county-page">
                 <form
                   action="/ca"

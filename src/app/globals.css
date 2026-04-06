@@ -387,7 +387,8 @@ img.county-hero-image-fill {
   /vendors “Find CCW Courses” hero H1 — must match /ca counties hero (ccw-directory.webflow.css h1).
   Placed at end of this file so rules load after Tailwind; linked app-overrides.css alone can lose cascade.
 */
-.section-3.vendors-hero h1.vendors-hero-title {
+.section-3.vendors-hero h1.vendors-hero-title,
+.section-3.counties-hero h1.vendors-hero-title {
   font-size: 48px !important;
   font-weight: 700 !important;
   line-height: 1.208em !important;
@@ -395,27 +396,36 @@ img.county-hero-image-fill {
 }
 
 @media screen and (max-width: 767px) {
-  .section-3.vendors-hero h1.vendors-hero-title {
+  .section-3.vendors-hero h1.vendors-hero-title,
+  .section-3.counties-hero h1.vendors-hero-title {
     font-size: 38px !important;
   }
 }
 
 @media screen and (max-width: 479px) {
-  .section-3.vendors-hero h1.vendors-hero-title {
+  .section-3.vendors-hero h1.vendors-hero-title,
+  .section-3.counties-hero h1.vendors-hero-title {
     font-size: 32px !important;
   }
 }
 
-/* Vendors hero breadcrumb — active segment must stay white + bold (nav + Tailwind can override app-overrides) */
-.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
+/* Hero breadcrumb — active segment white + bold (/vendors + /ca) */
+.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current,
+.section-3.counties-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
   color: #ffffff !important;
   font-weight: 700 !important;
 }
 
 /* Breadcrumb above H1 — globals/Tailwind were overriding app-overrides margins (runtime: gapPx 0, rowMarginBottom 0) */
-.section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title {
+.section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title,
+.section-3.counties-hero .vendors-hero-breadcrumb-row--above-title {
   margin-top: 0 !important;
   margin-bottom: 3rem !important;
+}
+
+/* /ca counties hero — two-line subtext white (vendors keeps rgba subtext in app-overrides) */
+.section-3.counties-hero .vendors-hero-description {
+  color: #ffffff !important;
 }
 
 /*
@@ -521,6 +531,51 @@ img.county-hero-image-fill {
 .section-3.vendors-hero .vendors-filter-bar-shell.card.filter-bar {
   padding: 1.5rem 2.5rem !important;
   box-sizing: border-box !important;
+}
+
+/*
+  /ca counties hero — same shell as /vendors: white card, thin slate frame; search input matches filter bar .input.
+*/
+.section-3.counties-hero .vendors-filter-bar-shell.card.filter-bar {
+  padding: 1.5rem 2.5rem !important;
+  box-sizing: border-box !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(100, 116, 139, 0.45) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+.section-3.counties-hero .filter-bar .grid-3-columns.filters-grid.county-page {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.section-3.counties-hero .filter-bar form.w-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.section-3.counties-hero .filter-bar form .flex-horizontal {
+  width: 100%;
+}
+
+.section-3.counties-hero .filter-bar form .flex-horizontal .input.icon-left-inside.search-btn-inside {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto;
+  box-sizing: border-box;
+}
+
+.section-3.counties-hero .filter-bar .input {
+  border: 1px solid #64748b !important;
+  box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;
+  border-radius: 8px !important;
+}
+
+.section-3.counties-hero .filter-bar .input:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
 }
 
 /*
