@@ -418,3 +418,202 @@ img.county-hero-image-fill {
   margin-bottom: 3rem !important;
 }
 
+/*
+  Dark navy hero background (/ca + /vendors) — must live here so it wins over linked app-overrides + Webflow.
+  Spotlight: base diagonal → inner highlight → broader blue → diagonal grid → edge vignette; center 50% 50%.
+*/
+.section-3.counties-hero {
+  overflow: hidden !important;
+}
+
+.section-3.vendors-hero,
+.section-3.counties-hero {
+  position: relative !important;
+  background-color: #0c1528 !important;
+  background-image:
+    radial-gradient(
+      ellipse 118% 105% at 50% 50%,
+      rgba(6, 12, 24, 0) 0%,
+      rgba(6, 12, 24, 0.14) 42%,
+      rgba(4, 8, 18, 0.82) 100%
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 3px
+    ),
+    radial-gradient(
+      ellipse 92% 68% at 50% 50%,
+      rgba(59, 130, 246, 0.24) 0%,
+      rgba(59, 130, 246, 0.08) 52%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 46% 36% at 50% 50%,
+      rgba(186, 220, 255, 0.16) 0%,
+      rgba(147, 197, 253, 0.08) 45%,
+      transparent 70%
+    ),
+    linear-gradient(165deg, #152a52 0%, #0a1628 45%, #060d18 100%) !important;
+  background-size: 100% 100%, 10px 10px, 100% 100%, 100% 100%, 100% 100% !important;
+  background-repeat: no-repeat, repeat, no-repeat, no-repeat, no-repeat !important;
+  padding-top: 72px !important;
+  padding-bottom: 48px !important;
+}
+
+.section-3.vendors-hero::before,
+.section-3.counties-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.section-3.vendors-hero > *,
+.section-3.counties-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+  Vendors filter card inset — must live here so it wins over linked app-overrides + Webflow
+  (.card.pd-44px---32px.filter-bar { padding: 15px 0 }).
+  Insets the bordered search input + dropdowns from the white card edge.
+*/
+.section-3.vendors-hero .vendors-filter-bar-shell.card.filter-bar {
+  padding: 1.5rem 2.5rem !important;
+  box-sizing: border-box !important;
+}
+
+/*
+  County filter dropdown — runtime showed linked app-overrides lost to this bundle; SECTION stayed overflow:hidden.
+  Log: navZIndex 200, navHeight 260px, searchPadding 0px; overflowChain SECTION hidden.
+*/
+.section-3.vendors-hero {
+  overflow: visible !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown[data-county-open="true"] {
+  z-index: 10050 !important;
+}
+
+/* Webflow sets .dropdown-toggle-2.city-filter { display: none } — show City on /vendors only */
+.section-3.vendors-hero .filter-bar .city-filter-wrap .dropdown-toggle-2.city-filter.w-dropdown-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/*
+  Grid columns use minmax(0, …) but .w-dropdown is inline-block, so long labels (e.g. Sort)
+  still sized the cell past the card. Fill the column and clip with ellipsis on the label.
+*/
+.section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page > .w-dropdown {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.section-3.vendors-hero .city-filter-wrap:has(nav.dropdown-list.w--open) {
+  z-index: 10050 !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown nav.dropdown-list.county-menu.w-dropdown-list.w--open,
+.section-3.vendors-hero .city-filter-wrap nav.dropdown-list.county-menu.w-dropdown-list.w--open {
+  z-index: 10051 !important;
+  max-height: min(60vh, 360px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown .filter-dropdown-search-wrap,
+.section-3.vendors-hero .city-filter-wrap .filter-dropdown-search-wrap {
+  flex: 0 0 auto !important;
+  padding: 10px 20px 12px !important;
+  box-sizing: border-box !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown .filter-dropdown-search-input,
+.section-3.vendors-hero .city-filter-wrap .filter-dropdown-search-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  border: 1px solid #64748b !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown .filter-dropdown-search-input:hover,
+.section-3.vendors-hero .city-filter-wrap .filter-dropdown-search-input:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown .filter-dropdown-search-input:focus,
+.section-3.vendors-hero .city-filter-wrap .filter-dropdown-search-input:focus {
+  border-color: var(--secondary--color-2) !important;
+}
+
+.section-3.vendors-hero .vendors-county-dropdown .filter-dropdown-list,
+.section-3.vendors-hero .city-filter-wrap .filter-dropdown-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 8px 12px 0 !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* /vendors filter bar — County/City/Sort toggles + dropdown search inputs match "Search by name" .input */
+.section-3.vendors-hero .filter-bar .input {
+  border: 1px solid #64748b !important;
+  box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;
+}
+
+.section-3.vendors-hero .filter-bar .input:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
+}
+
+.section-3.vendors-hero .filter-bar .dropdown-toggle-2.w-dropdown-toggle {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.section-3.vendors-hero .filter-bar .dropdown-toggle-2.w-dropdown-toggle > div:not(.w-icon-dropdown-toggle) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.section-3.vendors-hero .filter-bar .dropdown-toggle-2 {
+  border: 1px solid #64748b !important;
+  box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;
+  outline: none !important;
+}
+
+.section-3.vendors-hero .filter-bar .dropdown-toggle-2:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
+}
+

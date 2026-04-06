@@ -1,45 +1,8 @@
 /* Loaded last from layout.tsx — wins over Webflow ccw-directory.webflow.css */
 
 /* -------------------------------------------------------------------------- */
-/* Dark blue textured hero — Counties (/ca) + Find CCW Courses (/vendors)     */
+/* Dark blue textured hero — background + noise: src/app/globals.css        */
 /* -------------------------------------------------------------------------- */
-.section-3.vendors-hero,
-.section-3.counties-hero {
-  position: relative;
-  overflow: hidden;
-  background-color: #0c1528 !important;
-  background-image:
-    linear-gradient(180deg, rgba(15, 35, 75, 0.55) 0%, rgba(8, 18, 40, 0.92) 100%),
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.02) 2px,
-      rgba(255, 255, 255, 0.02) 3px
-    ),
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.15), transparent 55%),
-    linear-gradient(165deg, #152a52 0%, #0a1628 45%, #060d18 100%) !important;
-  background-size: auto, 10px 10px, 100% 100%, 100% 100% !important;
-  padding-top: 72px !important;
-  padding-bottom: 48px !important;
-}
-
-.section-3.vendors-hero::before,
-.section-3.counties-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-  opacity: 0.35;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-
-.section-3.vendors-hero > *,
-.section-3.counties-hero > * {
-  position: relative;
-  z-index: 1;
-}
 
 .section-3.counties-hero .container-default,
 .section-3.vendors-hero .container-2 {
@@ -193,6 +156,8 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* Vendors filter card padding: see vendors-filter-bar-shell in src/app/globals.css (loads after links) */
+
 /* /vendors filter row: drop Webflow 876px cap; search column uses full card width to the left */
 .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
   max-width: none !important;
@@ -229,6 +194,8 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* County dropdown (stacking, scroll, search inset): src/app/globals.css — linked file loses cascade to bundle */
 
 /* -------------------------------------------------------------------------- */
 /* Counties list — 3 columns, square images, equal cards                      */

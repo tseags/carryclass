@@ -83,6 +83,7 @@ function SearchableFilterDropdown({
   listClassName = DROPDOWN_LIST_STYLE,
   toggleClassName = "dropdown-toggle-2 w-dropdown-toggle",
   wrapperClassName = "",
+  markCountyOpenAttr = false,
 }: {
   label: string;
   open: boolean;
@@ -94,6 +95,8 @@ function SearchableFilterDropdown({
   listClassName?: string;
   toggleClassName?: string;
   wrapperClassName?: string;
+  /** Sets data-county-open for /vendors county menu stacking CSS (globals.css). */
+  markCountyOpenAttr?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -123,7 +126,11 @@ function SearchableFilterDropdown({
     : options;
 
   return (
-    <div ref={ref} className={`w-dropdown ${wrapperClassName}`}>
+    <div
+      ref={ref}
+      className={`w-dropdown ${wrapperClassName}`}
+      {...(markCountyOpenAttr ? { "data-county-open": open ? "true" : "false" } : {})}
+    >
       <div
         className={`${toggleClassName} ${open ? "w--open" : ""}`}
         onClick={(e) => { e.preventDefault(); onToggle(); }}
@@ -192,7 +199,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
   const sortLabel = sort === "price-low" ? "Price: Low to High" : sort === "price-high" ? "Price: High to Low" : sort === "name" ? "Name: A to Z" : sort === "name-desc" ? "Name: Z to A" : "Sort";
 
   return (
-    <div className="card pd-44px---32px filter-bar">
+    <div className="card pd-44px---32px filter-bar vendors-filter-bar-shell">
       <div className="grid-3-columns filters-grid vendor-page">
         <form
           action="/vendors"
@@ -233,6 +240,8 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
           open={openDropdown === "county"}
           onToggle={() => setOpenDropdown((v) => (v === "county" ? null : "county"))}
           onClose={() => setOpenDropdown(null)}
+          wrapperClassName="vendors-county-dropdown"
+          markCountyOpenAttr
           searchPlaceholder="Type to search"
           options={[
             { label: "All Counties", href: "/vendors" },
