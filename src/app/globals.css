@@ -705,3 +705,8 @@ img.county-hero-image-fill {
   box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
 }
 
+/* Vendor detail "Gear Needed" icons should render as white on dark tiles */
+.vendor-gear-icon .vendor-gear-icon-img {
+  filter: brightness(0) invert(1);
+}
+
