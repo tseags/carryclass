@@ -354,8 +354,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
         {/* Reviews - Google reviews when place_id is set */}
         <VendorReviewsSection vendor={vendor} />
 
-        {/* More approved vendors - full-width grey band, not a card */}
-        <section className="relative left-1/2 -translate-x-1/2 w-screen mt-16 bg-zinc-100 py-8 sm:py-10">
+        {/* More approved vendors - full-width grey band; vendors-list-section enables 3-col vendors-grid (app-overrides) */}
+        <section className="vendors-list-section relative left-1/2 -translate-x-1/2 w-screen mt-16 bg-zinc-100 py-8 sm:py-10">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <h2 className="text-lg font-semibold text-zinc-800">
