@@ -51,6 +51,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
     ? `${vendor.address}, ${vendor.city}, ${vendor.state}`
     : `${vendor.city}, ${vendor.state}, USA`;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=14&hl=en&output=embed`;
+  const heroButtonClassName = "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center";
 
   return (
     <div className="min-h-screen bg-white">
@@ -99,7 +100,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
               {vendor.acceptsBookings ? (
                 <Link
                   href={`/vendors/${vendor.slug}/book`}
-                  className="btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center"
+                  className={heroButtonClassName}
                 >
                   Book Now
                 </Link>
@@ -109,7 +110,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                     href={vendor.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-primary bg-secondary-2 small w-button match-header-btn mt-6"
+                    className={`${heroButtonClassName} self-start`}
                   >
                     Visit website
                   </a>
@@ -205,7 +206,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 {GEAR_ITEMS.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 py-2.5 pl-3 pr-4"
+                    className="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 py-2.5 pl-3 pr-4"
                   >
                     <div className="vendor-gear-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-md shadow-sm">
                       <Image
@@ -216,7 +217,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                         className="vendor-gear-icon-img object-contain"
                       />
                     </div>
-                    <span className="text-sm font-medium text-zinc-800">{item.label}</span>
+                    <span className="text-sm font-medium text-white">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -225,7 +226,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
           {/* Sidebar - Instructor info */}
           <div className="lg:col-span-1">
-            <div className="sticky rounded-2xl border-2 border-zinc-200 bg-white p-6 shadow-md vendor-profile-contact-card-sticky">
+            <div className="rounded-2xl border-2 border-zinc-200 bg-white p-6 shadow-md vendor-profile-contact-card-sticky md:sticky md:top-[calc(var(--header-offset)+1rem)]">
               <h3 className="text-sm font-semibold text-zinc-800">
                 Contact
               </h3>
