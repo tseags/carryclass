@@ -195,10 +195,20 @@
 /* -------------------------------------------------------------------------- */
 /* Counties list — 3 columns, square images, equal cards                      */
 /* -------------------------------------------------------------------------- */
+/* Slightly narrower content column so cards feel a bit smaller than full 1120px */
+.counties-page-content .inner-container._1120px {
+  max-width: 62rem;
+}
+
+.counties-page-content {
+  background-color: #ffffff;
+  padding-top: clamp(2rem, 3.5vw, 3rem);
+}
+
 .county-cards-grid-polished {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 1.5rem !important;
+  gap: 1.125rem !important;
   align-items: stretch;
 }
 
@@ -221,10 +231,10 @@
 }
 
 .county-cards-grid-polished .county-card-image-wrap {
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: 4 / 3 !important;
   width: 100% !important;
   position: relative !important;
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -234,15 +244,15 @@
 }
 
 .county-cards-grid-polished .link-item-text---hover-secondary-2 {
-  margin-top: 1rem !important;
+  margin-top: 0.625rem !important;
   text-align: left;
-  font-size: 1.125rem !important;
+  font-size: 1.0625rem !important;
 }
 
 .county-cards-grid-polished .color-neutral-600 {
-  font-size: 0.9rem !important;
+  font-size: 0.8125rem !important;
   line-height: 1.45 !important;
-  margin-top: 0.35rem !important;
+  margin-top: 0.25rem !important;
 }
 
 /* -------------------------------------------------------------------------- */

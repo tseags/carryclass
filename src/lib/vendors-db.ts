@@ -73,6 +73,24 @@ export async function getAllVendors(): Promise<Vendor[]> {
   return rows.map(toVendor);
 }
 
+/**
+ * Vendor count per county slug, from each vendor's `countiesServed`.
+ * A vendor listed in multiple counties is counted once per county.
+ */
+export async function getVendorCountsByCounty(): Promise<Record<string, number>> {
+  const rows = await prisma.vendor.findMany({
+    select: { countiesServed: true },
+  });
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    for (const raw of row.countiesServed) {
+      const slug = raw.toLowerCase();
+      counts[slug] = (counts[slug] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> {
   const slug = countySlug.toLowerCase();
   const rows = await prisma.vendor.findMany({

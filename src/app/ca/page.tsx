@@ -6,6 +6,7 @@ import { getCountyDisplayName } from "@/data/counties";
 import { getCountyImageUrl } from "@/data/county-images";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { CALIFORNIA_COUNTIES } from "@/data/counties";
+import { getVendorCountsByCounty } from "@/lib/vendors-db";
 
 export const metadata = {
   title: "Find California CCW Training by County | CCW Courses CA",
@@ -13,9 +14,13 @@ export const metadata = {
     "Browse all California counties to find approved CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
 };
 
-/** One-line blurb under each county name */
-function countyCardBlurb(displayName: string): string {
-  return `Sheriff-approved CCW classes, renewals, and instructors in ${displayName} County.`;
+/** One-line blurb under each county name — count is rendered bold by the caller. */
+function countyCardBlurb(displayName: string, count: number): React.ReactNode {
+  return (
+    <>
+      View <strong>{count}</strong> CCW courses in {displayName} County
+    </>
+  );
 }
 
 export default async function CaliforniaPage({
@@ -27,6 +32,8 @@ export default async function CaliforniaPage({
   const qRaw = resolved?.q;
   const qStr = Array.isArray(qRaw) ? qRaw[0] : qRaw;
   const query = (typeof qStr === "string" ? qStr : "").trim().toLowerCase();
+
+  const vendorCountsByCounty = await getVendorCountsByCounty();
 
   const allCounties = CALIFORNIA_COUNTIES.slice();
   const counties = query
@@ -116,6 +123,7 @@ export default async function CaliforniaPage({
                   {counties.map((slug) => {
                     const name = getCountyDisplayName(slug);
                     const imageUrl = getCountyImageUrl(slug);
+                    const vendorCount = vendorCountsByCounty[slug] ?? 0;
                     return (
                       <div
                         key={slug}
@@ -148,7 +156,7 @@ export default async function CaliforniaPage({
                               </h2>
                             </div>
                             <p className="color-neutral-600 mg-bottom-0">
-                              {countyCardBlurb(name)}
+                              {countyCardBlurb(name, vendorCount)}
                             </p>
                           </div>
                         </Link>
