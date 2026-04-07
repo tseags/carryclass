@@ -5114,7 +5114,6 @@ figcaption {
 }
 
 .overflow-hidden {
-  display: none;
   overflow: hidden;
 }
 
