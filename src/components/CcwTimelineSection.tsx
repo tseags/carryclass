@@ -44,13 +44,17 @@ function TimelineReportsList({
   const cardClass =
     variant === "modal"
       ? "rounded-md border border-zinc-100 bg-white px-4 py-3 shadow-sm"
-      : "rounded-md border border-zinc-100 bg-white px-3 py-2.5 shadow-sm";
+      : "rounded-md border border-white/25 bg-zinc-100 px-3 py-2.5 shadow-sm";
   const bodyClass =
     variant === "modal"
       ? "mt-2 whitespace-pre-wrap text-base leading-relaxed text-zinc-700"
-      : "mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700";
+      : "mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800";
   const nameClass =
-    variant === "modal" ? "text-base font-semibold text-zinc-900" : "text-sm font-semibold text-zinc-900";
+    variant === "modal"
+      ? "text-base font-semibold text-zinc-900"
+      : "text-sm font-semibold text-zinc-900";
+  const dateClass =
+    variant === "modal" ? "shrink-0 text-xs text-zinc-500" : "shrink-0 text-xs text-zinc-700";
 
   return (
     <ul className="space-y-4">
@@ -58,7 +62,7 @@ function TimelineReportsList({
         <li key={s.id} className={cardClass}>
           <div className="flex items-baseline justify-between gap-2">
             <span className={nameClass}>{s.displayName}</span>
-            <time className="shrink-0 text-xs text-zinc-500" dateTime={s.submittedAt}>
+            <time className={dateClass} dateTime={s.submittedAt}>
               {formatShortDate(s.submittedAt)}
             </time>
           </div>
@@ -210,13 +214,13 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                       <p className="text-lg font-semibold leading-snug text-zinc-900 sm:text-xl">
                         {m.label}
                       </p>
-                      <div className="mt-1 border-t-4 border-orange-500 pt-3">
+                      <div className="mt-1 pt-3">
                         <button
                           type="button"
                           aria-pressed={isActive}
                           onClick={() => onSelectProcess(m.process)}
-                          className={`w-full cursor-pointer rounded-md text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 ${
-                            isActive ? "bg-orange-50/80" : "hover:bg-zinc-50"
+                          className={`w-full cursor-pointer rounded-md text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
+                            isActive ? "bg-blue-50/80" : "hover:bg-zinc-50"
                           }`}
                         >
                           {showMetric ? (
@@ -234,7 +238,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                                 —
                               </span>
                               <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                No data has been submitted yet.
+                                No data has been submitted.
                               </span>
                             </>
                           )}
@@ -249,24 +253,25 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               <div
                 id="ccw-timeline-submit"
                 ref={feedRef}
-                className="scroll-mt-28 flex h-[min(160px,26vh)] min-h-[120px] flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50/80 sm:h-[min(200px,32vh)] sm:min-h-[140px]"
+                className="scroll-mt-28 flex h-[min(160px,26vh)] min-h-[120px] flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 sm:h-[min(200px,32vh)] sm:min-h-[140px]"
                 role="region"
                 aria-label="Timeline reports for selected process"
               >
-                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2 sm:px-4">
-                  <span className="min-w-0 truncate text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    {active?.label ?? "Reports"}
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-700 px-3 py-2 sm:px-4">
+                  <span className="min-w-0 truncate text-xs font-medium uppercase tracking-wide text-zinc-200">
+                    Wait times from previous applicants
                   </span>
                   <button
                     type="button"
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                    className="inline-flex shrink-0 items-center rounded-md border border-zinc-500 bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-100 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                     aria-expanded={feedExpanded}
                     aria-haspopup="dialog"
                     aria-controls={feedExpanded ? "ccw-timeline-feed-modal" : undefined}
+                    aria-label="Expand timeline reports"
                     onClick={() => setFeedExpanded(true)}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-600"
+                      className="h-3.5 w-3.5 text-zinc-100"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -277,7 +282,6 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                     >
                       <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                     </svg>
-                    <span>Expand</span>
                   </button>
                 </div>
                 <div
@@ -285,15 +289,15 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                   aria-live="polite"
                 >
                   {!active ? (
-                    <p className="text-sm text-zinc-600">Loading…</p>
+                    <p className="text-sm text-zinc-300">Loading…</p>
                   ) : active.submissions.length === 0 ? (
                     <div className="space-y-3">
-                      <p className="text-sm text-zinc-700">
-                        No data has been submitted yet.
+                      <p className="text-sm text-zinc-200">
+                        No data has been submitted.
                       </p>
                       <button
                         type="button"
-                        className="text-left text-sm font-medium text-orange-700 underline hover:text-orange-900"
+                        className="text-left text-sm font-medium text-blue-300 underline hover:text-blue-200"
                         onClick={openSubmitModal}
                       >
                         Submit the first timeline
@@ -343,7 +347,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 </h2>
                 <button
                   type="button"
-                  className="rounded-md p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                  className="rounded-md p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   aria-label="Close"
                   onClick={() => setFeedExpanded(false)}
                 >
@@ -365,11 +369,11 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 ) : active.submissions.length === 0 ? (
                   <div className="space-y-3">
                     <p className="text-sm text-zinc-700">
-                      No data has been submitted yet.
+                      No data has been submitted.
                     </p>
                     <button
                       type="button"
-                      className="text-left text-sm font-medium text-orange-700 underline hover:text-orange-900"
+                      className="text-left text-sm font-medium text-blue-700 underline hover:text-blue-900"
                       onClick={() => {
                         setFeedExpanded(false);
                         openSubmitModal();
@@ -416,7 +420,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 </h2>
                 <button
                   type="button"
-                  className="rounded-md p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                  className="rounded-md p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   aria-label="Close"
                   onClick={closeSubmitModal}
                 >
@@ -465,7 +469,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                         placeholder="e.g. Marcus T. or Anonymous"
                         value={formDisplayName}
                         onChange={(e) => setFormDisplayName(e.target.value)}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       />
                       <p className="mt-1 text-xs text-zinc-500">
                         Shown publicly with your timeline. Leave blank to use Anonymous.
@@ -485,7 +489,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                         onChange={(e) =>
                           setFormProcess(e.target.value as CcwTimelineProcess)
                         }
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       >
                         {processes.map((p) => (
                           <option key={p.process} value={p.process}>
@@ -508,7 +512,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                           type="date"
                           value={formDateStarted}
                           onChange={(e) => setFormDateStarted(e.target.value)}
-                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                         />
                       </div>
                       <div>
@@ -524,7 +528,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                           type="date"
                           value={formDateFinished}
                           onChange={(e) => setFormDateFinished(e.target.value)}
-                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                         />
                       </div>
                     </div>
@@ -545,7 +549,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                         placeholder="e.g. 150"
                         value={formTotalCost}
                         onChange={(e) => setFormTotalCost(e.target.value)}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       />
                     </div>
                     <div>
@@ -563,7 +567,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                         value={formBody}
                         onChange={(e) => setFormBody(e.target.value)}
                         placeholder="Key dates and milestones (applied, interview, permit in hand, etc.)"
-                        className="w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                        className="w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       />
                     </div>
                     <p className="text-xs text-zinc-500">
