@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { VendorCardWebflow } from "@/components/VendorCardWebflow";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorPhotoGrid } from "@/components/VendorPhotoGrid";
+import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
 import { getCountyDisplayName } from "@/data/counties";
 
@@ -47,10 +48,6 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const allVendors = await getAllVendors();
   const otherVendors = allVendors.filter((v) => v.slug !== slug).slice(0, 3);
 
-  const mapQuery = vendor.address
-    ? `${vendor.address}, ${vendor.city}, ${vendor.state}`
-    : `${vendor.city}, ${vendor.state}, USA`;
-  const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=14&hl=en&output=embed`;
   const heroButtonClassName = "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center";
   const pricingCards = [
     (vendor.priceInitial || vendor.classTypes.includes("initial") || vendor.classTypes.includes("both"))
@@ -142,18 +139,16 @@ export default async function VendorProfilePage({ params }: PageProps) {
             </div>
             <div
               data-hero-image-wrapper
-              className="relative w-full overflow-hidden rounded-xl border border-zinc-300 bg-zinc-200 shadow-sm aspect-[4/3] min-h-[200px]"
+              className="relative w-full overflow-hidden rounded-xl border border-zinc-300 bg-zinc-200 shadow-sm h-[260px] sm:h-[320px] lg:h-full lg:min-h-[320px]"
+              style={{ display: "block" }}
               aria-label={`Map: ${vendor.name} location`}
             >
-              <iframe
-                title={`Map: ${vendor.name} location`}
-                src={mapEmbedUrl}
-                width="100%"
-                height="100%"
-                className="absolute inset-0 h-full w-full border-0"
-                allowFullScreen
-                loading="eager"
-                referrerPolicy="no-referrer-when-downgrade"
+              <VendorHeroMapDynamic
+                vendorName={vendor.name}
+                city={vendor.city}
+                county={vendor.county}
+                state={vendor.state}
+                address={vendor.address}
               />
             </div>
           </div>
