@@ -52,6 +52,29 @@ export default async function VendorProfilePage({ params }: PageProps) {
     : `${vendor.city}, ${vendor.state}, USA`;
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=14&hl=en&output=embed`;
   const heroButtonClassName = "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center";
+  const pricingCards = [
+    (vendor.priceInitial || vendor.classTypes.includes("initial") || vendor.classTypes.includes("both"))
+      ? {
+          key: "initial",
+          value: `$${vendor.priceInitial ?? vendor.priceMax ?? vendor.priceMin ?? "—"}`,
+          description: "16hr Initial",
+        }
+      : null,
+    (vendor.priceRenewal || vendor.classTypes.includes("renewal") || vendor.classTypes.includes("both"))
+      ? {
+          key: "renewal",
+          value: `$${vendor.priceRenewal ?? vendor.priceMin ?? vendor.priceMax ?? "—"}`,
+          description: "8hr Renewal",
+        }
+      : null,
+    vendor.priceAddGun
+      ? {
+          key: "add-gun",
+          value: `$${vendor.priceAddGun}`,
+          description: "Add a gun",
+        }
+      : null,
+  ].filter((card): card is { key: string; value: string; description: string } => card !== null);
 
   return (
     <div className="min-h-screen bg-white">
@@ -142,35 +165,26 @@ export default async function VendorProfilePage({ params }: PageProps) {
           {/* Main content - 2 cols */}
           <div className="lg:col-span-2 space-y-14">
             {/* CCW Course Pricing */}
-            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2 className="text-lg font-semibold text-zinc-800">
-                CCW Course Pricing
-              </h2>
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                {(vendor.priceInitial || vendor.classTypes.includes("initial") || vendor.classTypes.includes("both")) && (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 text-center">
-                    <span className="block text-2xl font-bold tabular-nums text-zinc-900">
-                      ${vendor.priceInitial ?? vendor.priceMax ?? vendor.priceMin ?? "—"}
-                    </span>
-                    <span className="mt-1 block text-sm font-medium text-zinc-600">16hr Initial</span>
-                  </div>
-                )}
-                {(vendor.priceRenewal || vendor.classTypes.includes("renewal") || vendor.classTypes.includes("both")) && (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 text-center">
-                    <span className="block text-2xl font-bold tabular-nums text-zinc-900">
-                      ${vendor.priceRenewal ?? vendor.priceMin ?? vendor.priceMax ?? "—"}
-                    </span>
-                    <span className="mt-1 block text-sm font-medium text-zinc-600">8hr Renewal</span>
-                  </div>
-                )}
-                {vendor.priceAddGun && (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 text-center">
-                    <span className="block text-2xl font-bold tabular-nums text-zinc-900">
-                      ${vendor.priceAddGun}
-                    </span>
-                    <span className="mt-1 block text-sm font-medium text-zinc-600">Add a gun</span>
-                  </div>
-                )}
+            <section className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-sm sm:p-6">
+              <div className="relative z-10">
+                <h2 className="text-lg font-semibold text-white !text-white">CCW Course Pricing</h2>
+                <ul className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {pricingCards.map((card) => (
+                    <li key={card.key} className="group relative overflow-visible">
+                      <div
+                        tabIndex={0}
+                        className="relative z-10 flex min-h-[120px] flex-col justify-center rounded-xl border-2 border-zinc-400 bg-zinc-900/70 px-5 py-4 text-left shadow-sm transition duration-300 ease-out group-hover:-translate-y-1 group-hover:border-zinc-300 group-hover:bg-zinc-800/80 group-hover:shadow-lg group-hover:shadow-black/30 focus-visible:-translate-y-1 focus-visible:border-zinc-300 focus-visible:bg-zinc-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
+                      >
+                        <p className="text-6xl font-bold leading-none tabular-nums text-white transition duration-300 group-hover:text-sky-200">
+                          {card.value}
+                        </p>
+                        <p className="mt-2 text-sm font-medium leading-snug text-zinc-100 sm:text-base">
+                          {card.description}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
 
