@@ -3,6 +3,14 @@ import { getPlaceReviews } from "@/lib/google-reviews";
 import type { Vendor } from "@/types";
 import type { GoogleReview } from "@/lib/google-reviews";
 
+/** Dark blue accents — uses site `--navy` (see globals.css), consistent with other vendor UI */
+
+const linkGoogleClass =
+  "font-medium text-[var(--navy)] underline decoration-[var(--navy)]/35 underline-offset-2 transition-colors hover:text-blue-800 hover:decoration-blue-800/45 focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[var(--navy)] focus-visible:ring-offset-2";
+
+const ctaFocusClass =
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--navy)] focus-visible:ring-offset-2";
+
 /** Placeholder reviews to show layout when Google data is not yet configured */
 const PLACEHOLDER_REVIEWS: { rating: number; userRatingsTotal: number; reviews: GoogleReview[] } = {
   rating: 4.7,
@@ -29,20 +37,24 @@ const PLACEHOLDER_REVIEWS: { rating: number; userRatingsTotal: number; reviews: 
   ],
 };
 
-function StarRating({ rating }: { rating: number }) {
+function StarRating({ rating, size = "default" }: { rating: number; size?: "default" | "lg" }) {
   const full = Math.floor(rating);
   const half = rating % 1 >= 0.5;
+  const starClass = size === "lg" ? "text-lg leading-none" : "text-base leading-none";
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+    <span
+      className={`inline-flex items-center gap-0.5 ${starClass}`}
+      aria-label={`${rating} out of 5 stars`}
+    >
       {[1, 2, 3, 4, 5].map((i) => (
         <span
           key={i}
           className={
             i <= full
-              ? "text-amber-400"
+              ? "text-amber-500 drop-shadow-[0_0.5px_0_rgba(180,83,9,0.25)]"
               : half && i === full + 1
-                ? "text-amber-400 opacity-80"
-                : "text-zinc-200"
+                ? "text-amber-500 opacity-[0.85]"
+                : "text-zinc-300"
           }
         >
           ★
@@ -58,7 +70,7 @@ interface VendorReviewsSectionProps {
 
 function ReviewCard({ review }: { review: GoogleReview }) {
   return (
-    <li className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 sm:p-5">
+    <li className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm ring-1 ring-zinc-100/80 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-3">
           {review.profilePhotoUrl ? (
@@ -67,28 +79,28 @@ function ReviewCard({ review }: { review: GoogleReview }) {
               alt=""
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-zinc-100"
               unoptimized
             />
           ) : (
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-300 text-sm font-medium text-zinc-700"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-semibold text-zinc-800 ring-2 ring-zinc-100"
               aria-hidden
             >
               {review.authorName.charAt(0).toUpperCase() || "?"}
             </div>
           )}
           <div>
-            <p className="font-medium text-zinc-900">{review.authorName}</p>
-            <div className="mt-0.5 flex items-center gap-2">
+            <p className="font-semibold text-zinc-900">{review.authorName}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <StarRating rating={review.rating} />
-              <span className="text-xs text-zinc-500">{review.relativeTime}</span>
+              <span className="text-xs font-medium text-zinc-600">{review.relativeTime}</span>
             </div>
           </div>
         </div>
       </div>
       {review.text && (
-        <p className="mt-3 text-sm leading-relaxed text-zinc-700">{review.text}</p>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-800">{review.text}</p>
       )}
     </li>
   );
@@ -101,9 +113,15 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
   const displayData = usePlaceholder ? PLACEHOLDER_REVIEWS : data!;
 
   return (
-    <section className="mt-16 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8" aria-labelledby="reviews-heading">
+    <section
+      className="mt-16 rounded-2xl border border-zinc-300/90 bg-gradient-to-br from-zinc-50 via-white to-blue-50/45 p-6 shadow-md ring-1 ring-zinc-200/60 sm:p-8"
+      aria-labelledby="reviews-heading"
+    >
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 id="reviews-heading" className="text-lg font-semibold text-zinc-800">
+        <h2
+          id="reviews-heading"
+          className="border-l-4 border-l-[var(--navy)] pl-3 text-lg font-semibold text-zinc-900"
+        >
           Reviews
         </h2>
         {!usePlaceholder && data!.reviews.length > 0 && vendor.googleReviewsUrl && (
@@ -111,7 +129,7 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
             href={vendor.googleReviewsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900"
+            className={`text-sm ${linkGoogleClass}`}
           >
             View all on Google
           </a>
@@ -119,29 +137,33 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
       </div>
 
       {usePlaceholder && (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-3 rounded-lg border border-blue-200/90 bg-blue-50/90 px-3 py-2 text-xs text-zinc-700">
           Sample layout — real reviews from Google will appear here when Place ID is set.
         </p>
       )}
 
       {displayData.reviews.length > 0 && (
         <>
-          <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-zinc-200 pb-4">
-            <div className="flex items-center gap-2">
-              <StarRating rating={displayData.rating} />
-              <span className="text-lg font-semibold text-zinc-900">{displayData.rating.toFixed(1)}</span>
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 bg-white/90 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <StarRating rating={displayData.rating} size="lg" />
+                <span className="tabular-nums text-xl font-bold tracking-tight text-zinc-900">
+                  {displayData.rating.toFixed(1)}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-zinc-700">
+                Based on {displayData.userRatingsTotal} Google review{displayData.userRatingsTotal !== 1 ? "s" : ""}
+                {usePlaceholder && " (placeholder)"}
+              </span>
             </div>
-            <span className="text-sm text-zinc-600">
-              Based on {displayData.userRatingsTotal} Google review{displayData.userRatingsTotal !== 1 ? "s" : ""}
-              {usePlaceholder && " (placeholder)"}
-            </span>
-          </div>
 
-          <ul className="mt-6 space-y-6" role="list">
-            {displayData.reviews.map((review, i) => (
-              <ReviewCard key={i} review={review} />
-            ))}
-          </ul>
+            <ul className="m-0 list-none space-y-6 p-0" role="list">
+              {displayData.reviews.map((review, i) => (
+                <ReviewCard key={i} review={review} />
+              ))}
+            </ul>
+          </div>
 
           {vendor.googleReviewsUrl && !usePlaceholder && (
             <p className="mt-6 text-center">
@@ -149,7 +171,7 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
                 href={vendor.googleReviewsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary bg-secondary-2 small w-button inline-block"
+                className={`btn-primary bg-secondary-2 small w-button inline-block ${ctaFocusClass}`}
               >
                 View all on Google
               </a>
@@ -162,7 +184,7 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
                 href={vendor.googleReviewsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900"
+                className={`text-sm ${linkGoogleClass}`}
               >
                 See reviews on Google
               </a>
@@ -172,20 +194,23 @@ export async function VendorReviewsSection({ vendor }: VendorReviewsSectionProps
       )}
 
       {!usePlaceholder && data!.reviews.length === 0 && data!.userRatingsTotal > 0 && (
-        <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-zinc-200 pb-4">
-          <div className="flex items-center gap-2">
-            <StarRating rating={data!.rating} />
-            <span className="text-lg font-semibold text-zinc-900">{data!.rating.toFixed(1)}</span>
+        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 bg-white/90 px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <StarRating rating={data!.rating} size="lg" />
+            <span className="tabular-nums text-xl font-bold tracking-tight text-zinc-900">
+              {data!.rating.toFixed(1)}
+            </span>
           </div>
-          <span className="text-sm text-zinc-600">
-            Based on {data!.userRatingsTotal} Google review{data!.userRatingsTotal !== 1 ? "s" : ""}. No review text available to display.
+          <span className="text-sm font-medium text-zinc-700">
+            Based on {data!.userRatingsTotal} Google review{data!.userRatingsTotal !== 1 ? "s" : ""}. No review
+            text available to display.
           </span>
           {vendor.googleReviewsUrl && (
             <a
               href={vendor.googleReviewsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary bg-secondary-2 small w-button inline-block"
+              className={`btn-primary bg-secondary-2 small w-button inline-block ${ctaFocusClass}`}
             >
               View on Google
             </a>
