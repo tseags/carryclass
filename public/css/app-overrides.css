@@ -440,3 +440,37 @@
 .vendor-hero-map-popup .leaflet-popup-tip {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Vendor profile — CCW Course Pricing dark panel                                 */
+/* Webflow sets `h2 { color: var(--neutral--800) }` globally. When linked CSS   */
+/* wins over Tailwind utilities in some previews, the title + prices become     */
+/* dark text on a light/white background and the block looks “missing”.        */
+/*                                                                               */
+/* Match computed typography + margin for global `h2` in ccw-directory.        */
+/* webflow.css (same as “About the Experience” on the vendor profile). Tailwind */
+/* `text-lg` on the About h2 loses to unlayered Webflow; CCW was smaller because  */
+/* we previously forced 1.125rem/600/mb:0 here.                                   */
+/* -------------------------------------------------------------------------- */
+.vendor-ccw-pricing {
+  background-color: #09090b !important;
+  border-color: #27272a !important;
+  min-height: 7.5rem;
+}
+
+.vendor-ccw-pricing h2 {
+  color: #fafafa !important;
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.5em !important;
+}
+
+.vendor-ccw-pricing li p:first-of-type {
+  color: #fafafa !important;
+}
+
+.vendor-ccw-pricing li p:last-of-type {
+  color: #e4e4e7 !important;
+}

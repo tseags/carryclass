@@ -9,6 +9,7 @@ import { VendorPhotoGrid } from "@/components/VendorPhotoGrid";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
 import { getCountyDisplayName } from "@/data/counties";
+import { formatPrice } from "@/lib/utils";
 
 const GEAR_ITEMS = [
   { label: "Firearm", icon: "gun" },
@@ -49,15 +50,16 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const otherVendors = allVendors.filter((v) => v.slug !== slug).slice(0, 3);
 
   const heroButtonClassName = "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center";
-  const pricingCards = [
-    (vendor.priceInitial || vendor.classTypes.includes("initial") || vendor.classTypes.includes("both"))
+  const classTypes = vendor.classTypes ?? [];
+  const pricingCardsRaw = [
+    vendor.priceInitial || classTypes.includes("initial") || classTypes.includes("both")
       ? {
           key: "initial",
           value: `$${vendor.priceInitial ?? vendor.priceMax ?? vendor.priceMin ?? "—"}`,
           description: "16hr Initial",
         }
       : null,
-    (vendor.priceRenewal || vendor.classTypes.includes("renewal") || vendor.classTypes.includes("both"))
+    vendor.priceRenewal || classTypes.includes("renewal") || classTypes.includes("both")
       ? {
           key: "renewal",
           value: `$${vendor.priceRenewal ?? vendor.priceMin ?? vendor.priceMax ?? "—"}`,
@@ -72,6 +74,26 @@ export default async function VendorProfilePage({ params }: PageProps) {
         }
       : null,
   ].filter((card): card is { key: string; value: string; description: string } => card !== null);
+
+  const rangeLabel = formatPrice(vendor.priceMin, vendor.priceMax);
+  const pricingCards =
+    pricingCardsRaw.length > 0
+      ? pricingCardsRaw
+      : rangeLabel !== "Contact for pricing"
+        ? [
+            {
+              key: "typical-range",
+              value: rangeLabel,
+              description: "Typical price range",
+            },
+          ]
+        : [
+            {
+              key: "contact-pricing",
+              value: "Contact",
+              description: "Call or email for current rates",
+            },
+          ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -159,16 +181,18 @@ export default async function VendorProfilePage({ params }: PageProps) {
         <div className="grid gap-10 lg:grid-cols-3">
           {/* Main content - 2 cols */}
           <div className="lg:col-span-2 space-y-14">
-            {/* CCW Course Pricing */}
-            <section className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-sm sm:p-6">
+            {/* CCW Course Pricing — .vendor-ccw-pricing: Webflow h2/p colors must not override (see app-overrides.css) */}
+            <section className="vendor-ccw-pricing relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-sm sm:p-8">
               <div className="relative z-10">
-                <h2 className="text-lg font-semibold text-white !text-white">CCW Course Pricing</h2>
+                <h2 className="text-white !text-white">
+                  CCW Course Pricing
+                </h2>
                 <ul className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {pricingCards.map((card) => (
                     <li key={card.key} className="group relative overflow-visible">
                       <div
                         tabIndex={0}
-                        className="relative z-10 flex min-h-[120px] flex-col justify-center rounded-xl border-2 border-zinc-400 bg-zinc-900/70 px-5 py-4 text-left shadow-sm transition duration-300 ease-out group-hover:-translate-y-1 group-hover:border-zinc-300 group-hover:bg-zinc-800/80 group-hover:shadow-lg group-hover:shadow-black/30 focus-visible:-translate-y-1 focus-visible:border-zinc-300 focus-visible:bg-zinc-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
+                        className="relative z-10 flex min-h-[120px] flex-col items-center justify-center rounded-xl border-2 border-zinc-400 bg-zinc-900/70 px-5 pt-4 pb-2 text-center shadow-sm transition duration-300 ease-out group-hover:-translate-y-1 group-hover:border-zinc-300 group-hover:bg-zinc-800/80 group-hover:shadow-lg group-hover:shadow-black/30 focus-visible:-translate-y-1 focus-visible:border-zinc-300 focus-visible:bg-zinc-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70"
                       >
                         <p className="text-6xl font-bold leading-none tabular-nums text-white transition duration-300 group-hover:text-sky-200">
                           {card.value}
