@@ -285,7 +285,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                   </button>
                 </div>
                 <div
-                  className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-3"
+                  className="min-h-0 flex-1 overflow-y-scroll overscroll-y-contain px-3 py-3 [scrollbar-gutter:stable] [webkit-overflow-scrolling:touch]"
                   aria-live="polite"
                 >
                   {!active ? (

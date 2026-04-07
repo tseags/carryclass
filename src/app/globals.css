@@ -383,6 +383,12 @@ img.county-hero-image-fill {
   line-height: 1.2 !important;
 }
 
+/* County timeline feed: force frame layout so inner list can scroll */
+#ccw-timeline-submit {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 /*
   /vendors “Find CCW Courses” hero H1 — must match /ca counties hero (ccw-directory.webflow.css h1).
   Placed at end of this file so rules load after Tailwind; linked app-overrides.css alone can lose cascade.
