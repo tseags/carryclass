@@ -13,6 +13,14 @@ function sortHref(searchParams: URLSearchParams, sortValue: string): string {
   return q ? `/vendors?${q}` : "/vendors";
 }
 
+function categoryHref(searchParams: URLSearchParams, categoryValue: string): string {
+  const p = new URLSearchParams(searchParams.toString());
+  if (categoryValue) p.set("category", categoryValue);
+  else p.delete("category");
+  const q = p.toString();
+  return q ? `/vendors?${q}` : "/vendors";
+}
+
 function SortLink({ searchParams, sortValue, children }: { searchParams: URLSearchParams; sortValue: string; children: React.ReactNode }) {
   return <Link href={sortHref(searchParams, sortValue)} className="dropdown-option w-dropdown-link">{children}</Link>;
 }
@@ -179,7 +187,7 @@ interface VendorsFilterBarWebflowProps {
 }
 
 const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "All Courses" },
+  { value: "", label: "Category" },
   { value: "initial", label: "16-Hour Initial" },
   { value: "renewal", label: "8-Hour Renewal" },
   { value: "add-gun", label: "Add a Gun" },
@@ -205,7 +213,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
     router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
   }
 
-  const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "Course Type";
+  const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "Category";
   const sortLabel = sort === "price-low" ? "Price: Low to High" : sort === "price-high" ? "Price: High to Low" : sort === "name" ? "Name: A to Z" : sort === "name-desc" ? "Name: Z to A" : "Sort";
 
   return (
@@ -253,18 +261,13 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
           listClassName="dropdown-list county-menu w-dropdown-list"
         >
           {CATEGORY_OPTIONS.map((opt) => (
-            <button
+            <Link
               key={opt.value}
-              type="button"
+              href={categoryHref(searchParams, opt.value)}
               className="dropdown-option w-dropdown-link"
-              style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
-              onClick={() => {
-                updateParams({ category: opt.value || null });
-                setOpenDropdown(null);
-              }}
             >
               {opt.label}
-            </button>
+            </Link>
           ))}
         </FilterDropdown>
 
