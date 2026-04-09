@@ -49,7 +49,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const allVendors = await getAllVendors();
   const otherVendors = allVendors.filter((v) => v.slug !== slug).slice(0, 3);
 
-  const heroButtonClassName = "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block text-center";
+  const heroButtonClassName =
+    "btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block self-start text-center";
   const classTypes = vendor.classTypes ?? [];
   const pricingCardsRaw = [
     vendor.priceInitial || classTypes.includes("initial") || classTypes.includes("both")
@@ -140,10 +141,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                 )}
               </p>
               {vendor.acceptsBookings ? (
-                <Link
-                  href={`/vendors/${vendor.slug}/book`}
-                  className={heroButtonClassName}
-                >
+                <Link href={`/vendors/${vendor.slug}/book`} className={heroButtonClassName}>
                   Book Now
                 </Link>
               ) : (
@@ -152,7 +150,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                     href={vendor.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${heroButtonClassName} self-start`}
+                    className={heroButtonClassName}
                   >
                     Visit website
                   </a>
