@@ -19,7 +19,7 @@ export default async function VendorBookPage({ params }: PageProps) {
 
   const bookingData = await getUpcomingSessionsForVendorSlug(slug);
   const sessions: SerializableSession[] =
-    bookingData?.sessions.map((s) => ({
+    bookingData?.sessions?.map((s) => ({
       id: s.id,
       startsAt: s.startsAt.toISOString(),
       endsAt: s.endsAt?.toISOString() ?? null,

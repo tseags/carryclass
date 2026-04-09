@@ -262,6 +262,33 @@ export const VENDORS: Vendor[] = [
     featured: false,
     createdAt: "2024-03-20",
   },
+  {
+    id: "13",
+    slug: "demo-ccw-booking",
+    name: "Demo — Central Valley CCW Booking",
+    type: "company",
+    city: "Fresno",
+    county: "fresno",
+    state: "CA",
+    countiesServed: ["fresno", "madera", "tulare"],
+    classTypes: ["both"],
+    formats: ["in-person", "hybrid"],
+    priceMin: 75,
+    priceMax: 175,
+    priceInitial: 175,
+    priceRenewal: 95,
+    address: "1234 Demo Lane, Fresno, CA 93710",
+    website: "https://example.com",
+    phone: "(559) 555-0199",
+    description:
+      "SANDBOX DEMO ONLY — Not a real business. Used to test directory booking, class listings, and Stripe Checkout. Aligned with Central Valley sample data for UI polish.",
+    photos: [
+      "https://images.unsplash.com/photo-1544532396-cd7b2dc7f390?w=800&h=600&fit=crop",
+    ],
+    featured: true,
+    acceptsBookings: true,
+    createdAt: "2024-01-15",
+  },
 ];
 
 export function getVendorBySlug(slug: string): Vendor | undefined {

@@ -31,6 +31,8 @@ export interface Vendor {
   featured?: boolean;
   /** When true, hero shows Book Now and /vendors/[slug]/book is available */
   acceptsBookings?: boolean;
+  /** Stripe Connect account id (acct_...) — required for paid checkout */
+  stripeConnectAccountId?: string;
   createdAt: string;
 }
 

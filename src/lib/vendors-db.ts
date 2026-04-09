@@ -1,4 +1,5 @@
 import type { Vendor } from "@/types";
+import { VENDORS } from "@/data/vendors";
 import { prisma } from "./db";
 
 function toVendor(row: {
@@ -63,14 +64,38 @@ function toVendor(row: {
   };
 }
 
+function sortByName(vendors: Vendor[]): Vendor[] {
+  return [...vendors].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Seed rows in DB take precedence; static entries fill in any slug not present (e.g. demo before migrate/seed). */
+function staticVendorsMissingFromDb(dbSlugs: Set<string>): Vendor[] {
+  return VENDORS.filter((v) => !dbSlugs.has(v.slug));
+}
+
+function mergeWithStatic(dbVendors: Vendor[]): Vendor[] {
+  const dbSlugs = new Set(dbVendors.map((v) => v.slug));
+  return sortByName([...dbVendors, ...staticVendorsMissingFromDb(dbSlugs)]);
+}
+
 export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
-  const row = await prisma.vendor.findUnique({ where: { slug } });
-  return row ? toVendor(row) : null;
+  try {
+    const row = await prisma.vendor.findUnique({ where: { slug } });
+    if (row) return toVendor(row);
+  } catch (e) {
+    console.error("[vendors-db] getVendorBySlug", e);
+  }
+  return VENDORS.find((v) => v.slug === slug) ?? null;
 }
 
 export async function getAllVendors(): Promise<Vendor[]> {
-  const rows = await prisma.vendor.findMany({ orderBy: { name: "asc" } });
-  return rows.map(toVendor);
+  try {
+    const rows = await prisma.vendor.findMany({ orderBy: { name: "asc" } });
+    return mergeWithStatic(rows.map(toVendor));
+  } catch (e) {
+    console.error("[vendors-db] getAllVendors", e);
+    return sortByName([...VENDORS]);
+  }
 }
 
 /**
@@ -78,28 +103,56 @@ export async function getAllVendors(): Promise<Vendor[]> {
  * A vendor listed in multiple counties is counted once per county.
  */
 export async function getVendorCountsByCounty(): Promise<Record<string, number>> {
-  const rows = await prisma.vendor.findMany({
-    select: { countiesServed: true },
-  });
   const counts: Record<string, number> = {};
-  for (const row of rows) {
-    for (const raw of row.countiesServed) {
-      const slug = raw.toLowerCase();
-      counts[slug] = (counts[slug] ?? 0) + 1;
+  let dbSlugs = new Set<string>();
+
+  try {
+    const rows = await prisma.vendor.findMany({
+      select: { slug: true, countiesServed: true },
+    });
+    dbSlugs = new Set(rows.map((r) => r.slug));
+    for (const row of rows) {
+      for (const raw of row.countiesServed) {
+        const s = raw.toLowerCase();
+        counts[s] = (counts[s] ?? 0) + 1;
+      }
+    }
+  } catch (e) {
+    console.error("[vendors-db] getVendorCountsByCounty", e);
+    dbSlugs = new Set();
+  }
+
+  for (const v of staticVendorsMissingFromDb(dbSlugs)) {
+    for (const raw of v.countiesServed) {
+      const s = raw.toLowerCase();
+      counts[s] = (counts[s] ?? 0) + 1;
     }
   }
+
   return counts;
 }
 
 export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> {
   const slug = countySlug.toLowerCase();
-  const rows = await prisma.vendor.findMany({
-    where: {
-      countiesServed: { has: slug },
-    },
-    orderBy: { name: "asc" },
-  });
-  return rows.map(toVendor);
+  try {
+    const rows = await prisma.vendor.findMany({
+      where: {
+        countiesServed: { has: slug },
+      },
+      orderBy: { name: "asc" },
+    });
+    const dbVendors = rows.map(toVendor);
+    const dbSlugs = new Set(dbVendors.map((v) => v.slug));
+    const extra = staticVendorsMissingFromDb(dbSlugs).filter((v) =>
+      v.countiesServed.some((c) => c.toLowerCase() === slug)
+    );
+    return sortByName([...dbVendors, ...extra]);
+  } catch (e) {
+    console.error("[vendors-db] getVendorsByCounty", e);
+    return sortByName(
+      VENDORS.filter((v) => v.countiesServed.some((c) => c.toLowerCase() === slug))
+    );
+  }
 }
 
 export async function getVendorsByCity(
@@ -107,16 +160,36 @@ export async function getVendorsByCity(
   countySlug?: string
 ): Promise<Vendor[]> {
   const cityLower = city.toLowerCase();
-  const rows = await prisma.vendor.findMany({
-    where: {
-      city: { equals: city, mode: "insensitive" },
-      ...(countySlug && {
-        countiesServed: { has: countySlug.toLowerCase() },
-      }),
-    },
-    orderBy: { name: "asc" },
-  });
-  return rows.map(toVendor);
+  try {
+    const rows = await prisma.vendor.findMany({
+      where: {
+        city: { equals: city, mode: "insensitive" },
+        ...(countySlug && {
+          countiesServed: { has: countySlug.toLowerCase() },
+        }),
+      },
+      orderBy: { name: "asc" },
+    });
+    const dbVendors = rows.map(toVendor);
+    const dbSlugs = new Set(dbVendors.map((v) => v.slug));
+    const extra = staticVendorsMissingFromDb(dbSlugs).filter((v) => {
+      const cityMatch = v.city.toLowerCase() === cityLower;
+      if (!cityMatch) return false;
+      if (!countySlug) return true;
+      return v.countiesServed.some((c) => c.toLowerCase() === countySlug.toLowerCase());
+    });
+    return sortByName([...dbVendors, ...extra]);
+  } catch (e) {
+    console.error("[vendors-db] getVendorsByCity", e);
+    return sortByName(
+      VENDORS.filter((v) => {
+        const cityMatch = v.city.toLowerCase() === cityLower;
+        if (!cityMatch) return false;
+        if (!countySlug) return true;
+        return v.countiesServed.some((c) => c.toLowerCase() === countySlug.toLowerCase());
+      })
+    );
+  }
 }
 
 export async function getUniqueCitiesInCounty(countySlug: string): Promise<string[]> {
@@ -126,10 +199,16 @@ export async function getUniqueCitiesInCounty(countySlug: string): Promise<strin
 }
 
 export async function getAllUniqueCities(): Promise<string[]> {
-  const rows = await prisma.vendor.findMany({
-    select: { city: true },
-    distinct: ["city"],
-    orderBy: { city: "asc" },
-  });
-  return rows.map((r) => r.city);
+  try {
+    const rows = await prisma.vendor.findMany({
+      select: { slug: true, city: true },
+    });
+    const dbSlugs = new Set(rows.map((r) => r.slug));
+    const dbCities = rows.map((r) => r.city);
+    const staticCities = staticVendorsMissingFromDb(dbSlugs).map((v) => v.city);
+    return [...new Set([...dbCities, ...staticCities])].sort();
+  } catch (e) {
+    console.error("[vendors-db] getAllUniqueCities", e);
+    return [...new Set(VENDORS.map((v) => v.city))].sort();
+  }
 }
