@@ -1,5 +1,6 @@
 export type ClassType = "initial" | "renewal" | "both";
 export type ClassFormat = "in-person" | "online" | "hybrid";
+export type CourseCategory = "initial" | "renewal" | "add-gun" | "online";
 
 export interface Vendor {
   id: string;
@@ -56,6 +57,7 @@ export type VendorFilters = {
   city?: string;
   classType?: ClassType;
   format?: ClassFormat;
+  category?: CourseCategory;
   priceMin?: number;
   priceMax?: number;
   search?: string;

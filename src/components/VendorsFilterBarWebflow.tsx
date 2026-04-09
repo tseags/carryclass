@@ -178,14 +178,23 @@ interface VendorsFilterBarWebflowProps {
   allCities: string[];
 }
 
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All Courses" },
+  { value: "initial", label: "16-Hour Initial" },
+  { value: "renewal", label: "8-Hour Renewal" },
+  { value: "add-gun", label: "Add a Gun" },
+  { value: "online", label: "Virtual Courses" },
+];
+
 export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const county = searchParams.get("county") ?? "";
   const city = searchParams.get("city") ?? "";
+  const category = searchParams.get("category") ?? "";
   const searchQuery = searchParams.get("search") ?? "";
   const sort = searchParams.get("sort") ?? "";
-  const [openDropdown, setOpenDropdown] = useState<"county" | "city" | "sort" | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<"category" | "county" | "city" | "sort" | null>(null);
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -196,6 +205,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
     router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
   }
 
+  const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "Course Type";
   const sortLabel = sort === "price-low" ? "Price: Low to High" : sort === "price-high" ? "Price: High to Low" : sort === "name" ? "Name: A to Z" : sort === "name-desc" ? "Name: Z to A" : "Sort";
 
   return (
@@ -222,7 +232,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
               className="input icon-left-inside search-btn-inside county-search w-input"
               maxLength={256}
               name="query"
-              placeholder="Search by name"
+              placeholder="Search"
               type="search"
               defaultValue={searchQuery}
               key={searchQuery}
@@ -234,6 +244,29 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
             </button>
           </div>
         </form>
+
+        <FilterDropdown
+          label={categoryLabel}
+          open={openDropdown === "category"}
+          onToggle={() => setOpenDropdown((v) => (v === "category" ? null : "category"))}
+          onClose={() => setOpenDropdown(null)}
+          listClassName="dropdown-list county-menu w-dropdown-list"
+        >
+          {CATEGORY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className="dropdown-option w-dropdown-link"
+              style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
+              onClick={() => {
+                updateParams({ category: opt.value || null });
+                setOpenDropdown(null);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </FilterDropdown>
 
         <SearchableFilterDropdown
           label={county ? getCountyDisplayName(county) : "County"}

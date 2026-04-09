@@ -27,6 +27,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     city: resolved.city as string | undefined,
     classType: resolved.classType as "initial" | "renewal" | "both" | undefined,
     format: resolved.format as "in-person" | "online" | "hybrid" | undefined,
+    category: resolved.category as "initial" | "renewal" | "add-gun" | "online" | undefined,
     priceMax: resolved.priceMax ? Number(resolved.priceMax) : undefined,
     search: resolved.search as string | undefined,
   };

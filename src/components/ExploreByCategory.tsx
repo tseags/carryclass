@@ -3,34 +3,24 @@ import Image from "next/image";
 
 const CATEGORIES = [
   {
-    label: "16-Hour Initial Courses",
-    href: "/vendors?classType=initial",
+    label: "16-Hour Initial",
+    href: "/vendors?category=initial",
     icon: "/icons/target.png",
   },
   {
-    label: "8-Hour Renewal Courses",
-    href: "/vendors?classType=renewal",
+    label: "8-Hour Renewal",
+    href: "/vendors?category=renewal",
     icon: "/icons/renewal.png",
   },
   {
-    label: "Add a gun to CCW",
-    href: "/vendors",
+    label: "Add a Gun",
+    href: "/vendors?category=add-gun",
     icon: "/icons/add.png",
   },
   {
-    label: "In-Person Courses",
-    href: "/vendors?format=in-person",
-    icon: "/icons/person.png",
-  },
-  {
     label: "Virtual Courses",
-    href: "/vendors?format=online",
+    href: "/vendors?category=online",
     icon: "/icons/virtual.png",
-  },
-  {
-    label: "CCW Gear",
-    href: "/gear",
-    icon: "/icons/gear.png",
   },
 ];
 

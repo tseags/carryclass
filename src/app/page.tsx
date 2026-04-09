@@ -79,34 +79,26 @@ export default async function HomePage() {
       {/* View CCW Courses by County - horizontal scroll, 5 visible */}
       <CountyScrollSection />
 
-      {/* Explore by category - tight 6 grid, icon left + text right, all clickable */}
+      {/* Explore by category - 4 cards, icon left + text right, all clickable */}
       <div className="section bg-neutral-200 home-page">
         <div className="container-default w-container">
           <h2 className="mg-bottom-0 home-page">Explore by category</h2>
-          <div className="category-grid-6">
-            <Link href="/vendors?type=initial" className="category-grid-item">
+          <div className="category-grid-4">
+            <Link href="/vendors?category=initial" className="category-grid-item">
               <img src="/icons/target.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">16-Hour Initial Courses</h4>
+              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">16-Hour Initial</h4>
             </Link>
-            <Link href="/vendors?type=renewal" className="category-grid-item">
+            <Link href="/vendors?category=renewal" className="category-grid-item">
               <img src="/icons/renewal.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">8-Hour Renewal Courses</h4>
+              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">8-Hour Renewal</h4>
             </Link>
-            <Link href="/vendors" className="category-grid-item">
+            <Link href="/vendors?category=add-gun" className="category-grid-item">
               <img src="/icons/add.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">Add a gun to CCW</h4>
+              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">Add a Gun</h4>
             </Link>
-            <Link href="/vendors?format=in-person" className="category-grid-item">
-              <img src="/icons/In-person.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">In-Person Courses</h4>
-            </Link>
-            <Link href="/vendors?format=online" className="category-grid-item">
+            <Link href="/vendors?category=online" className="category-grid-item">
               <img src="/icons/virtual.png" loading="lazy" alt="" className="category-card-icon" />
               <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">Virtual Courses</h4>
-            </Link>
-            <Link href="/gear" className="category-grid-item">
-              <img src="/icons/gear.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">CCW Gear</h4>
             </Link>
           </div>
         </div>

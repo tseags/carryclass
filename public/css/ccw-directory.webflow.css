@@ -2848,7 +2848,7 @@ figcaption {
 }
 
 .grid-3-columns.filters-grid.vendor-page {
-  grid-template-columns: 2.7fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   padding-left: 0;
   padding-right: 0;
 }

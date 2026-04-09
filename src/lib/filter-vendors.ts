@@ -15,6 +15,23 @@ export function filterVendors(vendors: Vendor[], filters: VendorFilters): Vendor
     );
   }
 
+  if (filters.category) {
+    switch (filters.category) {
+      case "initial":
+        result = result.filter((v) => v.classTypes.includes("initial") || v.classTypes.includes("both"));
+        break;
+      case "renewal":
+        result = result.filter((v) => v.classTypes.includes("renewal") || v.classTypes.includes("both"));
+        break;
+      case "add-gun":
+        result = result.filter((v) => v.priceAddGun != null);
+        break;
+      case "online":
+        result = result.filter((v) => v.formats.includes("online"));
+        break;
+    }
+  }
+
   if (filters.classType) {
     result = result.filter((v) =>
       v.classTypes.includes(filters.classType!) || v.classTypes.includes("both")

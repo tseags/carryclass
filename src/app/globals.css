@@ -209,17 +209,20 @@ img.county-hero-image-fill {
   .county-card { flex: 0 0 100%; min-width: 100%; }
 }
 
-/* Explore by category - tight 6 grid (2 rows x 3 cols), icon left + text right */
-.category-grid-6 {
+/* Explore by category - 4 cards (2 x 2), icon left + text right */
+.category-grid-4 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 24px;
 }
 /* Explore by category: default = barely visible border, hover = darker visible border */
 .category-grid-item {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 16px;
   padding: 20px 24px;
   text-decoration: none;
@@ -243,7 +246,7 @@ img.county-hero-image-fill {
   object-fit: contain;
 }
 @media (max-width: 768px) {
-  .category-grid-6 {
+  .category-grid-4 {
     grid-template-columns: 1fr;
   }
 }

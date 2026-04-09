@@ -159,7 +159,7 @@
   width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  grid-template-columns: minmax(0, 3.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
 }
 
 .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page > form.w-form {
@@ -179,6 +179,12 @@
 }
 
 @media screen and (max-width: 991px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+}
+
+@media screen and (max-width: 640px) {
   .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
     grid-template-columns: 1fr 1fr !important;
   }
