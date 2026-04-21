@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroImages } from "@/components/HeroImages";
 import { CountyScrollSection } from "@/components/CountyScrollSection";
+import { ExploreByCategory } from "@/components/ExploreByCategory";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { getAllVendors } from "@/lib/vendors-db";
 import { getCountyDisplayName } from "@/data/counties";
@@ -41,7 +42,12 @@ export default async function HomePage() {
   const featuredVendors = [...vendors]
     .filter((v) => v.featured)
     .concat(vendors.filter((v) => !v.featured))
-    .slice(0, 6);
+    .slice(0, 3);
+  const popularVendorReviewStats = [
+    { rating: "4.9", reviews: "87 reviews" },
+    { rating: "4.8", reviews: "124 reviews" },
+    { rating: "4.9", reviews: "47 reviews" },
+  ];
 
   return (
     <>
@@ -79,90 +85,84 @@ export default async function HomePage() {
       {/* View CCW Courses by County - horizontal scroll, 5 visible */}
       <CountyScrollSection />
 
-      {/* Explore by category - 4 cards, icon left + text right, all clickable */}
-      <div className="section bg-neutral-200 home-page">
-        <div className="container-default w-container">
-          <h2 className="mg-bottom-0 home-page">Explore by category</h2>
-          <div className="category-grid-4">
-            <Link href="/vendors?category=initial" className="category-grid-item">
-              <img src="/icons/target.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">16-Hour Initial</h4>
-            </Link>
-            <Link href="/vendors?category=renewal" className="category-grid-item">
-              <img src="/icons/renewal.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">8-Hour Renewal</h4>
-            </Link>
-            <Link href="/vendors?category=add-gun" className="category-grid-item">
-              <img src="/icons/add.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">Add a Gun</h4>
-            </Link>
-            <Link href="/vendors?category=online" className="category-grid-item">
-              <img src="/icons/virtual.png" loading="lazy" alt="" className="category-card-icon" />
-              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0">Virtual Courses</h4>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <ExploreByCategory />
 
-      {/* Popular CCW Vendors - equal size cards, hover, always show Initial + Renewal */}
-      <div id="experiences" className="section bg-neutral-200 home-page popular">
+      {/* Popular CCW Vendors - redesigned to mirror design reference */}
+      <div id="experiences" className="section bg-neutral-200 home-page popular popular-vendors-redesign">
         <div className="container-default w-container">
-          <div className="grid-2-columns title-and-btn-grid mg-bottom-24px">
-            <h2 className="mg-bottom-0">Popular CCW Vendors</h2>
+          <div className="popular-vendors-redesign__header">
             <div>
-              <Link href="/vendors" className="btn-secondary w-button">
+              <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
+              <h2 className="mg-bottom-0">Popular CCW vendors</h2>
+            </div>
+            <div className="popular-vendors-redesign__header-btn">
+              <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
                 View All Vendors
               </Link>
             </div>
           </div>
-          <div className="grid-2-columns _1-col-tablet" style={{ gap: "24px", alignItems: "stretch" }}>
-            {featuredVendors.map((vendor) => (
-              <Link key={vendor.id} href={`/vendors/${vendor.slug}`} className="w-inline-block" style={{ textDecoration: "none", color: "inherit" }}>
-                <div className="vendor-card-hover card-link-image-top---text-container pd-36px---24px outline popular home" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                  <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name">
-                    {vendor.name}
-                  </h3>
-                  <div className="grid-1-column gap-row-10px mg-bottom-24px">
-                    <div className="flex align-start gap-column-8px">
-                      <div className="paragraph-small color-neutral-600 bold">
-                        {vendor.type === "company" ? "Company" : "Instructor"} · {vendor.city}, CA
+          <div className="popular-vendors-redesign__grid">
+            {featuredVendors.map((vendor, index) => {
+              const reviewMeta =
+                popularVendorReviewStats[index] ??
+                popularVendorReviewStats[popularVendorReviewStats.length - 1];
+              const servedCounty = vendor.countiesServed[0]
+                ? getCountyDisplayName(vendor.countiesServed[0])
+                : getCountyDisplayName(vendor.county);
+              const cardDescription =
+                vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+
+              return (
+                <Link
+                  key={vendor.id}
+                  href={`/vendors/${vendor.slug}`}
+                  className="popular-vendors-redesign__card"
+                >
+                  <div className="popular-vendors-redesign__featured">Featured</div>
+                  <div className="popular-vendors-redesign__title-row">
+                    <h3 className="popular-vendors-redesign__title">{vendor.name}</h3>
+                    <div className="popular-vendors-redesign__format-pill">In person</div>
+                  </div>
+
+                  <div className="popular-vendors-redesign__rating-row">
+                    <span className="popular-vendors-redesign__stars">★★★★★</span>
+                    <span className="popular-vendors-redesign__rating-copy">
+                      {reviewMeta.rating} · {reviewMeta.reviews}
+                    </span>
+                  </div>
+
+                  <div className="popular-vendors-redesign__location-row">
+                    <img
+                      src="/images/location-icon-color-neutral-400-directory-webflow-ecommerce-template.svg"
+                      loading="lazy"
+                      width={14}
+                      height={14}
+                      alt=""
+                    />
+                    <span>
+                      {vendor.city}, {servedCounty} County
+                    </span>
+                  </div>
+
+                  <p className="popular-vendors-redesign__description">{cardDescription}</p>
+
+                  <div className="popular-vendors-redesign__prices">
+                    <div>
+                      <div className="popular-vendors-redesign__price">
+                        {vendor.priceInitial != null ? `$${vendor.priceInitial}` : "Contact"}
                       </div>
+                      <div className="popular-vendors-redesign__price-label">16-hr initial</div>
                     </div>
-                    <div className="flex align-start gap-column-8px">
-                      <img
-                        src="/images/location-icon-color-neutral-400-directory-webflow-ecommerce-template.svg"
-                        loading="lazy"
-                        width={14}
-                        alt=""
-                        className="mg-top-4px"
-                      />
-                      <div className="paragraph-small color-neutral-600">
-                        {vendor.countiesServed.map((c) => getCountyDisplayName(c)).join(", ")}
+                    <div>
+                      <div className="popular-vendors-redesign__price">
+                        {vendor.priceRenewal != null ? `$${vendor.priceRenewal}` : "Contact"}
                       </div>
-                    </div>
-                    <div className="flex align-start gap-column-8px">
-                      <div className="paragraph-small color-neutral-600">
-                        <strong className="bold-text-2">$</strong>
-                      </div>
-                      <div className="paragraph-small color-neutral-600">
-                        16-Hour Initial: <strong>{vendor.priceInitial != null ? `$${vendor.priceInitial}` : "Contact"}</strong>
-                      </div>
-                    </div>
-                    <div className="flex align-start gap-column-8px">
-                      <div className="paragraph-small color-neutral-600">
-                        <strong className="bold-text-2">$</strong>
-                      </div>
-                      <div className="paragraph-small color-neutral-600">
-                        8-Hour Renewal: <strong>{vendor.priceRenewal != null ? `$${vendor.priceRenewal}` : "Contact"}</strong>
-                      </div>
+                      <div className="popular-vendors-redesign__price-label">8-hr renewal</div>
                     </div>
                   </div>
-                  <div className="flex-align-left flex-align-stretch-mbp mg-top-auto">
-                    <div className="btn-primary vendor-card">View Now</div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

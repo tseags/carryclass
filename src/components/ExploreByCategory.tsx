@@ -1,54 +1,61 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 
 const CATEGORIES = [
   {
     label: "16-Hour Initial",
+    description: "Required for first-time CCW applicants",
     href: "/vendors?category=initial",
     icon: "/icons/target.png",
   },
   {
     label: "8-Hour Renewal",
+    description: "For existing permit holders",
     href: "/vendors?category=renewal",
     icon: "/icons/renewal.png",
   },
   {
     label: "Add a Gun",
+    description: "Add a new firearm to your permit",
     href: "/vendors?category=add-gun",
     icon: "/icons/add.png",
   },
   {
     label: "Virtual Courses",
+    description: "Complete your renewal from home",
     href: "/vendors?category=online",
     icon: "/icons/virtual.png",
   },
-];
+] as const;
 
 export function ExploreByCategory() {
   return (
-    <section className="py-12">
-      <h2 className="text-2xl font-bold text-zinc-900">
-        Explore by category
-      </h2>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.label}
-            href={cat.href}
-            className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-orange-100 to-rose-100">
-              <Image
-                src={cat.icon}
-                alt=""
-                width={28}
-                height={28}
-                className="object-contain"
-              />
-            </div>
-            <span className="font-medium text-zinc-900">{cat.label}</span>
-          </Link>
-        ))}
+    <section className="section explore-by-category-section home-page">
+      <div className="container-default w-container">
+        <h2 className="mg-bottom-0 home-page explore-by-category-heading">Explore by category</h2>
+        <div className="explore-by-category-grid">
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat.href}
+              href={cat.href}
+              className="explore-by-category-card"
+            >
+              <div className="explore-by-category-card__icon-wrap" aria-hidden>
+                <Image
+                  src={cat.icon}
+                  alt=""
+                  width={22}
+                  height={22}
+                  className="explore-by-category-card__icon"
+                />
+              </div>
+              <h4 className="link-item-text---hover-secondary-2 mg-bottom-0 explore-by-category-card__title">
+                {cat.label}
+              </h4>
+              <p className="explore-by-category-card__desc">{cat.description}</p>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -480,3 +480,19 @@
 .vendor-ccw-pricing li p:last-of-type {
   color: #e4e4e7 !important;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Home page section background overrides                                     */
+/* -------------------------------------------------------------------------- */
+.section-2 {
+  background-color: #f9f7f2 !important;
+}
+
+/* Home hero: visible surface is the inner card, not only the section wrapper */
+.section-2 .top-section-card.home {
+  background-color: #f9f7f2 !important;
+}
+
+.section.bg-neutral-200.home-page.popular.popular-vendors-redesign {
+  background-color: #fafafa !important;
+}

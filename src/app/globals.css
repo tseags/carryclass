@@ -34,6 +34,11 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Home hero section background override */
+.section-2 {
+  background-color: #f9f7f2 !important;
+}
+
 /* Ensure page content is visible (Webflow export used opacity:0 for animations) */
 .page-wrapper {
   opacity: 1 !important;
@@ -209,45 +214,75 @@ img.county-hero-image-fill {
   .county-card { flex: 0 0 100%; min-width: 100%; }
 }
 
-/* Explore by category - 4 cards (2 x 2), icon left + text right */
-.category-grid-4 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-top: 24px;
+/* Explore by category — vertical cards (zip / design reference) */
+.explore-by-category-section {
+  background-color: #f9f7f2 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 72px !important;
+  padding-bottom: 72px !important;
 }
-/* Explore by category: default = barely visible border, hover = darker visible border */
-.category-grid-item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 16px;
-  padding: 20px 24px;
+.explore-by-category-heading {
+  margin-bottom: 24px !important;
+}
+.explore-by-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.explore-by-category-card {
+  display: block;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 20px 18px;
+  text-align: left;
   text-decoration: none;
   color: inherit;
-  min-height: 72px;
-  background: #fff;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
-.category-grid-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  border-color: rgba(0, 0, 0, 0.25) !important;
+.explore-by-category-card:hover {
+  border-color: rgba(201, 100, 66, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
-.category-card-icon {
+.explore-by-category-card__icon-wrap {
   width: 40px;
   height: 40px;
-  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(201, 100, 66, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.explore-by-category-card__icon {
   object-fit: contain;
 }
-@media (max-width: 768px) {
-  .category-grid-4 {
+.explore-by-category-card__title {
+  font-size: 16px;
+  line-height: 1.3;
+  color: #111827;
+  margin-bottom: 5px !important;
+}
+.explore-by-category-card__desc {
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0;
+}
+@media (max-width: 991px) {
+  .explore-by-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 576px) {
+  .explore-by-category-grid {
     grid-template-columns: 1fr;
+  }
+  .explore-by-category-section {
+    padding-top: 56px !important;
+    padding-bottom: 56px !important;
   }
 }
 
@@ -717,5 +752,143 @@ img.county-hero-image-fill {
 /* Vendor detail "Gear Needed" icons should render as white on dark tiles */
 .vendor-gear-icon .vendor-gear-icon-img {
   filter: brightness(0) invert(1);
+}
+
+/* Home: Popular vendors card redesign */
+.popular-vendors-redesign {
+  background: #fafafa !important;
+}
+.popular-vendors-redesign__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.popular-vendors-redesign__eyebrow {
+  margin-bottom: 10px;
+  color: #c96442;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.popular-vendors-redesign__header-btn {
+  flex-shrink: 0;
+}
+.popular-vendors-redesign__view-all {
+  border-radius: 10px !important;
+}
+.popular-vendors-redesign__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.popular-vendors-redesign__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  background: #fbfaf6;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.popular-vendors-redesign__card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(201, 100, 66, 0.3);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+.popular-vendors-redesign__featured {
+  margin-bottom: 8px;
+  color: #c96442;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.popular-vendors-redesign__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.popular-vendors-redesign__title {
+  margin: 0;
+  color: #111827;
+  font-size: 33px;
+  font-size: clamp(21px, 1.55vw, 27px);
+  line-height: 1.18;
+}
+.popular-vendors-redesign__format-pill {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(201, 100, 66, 0.12);
+  color: #c96442;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.popular-vendors-redesign__rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.popular-vendors-redesign__stars {
+  color: #c96442;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.popular-vendors-redesign__rating-copy {
+  color: #6b7280;
+  font-size: 13px;
+}
+.popular-vendors-redesign__location-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.popular-vendors-redesign__description {
+  margin: 0 0 16px;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.55;
+  flex: 1 1 auto;
+}
+.popular-vendors-redesign__prices {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+.popular-vendors-redesign__price {
+  color: #111827;
+  font-size: 30px;
+  font-size: clamp(24px, 1.8vw, 32px);
+  line-height: 1;
+}
+.popular-vendors-redesign__price-label {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+@media (max-width: 991px) {
+  .popular-vendors-redesign__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
