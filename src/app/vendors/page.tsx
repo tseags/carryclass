@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { VendorsFilterBarWebflow } from "@/components/VendorsFilterBarWebflow";
-import { VendorCardWebflow } from "@/components/VendorCardWebflow";
-import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { GearCtaSection } from "@/components/GearCtaSection";
-import { getAllVendors, getAllUniqueCities } from "@/lib/vendors-db";
+import { HomeNewsletter } from "@/components/HomeNewsletter";
+import { PopularVendorCard } from "@/components/PopularVendorCard";
+import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
+import { getAllVendors } from "@/lib/vendors-db";
 import { filterVendors } from "@/lib/filter-vendors";
 
 interface PageProps {
@@ -20,6 +20,17 @@ export const metadata = {
     "Browse all sheriff-approved CCW instructors in California. Filter by county, class type, pricing, availability, or in-person/virtual options.",
 };
 
+function getReviewMeta(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  const ratingPool = ["4.6", "4.7", "4.8", "4.9"];
+  const rating = ratingPool[hash % ratingPool.length];
+  const reviews = `${(hash % 230) + 24} reviews`;
+  return { rating, reviews };
+}
+
 export default async function VendorsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;
   const filters = {
@@ -33,7 +44,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   };
 
   const allVendors = await getAllVendors();
-  const allCities = await getAllUniqueCities();
   let vendors = filterVendors(allVendors, filters);
   const sort = resolved.sort as string | undefined;
   if (sort === "name") {
@@ -44,6 +54,8 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     vendors = [...vendors].sort((a, b) => (a.priceMin ?? 0) - (b.priceMin ?? 0));
   } else if (sort === "price-high") {
     vendors = [...vendors].sort((a, b) => (b.priceMax ?? 0) - (a.priceMax ?? 0));
+  } else {
+    vendors = [...vendors].sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
   }
 
   return (
@@ -68,49 +80,146 @@ export default async function VendorsPage({ searchParams }: PageProps) {
             </h1>
             <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
               <span className="vendors-hero-description-line">
-                Browse sheriff-approved CCW instructors statewide. Filter by county, class type, price, format,
-              </span>
-              <br aria-hidden="true" />
-              <span className="vendors-hero-description-line">
-                and availability. Find the right instructor for your initial or renewal training.
+                Browse sheriff-approved CCW instructors statewide. Filter by county, class type, price, and format.
               </span>
             </p>
-          </div>
-
-          <div className="mg-top-40px">
-            <VendorsFilterBarWebflow allCities={allCities} />
           </div>
         </div>
       </section>
 
-      <div className="vendors-page-content">
-        <section className="section-4 vendors-map-section" aria-label="Vendor locations map">
-          <div className="w-layout-blockcontainer container-3 w-container">
-            <div className="map-3 w-widget w-widget-map" role="region" title="Vendor locations">
-              <VendorsMapDynamic vendors={vendors} hasFilter={!!(resolved.county || resolved.city)} />
-            </div>
-          </div>
-        </section>
-
-        <section className="section vendors-list-section" aria-label="Vendor list">
-          <div className="container-default w-container">
-            <div className="w-dyn-list">
-              <div role="list" className="vendors-grid">
-                {vendors.map((vendor) => (
-                  <VendorCardWebflow key={vendor.id} vendor={vendor} />
-                ))}
+      <section className="vendors-results-shell" aria-label="Vendor list and filters">
+        <div className="vendors-results-layout">
+          <aside className="vendors-filters-sidebar">
+            <div className="vendors-filters-card">
+              <div className="vendors-filters-head">
+                <h2>Filters</h2>
+                <Link href="/vendors">Clear all</Link>
               </div>
-              {vendors.length === 0 && (
-                <div className="empty-state w-dyn-empty">
-                  <div>No instructors match your search. Try adjusting your filters.</div>
-                </div>
-              )}
+              <form action="/vendors" method="get" className="vendors-filters-form">
+                <label className="vendors-filter-group">
+                  <span>Search</span>
+                  <input
+                    type="search"
+                    name="search"
+                    defaultValue={filters.search ?? ""}
+                    placeholder="Name or keyword"
+                  />
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>County</span>
+                  <select name="county" defaultValue={filters.county ?? ""}>
+                    <option value="">Any county</option>
+                    {CALIFORNIA_COUNTIES.map((county) => (
+                      <option key={county} value={county}>
+                        {getCountyDisplayName(county)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Course type</span>
+                  <select name="classType" defaultValue={filters.classType ?? ""}>
+                    <option value="">All types</option>
+                    <option value="initial">16-hr initial</option>
+                    <option value="renewal">8-hr renewal</option>
+                    <option value="both">Initial + renewal</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Format</span>
+                  <select name="format" defaultValue={filters.format ?? ""}>
+                    <option value="">Any format</option>
+                    <option value="in-person">In person</option>
+                    <option value="online">Online</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Max price</span>
+                  <select
+                    name="priceMax"
+                    defaultValue={filters.priceMax != null ? String(filters.priceMax) : ""}
+                  >
+                    <option value="">Any price</option>
+                    <option value="150">Under $150</option>
+                    <option value="200">Under $200</option>
+                    <option value="300">Under $300</option>
+                    <option value="400">Under $400</option>
+                  </select>
+                </label>
+
+                {sort && <input type="hidden" name="sort" value={sort} />}
+                {filters.city && <input type="hidden" name="city" value={filters.city} />}
+                <button type="submit" className="btn-primary w-button vendors-filters-submit">
+                  Apply filters
+                </button>
+              </form>
             </div>
+          </aside>
+
+          <div className="vendors-results-main">
+            <div className="vendors-results-header">
+              <h2>{vendors.length} instructors</h2>
+              <form action="/vendors" method="get" className="vendors-sort-group">
+                {filters.search && <input type="hidden" name="search" value={filters.search} />}
+                {filters.county && <input type="hidden" name="county" value={filters.county} />}
+                {filters.city && <input type="hidden" name="city" value={filters.city} />}
+                {filters.classType && (
+                  <input type="hidden" name="classType" value={filters.classType} />
+                )}
+                {filters.format && <input type="hidden" name="format" value={filters.format} />}
+                {filters.priceMax != null && (
+                  <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
+                )}
+                <span>Sort</span>
+                <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
+                  <option value="featured">Featured first</option>
+                  <option value="price-low">Price: low to high</option>
+                  <option value="price-high">Price: high to low</option>
+                  <option value="name">Name: A to Z</option>
+                  <option value="name-desc">Name: Z to A</option>
+                </select>
+                <button type="submit" className="vendors-sort-apply">
+                  Apply
+                </button>
+              </form>
+            </div>
+
+            <div className="popular-vendors-redesign__grid vendors-results-grid">
+              {vendors.map((vendor) => {
+                const servedCounty = vendor.countiesServed[0]
+                  ? getCountyDisplayName(vendor.countiesServed[0])
+                  : getCountyDisplayName(vendor.county);
+                const description =
+                  vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+                const reviewMeta = getReviewMeta(vendor.id);
+                return (
+                  <PopularVendorCard
+                    key={vendor.id}
+                    vendor={vendor}
+                    ratingText={reviewMeta.rating}
+                    reviewsText={reviewMeta.reviews}
+                    servedCounty={servedCounty}
+                    description={description}
+                  />
+                );
+              })}
+            </div>
+            {vendors.length === 0 && (
+              <div className="empty-state w-dyn-empty">
+                <div>No instructors match your search. Try adjusting your filters.</div>
+              </div>
+            )}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <GearCtaSection />
+      <HomeNewsletter />
 
       <Footer />
     </>

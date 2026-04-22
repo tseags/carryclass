@@ -31,11 +31,11 @@ function FooterColumn({
   links: FooterLink[];
 }) {
   return (
-    <div>
+    <div className="site-footer__column text-left">
       <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.5px] text-[#b0aea5]">
         {title}
       </div>
-      <ul className="space-y-[10px]">
+      <ul className="site-footer__column-list space-y-[10px]">
         {links.map(({ label, href }) => (
           <li key={`${title}-${label}`}>
             <Link
@@ -55,7 +55,7 @@ export function Footer() {
   return (
     <footer className="site-footer border-t border-[#30302e] bg-[#141413] px-6 pb-10 pt-16">
       <div className="mx-auto w-full max-w-[1200px]">
-        <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-[2fr_3fr]">
           <div className="md:pr-6">
             <Link
               href="/"
@@ -67,15 +67,17 @@ export function Footer() {
                 Directory
               </span>
             </Link>
-            <p className="mt-4 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
+            <p className="site-footer__tagline mt-10 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
               California&apos;s most complete directory of sheriff-approved CCW
               training courses and instructors.
             </p>
           </div>
 
-          <FooterColumn title="Directory" links={DIRECTORY_LINKS} />
-          <FooterColumn title="For students" links={STUDENT_LINKS} />
-          <FooterColumn title="Instructors" links={INSTRUCTOR_LINKS} />
+          <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
+            <FooterColumn title="Directory" links={DIRECTORY_LINKS} />
+            <FooterColumn title="For students" links={STUDENT_LINKS} />
+            <FooterColumn title="Instructors" links={INSTRUCTOR_LINKS} />
+          </div>
         </div>
 
         <div className="flex flex-col items-start justify-between gap-3 border-t border-[#30302e] pt-6 text-[13px] text-[#87867f] sm:flex-row sm:flex-wrap sm:items-center">

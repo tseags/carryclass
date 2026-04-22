@@ -126,11 +126,18 @@ img.county-hero-image-fill {
 /* Hero images: subtle float on scroll (slight movement) */
 .hero-float-image {
   animation: hero-float 6s ease-in-out infinite;
-  transition: transform 0.3s ease-out;
 }
 @keyframes hero-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+/* Scale is applied to the inner img so it doesn't fight the wrapper's float transform */
+.hero-float-image img {
+  transition: transform 0.35s ease-out;
+  will-change: transform;
+}
+.hero-float-image:hover img {
+  transform: scale(1.05);
 }
 
 /* County cards horizontal scroll - 4 visible at a time; padding so hover keeps rounded corners */
@@ -990,50 +997,71 @@ img.county-hero-image-fill {
 }
 .by-the-numbers__stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, auto);
-  column-gap: 48px;
-  row-gap: 40px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
   position: relative;
 }
-.by-the-numbers__stats::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 8%;
-  bottom: 8%;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.14);
-  transform: translateX(-0.5px);
-  pointer-events: none;
-}
-.by-the-numbers__stats::after {
-  content: "";
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 50%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.14);
-  transform: translateY(-0.5px);
-  pointer-events: none;
-}
 .by-the-numbers__stat {
-  padding: 8px 24px;
+  background: #f2efe8;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease;
+  cursor: default;
+  opacity: 0;
+  transform: translateY(24px);
+  will-change: transform, opacity;
+}
+.by-the-numbers__stats.is-visible .by-the-numbers__stat {
+  animation: byTheNumbersStatIn 0.5s ease-out forwards;
+}
+.by-the-numbers__stat:hover {
+  transform: translateY(-12px) scale(1.1) !important;
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.34);
+  z-index: 1;
 }
 .by-the-numbers__stat-number {
   font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
   font-weight: 700;
-  font-size: clamp(42px, 4.6vw, 60px);
+  font-size: clamp(34px, 3.6vw, 48px);
   line-height: 1;
-  color: #ffffff;
+  color: #0f0f10;
   letter-spacing: -0.02em;
   margin-bottom: 10px;
+  transition: color 0.25s ease;
+}
+.by-the-numbers__stat:hover .by-the-numbers__stat-number {
+  color: #c96442;
 }
 .by-the-numbers__stat-label {
-  color: rgba(255, 255, 255, 0.64);
+  color: rgba(15, 15, 16, 0.6);
   font-size: 14px;
   line-height: 1.4;
+}
+
+@keyframes byTheNumbersStatIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .by-the-numbers__stat {
+    opacity: 1;
+    transform: none;
+  }
+  .by-the-numbers__stats.is-visible .by-the-numbers__stat {
+    animation: none;
+  }
+  .by-the-numbers__stat:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 991px) {
@@ -1045,11 +1073,7 @@ img.county-hero-image-fill {
     gap: 48px;
   }
   .by-the-numbers__stats {
-    column-gap: 32px;
-    row-gap: 32px;
-  }
-  .by-the-numbers__stat {
-    padding: 4px 12px;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1059,21 +1083,6 @@ img.county-hero-image-fill {
   }
   .by-the-numbers__stats {
     grid-template-columns: 1fr;
-    grid-template-rows: none;
-    column-gap: 0;
-    row-gap: 28px;
-  }
-  .by-the-numbers__stats::before,
-  .by-the-numbers__stats::after {
-    display: none;
-  }
-  .by-the-numbers__stat {
-    padding: 0 0 28px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  }
-  .by-the-numbers__stat:last-child {
-    padding-bottom: 0;
-    border-bottom: none;
   }
 }
 
@@ -1181,7 +1190,7 @@ img.county-hero-image-fill {
 /* Home: Newsletter v2 ("Subscribe for CCW updates") — centered               */
 /* -------------------------------------------------------------------------- */
 .home-newsletter {
-  background-color: #fefcf9;
+  background-color: #f2efe8;
   padding: 80px 0;
   border-top: 1px solid #f0eee6;
 }
@@ -1307,26 +1316,9 @@ img.county-hero-image-fill {
   line-height: 1.25;
   letter-spacing: -0.01em;
 }
-.home-articles__view-all {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 18px;
-  background: #ffffff;
-  border: 1px solid #e8e6dc;
-  border-radius: 10px;
-  color: #141413;
-  font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
-}
-.home-articles__view-all:hover {
-  border-color: #c2c0b6;
-  box-shadow: 0 1px 3px rgba(20, 20, 19, 0.06);
-  color: #141413;
-}
+/* .home-articles__view-all styles removed — the "Browse all articles" link now
+   uses the shared `.btn-secondary.w-button.popular-vendors-redesign__view-all`
+   styling to match the "View All Vendors" button. */
 .home-articles__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1349,14 +1341,22 @@ img.county-hero-image-fill {
   color: inherit;
 }
 .home-articles__card-banner {
-  background: #e8e6dc;
-  padding: 26px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 96px;
+  position: relative;
+  overflow: hidden;
+  height: 180px;
+}
+.home-articles__card-image {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 .home-articles__category {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 3px 9px;
+  border-radius: 20px;
   color: #4d4c48;
   font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
   font-size: 11px;
@@ -1393,6 +1393,18 @@ img.county-hero-image-fill {
   font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
   font-size: 13px;
   font-weight: 600;
+  transition: color 150ms ease, letter-spacing 150ms ease;
+}
+.home-articles__arrow {
+  display: inline-block;
+  transition: transform 150ms ease;
+}
+.home-articles__card:hover .home-articles__read-more {
+  color: #b5522e;
+  letter-spacing: 0.03em;
+}
+.home-articles__card:hover .home-articles__arrow {
+  transform: translateX(4px);
 }
 
 @media (max-width: 991px) {
