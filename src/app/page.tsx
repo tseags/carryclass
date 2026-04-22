@@ -88,7 +88,7 @@ export default async function HomePage() {
       <ExploreByCategory />
 
       {/* Popular CCW Vendors - redesigned to mirror design reference */}
-      <div id="experiences" className="section bg-neutral-200 home-page popular popular-vendors-redesign">
+      <div id="experiences" className="section home-page popular popular-vendors-redesign">
         <div className="container-default w-container">
           <div className="popular-vendors-redesign__header">
             <div>
@@ -121,7 +121,6 @@ export default async function HomePage() {
                   <div className="popular-vendors-redesign__featured">Featured</div>
                   <div className="popular-vendors-redesign__title-row">
                     <h3 className="popular-vendors-redesign__title">{vendor.name}</h3>
-                    <div className="popular-vendors-redesign__format-pill">In person</div>
                   </div>
 
                   <div className="popular-vendors-redesign__rating-row">

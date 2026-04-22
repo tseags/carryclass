@@ -242,7 +242,7 @@ img.county-hero-image-fill {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .explore-by-category-card:hover {
-  border-color: rgba(201, 100, 66, 0.35);
+  border-color: rgba(17, 24, 39, 0.35);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 .explore-by-category-card__icon-wrap {
@@ -756,7 +756,7 @@ img.county-hero-image-fill {
 
 /* Home: Popular vendors card redesign */
 .popular-vendors-redesign {
-  background: #fafafa !important;
+  background: #fefcf9 !important;
 }
 .popular-vendors-redesign__header {
   display: flex;
@@ -790,16 +790,16 @@ img.county-hero-image-fill {
   height: 100%;
   text-decoration: none;
   color: inherit;
-  background: #fbfaf6;
-  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.10);
   border-radius: 16px;
   padding: 22px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .popular-vendors-redesign__card:hover {
   transform: translateY(-3px);
-  border-color: rgba(201, 100, 66, 0.3);
+  border-color: rgba(17, 24, 39, 0.35);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
 .popular-vendors-redesign__featured {
@@ -811,10 +811,6 @@ img.county-hero-image-fill {
   text-transform: uppercase;
 }
 .popular-vendors-redesign__title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
   margin-bottom: 8px;
 }
 .popular-vendors-redesign__title {
@@ -823,17 +819,6 @@ img.county-hero-image-fill {
   font-size: 33px;
   font-size: clamp(21px, 1.55vw, 27px);
   line-height: 1.18;
-}
-.popular-vendors-redesign__format-pill {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(201, 100, 66, 0.12);
-  color: #c96442;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.5;
-  white-space: nowrap;
 }
 .popular-vendors-redesign__rating-row {
   display: flex;

@@ -23,7 +23,7 @@ export function CountyScrollClient({ tiles }: Props) {
   };
 
   return (
-    <div className="section overflow-hidden home-page">
+    <div className="section overflow-hidden home-page" style={{ backgroundColor: "#fefcf9" }}>
       <div className="container-default w-container">
         <div className="grid-2-columns title-and-btn-grid mg-bottom-24px">
           <h2 className="mg-bottom-0">View CCW Courses by County</h2>
