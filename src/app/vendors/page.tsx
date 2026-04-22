@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
+import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
 import { getAllVendors } from "@/lib/vendors-db";
 import { filterVendors } from "@/lib/filter-vendors";
@@ -57,6 +58,33 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   } else {
     vendors = [...vendors].sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
   }
+
+  const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
+
+  const hasFilter = Boolean(
+    filters.county ||
+      filters.city ||
+      filters.classType ||
+      filters.format ||
+      filters.category ||
+      filters.priceMax != null ||
+      (filters.search && filters.search.trim().length > 0)
+  );
+
+  const buildViewHref = (nextView: "list" | "map") => {
+    const params = new URLSearchParams();
+    if (filters.search) params.set("search", filters.search);
+    if (filters.county) params.set("county", filters.county);
+    if (filters.city) params.set("city", filters.city);
+    if (filters.classType) params.set("classType", filters.classType);
+    if (filters.format) params.set("format", filters.format);
+    if (filters.category) params.set("category", filters.category);
+    if (filters.priceMax != null) params.set("priceMax", String(filters.priceMax));
+    if (sort) params.set("sort", sort);
+    params.set("view", nextView);
+    const qs = params.toString();
+    return qs ? `/vendors?${qs}` : "/vendors";
+  };
 
   return (
     <>
@@ -154,6 +182,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
 
                 {sort && <input type="hidden" name="sort" value={sort} />}
                 {filters.city && <input type="hidden" name="city" value={filters.city} />}
+                <input type="hidden" name="view" value={view} />
                 <button type="submit" className="btn-primary w-button vendors-filters-submit">
                   Apply filters
                 </button>
@@ -164,54 +193,131 @@ export default async function VendorsPage({ searchParams }: PageProps) {
           <div className="vendors-results-main">
             <div className="vendors-results-header">
               <h2>{vendors.length} instructors</h2>
-              <form action="/vendors" method="get" className="vendors-sort-group">
-                {filters.search && <input type="hidden" name="search" value={filters.search} />}
-                {filters.county && <input type="hidden" name="county" value={filters.county} />}
-                {filters.city && <input type="hidden" name="city" value={filters.city} />}
-                {filters.classType && (
-                  <input type="hidden" name="classType" value={filters.classType} />
-                )}
-                {filters.format && <input type="hidden" name="format" value={filters.format} />}
-                {filters.priceMax != null && (
-                  <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
-                )}
-                <span>Sort</span>
-                <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
-                  <option value="featured">Featured first</option>
-                  <option value="price-low">Price: low to high</option>
-                  <option value="price-high">Price: high to low</option>
-                  <option value="name">Name: A to Z</option>
-                  <option value="name-desc">Name: Z to A</option>
-                </select>
-                <button type="submit" className="vendors-sort-apply">
-                  Apply
-                </button>
-              </form>
+              <div className="vendors-results-header-controls">
+                <div
+                  className="vendors-view-toggle"
+                  role="group"
+                  aria-label="Choose how to view results"
+                >
+                  <Link
+                    href={buildViewHref("list")}
+                    className="vendors-view-toggle__btn"
+                    aria-pressed={view === "list"}
+                    aria-label="View results as a list"
+                    scroll={false}
+                  >
+                    <svg
+                      className="vendors-view-toggle__icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 3.5h12M2 8h12M2 12.5h12"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span>List</span>
+                  </Link>
+                  <Link
+                    href={buildViewHref("map")}
+                    className="vendors-view-toggle__btn"
+                    aria-pressed={view === "map"}
+                    aria-label="View results on a map"
+                    scroll={false}
+                  >
+                    <svg
+                      className="vendors-view-toggle__icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 1 0-9 0C3.5 9.8 8 14 8 14Z"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="8" cy="6.5" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+                    </svg>
+                    <span>Map</span>
+                  </Link>
+                </div>
+
+                <form action="/vendors" method="get" className="vendors-sort-group">
+                  {filters.search && <input type="hidden" name="search" value={filters.search} />}
+                  {filters.county && <input type="hidden" name="county" value={filters.county} />}
+                  {filters.city && <input type="hidden" name="city" value={filters.city} />}
+                  {filters.classType && (
+                    <input type="hidden" name="classType" value={filters.classType} />
+                  )}
+                  {filters.format && <input type="hidden" name="format" value={filters.format} />}
+                  {filters.priceMax != null && (
+                    <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
+                  )}
+                  <input type="hidden" name="view" value={view} />
+                  <span>Sort</span>
+                  <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
+                    <option value="featured">Featured first</option>
+                    <option value="price-low">Price: low to high</option>
+                    <option value="price-high">Price: high to low</option>
+                    <option value="name">Name: A to Z</option>
+                    <option value="name-desc">Name: Z to A</option>
+                  </select>
+                  <button type="submit" className="vendors-sort-apply">
+                    Apply
+                  </button>
+                </form>
+              </div>
             </div>
 
-            <div className="popular-vendors-redesign__grid vendors-results-grid">
-              {vendors.map((vendor) => {
-                const servedCounty = vendor.countiesServed[0]
-                  ? getCountyDisplayName(vendor.countiesServed[0])
-                  : getCountyDisplayName(vendor.county);
-                const description =
-                  vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
-                const reviewMeta = getReviewMeta(vendor.id);
-                return (
-                  <PopularVendorCard
-                    key={vendor.id}
-                    vendor={vendor}
-                    ratingText={reviewMeta.rating}
-                    reviewsText={reviewMeta.reviews}
-                    servedCounty={servedCounty}
-                    description={description}
-                  />
-                );
-              })}
-            </div>
-            {vendors.length === 0 && (
-              <div className="empty-state w-dyn-empty">
-                <div>No instructors match your search. Try adjusting your filters.</div>
+            {view === "list" ? (
+              <>
+                <div className="popular-vendors-redesign__grid vendors-results-grid">
+                  {vendors.map((vendor) => {
+                    const servedCounty = vendor.countiesServed[0]
+                      ? getCountyDisplayName(vendor.countiesServed[0])
+                      : getCountyDisplayName(vendor.county);
+                    const description =
+                      vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+                    const reviewMeta = getReviewMeta(vendor.id);
+                    return (
+                      <PopularVendorCard
+                        key={vendor.id}
+                        vendor={vendor}
+                        ratingText={reviewMeta.rating}
+                        reviewsText={reviewMeta.reviews}
+                        servedCounty={servedCounty}
+                        description={description}
+                      />
+                    );
+                  })}
+                </div>
+                {vendors.length === 0 && (
+                  <div className="empty-state w-dyn-empty">
+                    <div>No instructors match your search. Try adjusting your filters.</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="vendors-results-map" aria-label="Vendor map">
+                {vendors.length > 0 ? (
+                  <VendorsMapDynamic vendors={vendors} hasFilter={hasFilter} />
+                ) : (
+                  <div className="vendors-map-empty" role="status">
+                    <strong>No matching vendors to map</strong>
+                    <p>Try clearing filters or switching back to list view.</p>
+                    <Link href={buildViewHref("list")} className="vendors-map-empty__link">
+                      Back to list
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
           </div>

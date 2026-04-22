@@ -563,6 +563,143 @@
   border-color: #141413;
 }
 
+/* -------------------------------------------------------------------------- */
+/* /vendors — List / Map view toggle                                          */
+/* -------------------------------------------------------------------------- */
+.vendors-results-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vendors-view-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.vendors-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.vendors-view-toggle__btn:hover {
+  background: #f4f2ec;
+  color: #141413;
+  text-decoration: none;
+}
+
+.vendors-view-toggle__btn[aria-pressed="true"] {
+  background: #141413;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.vendors-view-toggle__btn[aria-pressed="true"]:hover {
+  background: #141413;
+  color: #ffffff;
+}
+
+.vendors-view-toggle__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.35);
+}
+
+.vendors-view-toggle__icon {
+  flex: 0 0 auto;
+}
+
+/* Map container spacing inside the results area */
+.vendors-results-map {
+  margin-top: 4px;
+}
+
+/* Empty state specific to the map view */
+.vendors-map-empty {
+  background: #ffffff;
+  border: 1px dashed #d7d4cb;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  color: #3f3f46;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 260px;
+  justify-content: center;
+}
+
+.vendors-map-empty strong {
+  font-size: 15px;
+  color: #141413;
+}
+
+.vendors-map-empty p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.vendors-map-empty__link {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c96442;
+  text-decoration: none;
+}
+
+.vendors-map-empty__link:hover {
+  text-decoration: underline;
+}
+
+/* Inside the results column the map is narrower than the legacy section. */
+.vendors-results-map .vendors-map-wrapper {
+  height: min(60vh, 560px);
+}
+
+@media (max-width: 900px) {
+  .vendors-results-header-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .vendors-results-map .vendors-map-wrapper {
+    height: min(55vh, 440px);
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 600px) {
+  .vendors-view-toggle__btn {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+
+  .vendors-results-map .vendors-map-wrapper {
+    height: 380px;
+    min-height: 280px;
+  }
+}
+
 /* Force 3-column grid in the results area regardless of popular-vendors default */
 .vendors-results-main .vendors-results-grid,
 .vendors-results-main .popular-vendors-redesign__grid.vendors-results-grid {
