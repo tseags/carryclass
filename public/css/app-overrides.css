@@ -4,35 +4,28 @@
 /* Dark blue textured hero — background + noise: src/app/globals.css        */
 /* -------------------------------------------------------------------------- */
 
-.section-3.counties-hero .container-2,
 .section-3.vendors-hero .container-2 {
   max-width: 1100px;
 }
 
 /* Hero typography on dark */
-.section-3.counties-hero h1,
 .section-3.vendors-hero .vendors-hero-title,
 .section-3.vendors-hero h1 {
   color: #f8fafc !important;
 }
 
-/* Vendors + /ca counties hero H1 font-size: src/app/globals.css */
+/* Vendors hero H1 font-size: src/app/globals.css */
 
-.section-3.vendors-hero .vendors-hero-title,
-.section-3.counties-hero .vendors-hero-title {
+.section-3.vendors-hero .vendors-hero-title {
   max-width: 52rem;
   margin-left: auto;
   margin-right: auto;
 }
 
-.section-3.counties-hero .main-description,
-.section-3.counties-hero .pricing-page p,
 .section-3.vendors-hero .vendors-hero-description,
 .section-3.vendors-hero .paragraph-5 {
   color: rgba(226, 232, 240, 0.92) !important;
 }
-
-/* /ca hero subtext white — see src/app/globals.css (.section-3.counties-hero .vendors-hero-description) */
 
 /* Breadcrumb: centered (below-title rows only; --above-title spacing in globals.css) */
 .vendors-hero-breadcrumb-row {
@@ -79,7 +72,6 @@
   color: rgba(148, 163, 184, 0.9) !important;
 }
 
-.section-3.counties-hero .vendors-hero-content,
 .vendors-hero .vendors-hero-content {
   text-align: center;
   max-width: 52rem;
@@ -113,34 +105,29 @@
 }
 
 /* Hero subcopy: two short lines + br; from 768px nowrap each line so first span can’t wrap to a 3rd row */
-.section-3.vendors-hero .vendors-hero-description--two-lines,
-.section-3.counties-hero .vendors-hero-description--two-lines {
+.section-3.vendors-hero .vendors-hero-description--two-lines {
   max-width: 44rem;
   margin-left: auto;
   margin-right: auto;
   text-align: center !important;
   width: 100%;
 }
-.section-3.vendors-hero .vendors-hero-description-line,
-.section-3.counties-hero .vendors-hero-description-line {
+.section-3.vendors-hero .vendors-hero-description-line {
   display: inline-block;
   width: 100%;
   text-align: center;
   vertical-align: top;
 }
-.section-3.vendors-hero .vendors-hero-description--two-lines br,
-.section-3.counties-hero .vendors-hero-description--two-lines br {
+.section-3.vendors-hero .vendors-hero-description--two-lines br {
   line-height: 0;
 }
 @media screen and (min-width: 768px) {
-  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line,
-  .section-3.counties-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
     white-space: nowrap;
   }
 }
 @media screen and (max-width: 767px) {
-  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line,
-  .section-3.counties-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
     white-space: normal;
   }
 }
@@ -199,67 +186,88 @@
 /* County dropdown (stacking, scroll, search inset): src/app/globals.css — linked file loses cascade to bundle */
 
 /* -------------------------------------------------------------------------- */
-/* Counties list — 3 columns, square images, equal cards                      */
+/* /ca county result cards — image banner pinned to card top                  */
+/*                                                                            */
+/* Root cause of prior full-page overlay: Next.js <Image fill /> emits        */
+/* inline `position:absolute; inset:0` — if the parent wrapper fails to       */
+/* establish a positioned containing block (relative + explicit size), the    */
+/* img promotes up the ancestor chain and paints over the entire page.        */
+/* Rules below set the contain chain with !important so the img CANNOT        */
+/* escape, and add width/height/object-fit defensively.                       */
 /* -------------------------------------------------------------------------- */
-/* Slightly narrower content column so cards feel a bit smaller than full 1120px */
-.counties-page-content .inner-container._1120px {
-  max-width: 62rem;
-}
-
-.counties-page-content {
-  background-color: #ffffff;
-  padding-top: clamp(2rem, 3.5vw, 3rem);
-}
-
-.county-cards-grid-polished {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 1.125rem !important;
-  align-items: stretch;
-}
-
-@media (max-width: 991px) {
-  .county-cards-grid-polished {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (max-width: 576px) {
-  .county-cards-grid-polished {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-.county-cards-grid-polished .county-card .div-block-7 {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.county-cards-grid-polished .county-card-image-wrap {
-  aspect-ratio: 4 / 3 !important;
-  width: 100% !important;
-  position: relative !important;
-  border-radius: 12px 12px 0 0;
+.county-result-card {
+  padding: 0 !important;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
-.county-cards-grid-polished .county-card-image-wrap img.image-3 {
+.county-result-card > *:not(.county-result-card__media) {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+.county-result-card > .popular-vendors-redesign__featured {
+  padding-top: 18px;
+  margin-bottom: 6px;
+}
+
+.county-result-card > .popular-vendors-redesign__prices {
+  padding-bottom: 22px;
+  margin-top: auto;
+}
+
+.county-result-card__media {
+  position: relative !important;
+  display: block;
+  width: 100% !important;
+  margin: 0 0 14px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  background: #eef2f7;
+  isolation: isolate;
+}
+
+/* Intrinsic aspect via padding (fallback for browsers without aspect-ratio),
+   also guarantees a non-zero height so <Image fill /> renders visibly. */
+.county-result-card__media::before {
+  content: "";
+  display: block;
+  padding-top: 62.5%; /* 16:10 */
+}
+
+.county-result-card__image,
+.county-result-card__media > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   object-fit: cover !important;
+  object-position: center;
+  display: block;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: transform 0.3s ease;
 }
 
-.county-cards-grid-polished .link-item-text---hover-secondary-2 {
-  margin-top: 0.625rem !important;
-  text-align: left;
-  font-size: 1.0625rem !important;
+.county-result-card:hover .county-result-card__image {
+  transform: scale(1.03);
 }
 
-.county-cards-grid-polished .color-neutral-600 {
-  font-size: 0.8125rem !important;
-  line-height: 1.45 !important;
-  margin-top: 0.25rem !important;
+.county-result-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e7ecf2 0%, #d7dfea 100%);
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Vendors list — 3 columns, square-forward cards, spacing                  */
@@ -403,9 +411,14 @@
 
 .vendors-filters-sidebar {
   position: sticky;
-  top: 90px;
+  top: calc(var(--header-offset, 0px) + 32px) !important;
   width: 100%;
   min-width: 0;
+}
+
+/* Keep a guaranteed visual gap below sticky header on /vendors. */
+.vendors-results-layout .vendors-filters-sidebar {
+  top: calc(var(--header-offset, 0px) + 32px) !important;
 }
 
 .vendors-filters-card {

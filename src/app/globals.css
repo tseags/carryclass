@@ -444,11 +444,10 @@ img.county-hero-image-fill {
 }
 
 /*
-  /vendors “Find CCW Courses” hero H1 — must match /ca counties hero (ccw-directory.webflow.css h1).
+  /vendors “Find CCW Courses” hero H1 — also used on /ca counties page (same hero).
   Placed at end of this file so rules load after Tailwind; linked app-overrides.css alone can lose cascade.
 */
-.section-3.vendors-hero h1.vendors-hero-title,
-.section-3.counties-hero h1.vendors-hero-title {
+.section-3.vendors-hero h1.vendors-hero-title {
   font-size: 48px !important;
   font-weight: 700 !important;
   line-height: 1.208em !important;
@@ -456,129 +455,41 @@ img.county-hero-image-fill {
 }
 
 @media screen and (max-width: 767px) {
-  .section-3.vendors-hero h1.vendors-hero-title,
-  .section-3.counties-hero h1.vendors-hero-title {
+  .section-3.vendors-hero h1.vendors-hero-title {
     font-size: 38px !important;
   }
 }
 
 @media screen and (max-width: 479px) {
-  .section-3.vendors-hero h1.vendors-hero-title,
-  .section-3.counties-hero h1.vendors-hero-title {
+  .section-3.vendors-hero h1.vendors-hero-title {
     font-size: 32px !important;
   }
 }
 
-/* Hero breadcrumb — active segment white + bold (/vendors + /ca) */
-.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current,
-.section-3.counties-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
+/* Hero breadcrumb — active segment white + bold */
+.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
   color: #ffffff !important;
   font-weight: 700 !important;
 }
 
 /* Breadcrumb above H1 — globals/Tailwind were overriding app-overrides margins (runtime: gapPx 0, rowMarginBottom 0) */
-.section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title,
-.section-3.counties-hero .vendors-hero-breadcrumb-row--above-title {
+.section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title {
   margin-top: 0 !important;
   margin-bottom: 3rem !important;
 }
 
-/* /ca counties hero — two-line subtext white (vendors keeps rgba subtext in app-overrides) */
-.section-3.counties-hero .vendors-hero-description {
-  color: #ffffff !important;
-}
-
 /*
-  Dark navy hero background (/ca + /vendors) — must live here so it wins over linked app-overrides + Webflow.
-  Soft spotlight: base diagonal → inner highlight → broader blue → diagonal grid → light edge vignette; center 50% 50%.
+  Dark hero background (/vendors + /ca) — lives here so it wins over linked app-overrides + Webflow.
+  Final color is a near-black that matches the footer (#141413); the section-end rules in
+  app-overrides.css layer on the small amount of texture noise via ::before + ::after.
 */
-.section-3.counties-hero {
-  overflow: hidden !important;
-}
-
-.section-3.vendors-hero,
-.section-3.counties-hero {
+.section-3.vendors-hero {
   position: relative !important;
-  background-color: #121f38 !important;
-  background-image:
-    radial-gradient(
-      ellipse 125% 110% at 50% 48%,
-      rgba(8, 16, 32, 0) 0%,
-      rgba(12, 22, 42, 0.06) 48%,
-      rgba(22, 36, 58, 0.38) 100%
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.038) 2px,
-      rgba(255, 255, 255, 0.038) 3px
-    ),
-    repeating-linear-gradient(
-      52deg,
-      transparent,
-      transparent 3px,
-      rgba(255, 255, 255, 0.018) 3px,
-      rgba(255, 255, 255, 0.018) 4px
-    ),
-    radial-gradient(
-      ellipse 95% 72% at 50% 50%,
-      rgba(59, 130, 246, 0.14) 0%,
-      rgba(59, 130, 246, 0.05) 55%,
-      transparent 72%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 50% 50%,
-      rgba(186, 220, 255, 0.09) 0%,
-      rgba(147, 197, 253, 0.05) 48%,
-      transparent 74%
-    ),
-    linear-gradient(168deg, #1a3358 0%, #142a4a 42%, #152a48 72%, #182a46 100%) !important;
-  background-size:
-    100% 100%,
-    10px 10px,
-    7px 7px,
-    100% 100%,
-    100% 100%,
-    100% 100% !important;
-  background-repeat:
-    no-repeat,
-    repeat,
-    repeat,
-    no-repeat,
-    no-repeat,
-    no-repeat !important;
   padding-top: 72px !important;
   padding-bottom: 48px !important;
 }
 
-.section-3.vendors-hero::before,
-.section-3.counties-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-  opacity: 0.4;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-}
-
-/* Finer grain layer — reads as canvas/paper; sits above ::before */
-.section-3.vendors-hero::after,
-.section-3.counties-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.12'/%3E%3C/svg%3E");
-  opacity: 0.32;
-  pointer-events: none;
-  mix-blend-mode: soft-light;
-}
-
-.section-3.vendors-hero > *,
-.section-3.counties-hero > * {
+.section-3.vendors-hero > * {
   position: relative;
   z-index: 1;
 }
@@ -591,51 +502,6 @@ img.county-hero-image-fill {
 .section-3.vendors-hero .vendors-filter-bar-shell.card.filter-bar {
   padding: 1.5rem 2.5rem !important;
   box-sizing: border-box !important;
-}
-
-/*
-  /ca counties hero — same shell as /vendors: white card, thin slate frame; search input matches filter bar .input.
-*/
-.section-3.counties-hero .vendors-filter-bar-shell.card.filter-bar {
-  padding: 1.5rem 2.5rem !important;
-  box-sizing: border-box !important;
-  background-color: #ffffff !important;
-  border: 1px solid rgba(100, 116, 139, 0.45) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
-}
-
-.section-3.counties-hero .filter-bar .grid-3-columns.filters-grid.county-page {
-  max-width: none !important;
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.section-3.counties-hero .filter-bar form.w-form {
-  width: 100%;
-  min-width: 0;
-}
-
-.section-3.counties-hero .filter-bar form .flex-horizontal {
-  width: 100%;
-}
-
-.section-3.counties-hero .filter-bar form .flex-horizontal .input.icon-left-inside.search-btn-inside {
-  flex: 1 1 0%;
-  min-width: 0;
-  width: auto;
-  box-sizing: border-box;
-}
-
-.section-3.counties-hero .filter-bar .input {
-  border: 1px solid #64748b !important;
-  box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;
-  border-radius: 8px !important;
-}
-
-.section-3.counties-hero .filter-bar .input:hover {
-  border-color: #475569 !important;
-  box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
 }
 
 /*
