@@ -1,157 +1,98 @@
 import Link from "next/link";
-import Image from "next/image";
-import { getCountyDisplayName } from "@/data/counties";
 
-const FEATURED_COUNTIES = [
-  { slug: "los-angeles", image: "los-angeles.png" },
-  { slug: "san-diego", image: "San-Diego---2.png" },
-  { slug: "orange", image: "Orange-County.png" },
-  { slug: "riverside", image: "riverside.png" },
-  { slug: "san-bernardino", image: "san-bernardino.jpg" },
-  { slug: "sacramento", image: "sacramento-2.jpg" },
-] as const;
+type FooterLink = { label: string; href: string };
+
+const DIRECTORY_LINKS: FooterLink[] = [
+  { label: "Find courses", href: "/vendors" },
+  { label: "Browse counties", href: "/ca" },
+  { label: "Gear", href: "/gear" },
+  { label: "About", href: "/about" },
+];
+
+const STUDENT_LINKS: FooterLink[] = [
+  { label: "Initial courses", href: "/vendors" },
+  { label: "Renewal courses", href: "/vendors" },
+  { label: "Virtual options", href: "/vendors" },
+  { label: "FAQs", href: "/faqs" },
+];
+
+const INSTRUCTOR_LINKS: FooterLink[] = [
+  { label: "List your course", href: "/vendors/claim" },
+  { label: "Update listing", href: "/dashboard/vendor" },
+  { label: "Sign in", href: "/sign-in" },
+  { label: "Sign up", href: "/sign-up" },
+];
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: FooterLink[];
+}) {
+  return (
+    <div>
+      <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.5px] text-[#b0aea5]">
+        {title}
+      </div>
+      <ul className="space-y-[10px]">
+        {links.map(({ label, href }) => (
+          <li key={`${title}-${label}`}>
+            <Link
+              href={href}
+              className="site-footer__link text-sm leading-none"
+            >
+              {label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function Footer() {
   return (
-    <div>
-      <div className="container-default w-container">
-        <div className="footer-inner-wrapper">
-          <div className="inner-container _1122px center">
-            <div className="grid-4-columns footer-pages-grid">
-              <div>
-                <div className="text-300 footer-column-title">Pages</div>
-                <div className="grid-3-columns footer-main-pages-grid">
-                  <ul role="list" className="footer-list-wrapper">
-                    <li className="footer-list-item">
-                      <Link href="/" className="footer-link">
-                        Home
-                      </Link>
-                    </li>
-                    <li className="footer-list-item">
-                      <Link href="/vendors" className="footer-link">
-                        All Vendors
-                      </Link>
-                    </li>
-                    <li className="footer-list-item">
-                      <Link href="/ca" className="footer-link">
-                        Counties
-                      </Link>
-                    </li>
-                    <li className="footer-list-item">
-                      <Link href="/about" className="footer-link">
-                        About
-                      </Link>
-                    </li>
-                    <li className="footer-list-item">
-                      <Link href="/faqs" className="footer-link">
-                        FAQs
-                      </Link>
-                    </li>
-                    <li className="footer-list-item mg-bottom-0">
-                      <Link href="/vendors" className="footer-link">
-                        For Vendors
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div>
-                <div className="text-300 footer-column-title">Resources</div>
-                <ul role="list" className="footer-list-wrapper">
-                  <li className="footer-list-item">
-                    <Link href="/blog" className="footer-link">
-                      Blog
-                    </Link>
-                  </li>
-                  <li className="footer-list-item">
-                    <Link href="/gear" className="footer-link">
-                      Gear
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <div className="text-300 footer-column-title">
-                  Featured Counties | <Link href="/ca">View all</Link>
-                </div>
-                <div className="grid-1-column gap-row-16px">
-                  {FEATURED_COUNTIES.slice(0, 3).map(({ slug, image }) => (
-                    <Link
-                      key={slug}
-                      href={`/ca/${slug}`}
-                      className="footer-link---image-left w-inline-block"
-                    >
-                      <div className="link-item---image-wrapper border-radius-6px">
-                        <img
-                          src={`/images/${image}`}
-                          loading="lazy"
-                          alt=""
-                          className="link-item---image"
-                        />
-                      </div>
-                      <div className="grid-1-column gap-row-6px">
-                        <div className="link-item-text---hover-secondary-2 text-200 bold">
-                          {getCountyDisplayName(slug)} County
-                        </div>
-                        <div className="text-200 color-neutral-600">
-                          View CCW Classes
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="grid-1-column gap-row-16px">
-                  {FEATURED_COUNTIES.slice(3, 6).map(({ slug, image }) => (
-                    <Link
-                      key={slug}
-                      href={`/ca/${slug}`}
-                      className="footer-link---image-left w-inline-block"
-                    >
-                      <div className="link-item---image-wrapper border-radius-6px">
-                        <img
-                          src={`/images/${image}`}
-                          loading="lazy"
-                          alt=""
-                          className="link-item---image"
-                        />
-                      </div>
-                      <div className="grid-1-column gap-row-6px">
-                        <div className="link-item-text---hover-secondary-2 text-200 bold">
-                          {getCountyDisplayName(slug)} County
-                        </div>
-                        <div className="text-200 color-neutral-600">
-                          View CCW Classes
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+    <footer className="site-footer border-t border-[#30302e] bg-[#141413] px-6 pb-10 pt-16">
+      <div className="mx-auto w-full max-w-[1200px]">
+        <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
+          <div className="md:pr-6">
+            <Link
+              href="/"
+              aria-label="CCW Directory"
+              className="site-footer__wordmark inline-flex items-baseline font-serif text-[26px] leading-none tracking-[-0.01em]"
+            >
+              <span className="font-medium">CCW</span>
+              <span className="site-footer__wordmark-accent ml-[0.35em] font-normal">
+                Directory
+              </span>
+            </Link>
+            <p className="mt-4 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
+              California&apos;s most complete directory of sheriff-approved CCW
+              training courses and instructors.
+            </p>
           </div>
-          <div className="grid-2-columns footer---logo-and-text-grid">
-            <div>
-              <Link href="/" className="logo-link w-nav-brand">
-                <img
-                  src="/images/CCW-Logo---Transparent.png"
-                  loading="lazy"
-                  width={223}
-                  sizes="(max-width: 479px) 93vw, 223px"
-                  alt="CCW Courses"
-                />
-              </Link>
-            </div>
-            <div className="color-neutral-800">
-              © 2025 ccwclassesca.com · All rights reserved ·{" "}
-              <Link href="/terms-conditions">Terms & Conditions</Link> ·{" "}
-              <Link href="/terms-conditions">Privacy Policy</Link> ·{" "}
-              <Link href="/terms-conditions">User Policy</Link>
-            </div>
-          </div>
+
+          <FooterColumn title="Directory" links={DIRECTORY_LINKS} />
+          <FooterColumn title="For students" links={STUDENT_LINKS} />
+          <FooterColumn title="Instructors" links={INSTRUCTOR_LINKS} />
+        </div>
+
+        <div className="flex flex-col items-start justify-between gap-3 border-t border-[#30302e] pt-6 text-[13px] text-[#87867f] sm:flex-row sm:flex-wrap sm:items-center">
+          <p>&copy; 2026 CCW Directory. All rights reserved.</p>
+          <nav className="flex items-center gap-6">
+            <Link href="/terms-conditions" className="site-footer__link">
+              Privacy
+            </Link>
+            <Link href="/terms-conditions" className="site-footer__link">
+              Terms
+            </Link>
+            <Link href="/terms-conditions" className="site-footer__link">
+              Accessibility
+            </Link>
+          </nav>
         </div>
       </div>
-    </div>
+    </footer>
   );
 }

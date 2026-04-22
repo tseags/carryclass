@@ -485,14 +485,63 @@
 /* Home page section background overrides                                     */
 /* -------------------------------------------------------------------------- */
 .section-2 {
-  background-color: #f9f7f2 !important;
+  background-color: #f2efe8 !important;
 }
 
 /* Home hero: visible surface is the inner card, not only the section wrapper */
 .section-2 .top-section-card.home {
-  background-color: #f9f7f2 !important;
+  background-color: #f2efe8 !important;
 }
 
 .section.bg-neutral-200.home-page.popular.popular-vendors-redesign {
   background-color: #fafafa !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header background consistency (desktop + mobile menu states)               */
+/* -------------------------------------------------------------------------- */
+.header-wrapper,
+.header-wrapper.w-nav,
+.header-nav-menu-wrapper,
+.header-wrapper .header-nav-menu-wrapper,
+.header-wrapper [data-nav-menu-open] {
+  background-color: #fefcf9 !important;
+}
+
+/* Primary CTA unification: near-black button with white label */
+.btn-primary,
+a.btn-primary,
+button.btn-primary {
+  background-color: #141413 !important;
+  color: #ffffff !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Site footer (src/components/Footer.tsx) — neutralize Webflow anchor styles */
+/* so the dark, minimal column layout renders with its intended palette.      */
+/* -------------------------------------------------------------------------- */
+.site-footer a,
+.site-footer a:hover,
+.site-footer a:focus,
+.site-footer a:visited {
+  text-decoration: none;
+  background-image: none;
+  box-shadow: none;
+}
+.site-footer a {
+  color: inherit;
+}
+.site-footer .site-footer__wordmark {
+  color: #faf9f5;
+}
+.site-footer .site-footer__wordmark-accent {
+  color: #d97757;
+}
+.site-footer .site-footer__link {
+  color: #87867f;
+  transition: color 150ms ease;
+}
+.site-footer .site-footer__link:hover,
+.site-footer .site-footer__link:focus {
+  color: #b0aea5;
 }
