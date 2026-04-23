@@ -75,7 +75,7 @@ export default async function HomePage() {
           <div className="popular-vendors-redesign__header">
             <div>
               <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
-              <h2 className="mg-bottom-0">Popular CCW vendors</h2>
+              <h2 className="mg-bottom-0">Popular CCW courses</h2>
             </div>
             <div className="popular-vendors-redesign__header-btn">
               <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
@@ -116,7 +116,7 @@ export default async function HomePage() {
             <div className="by-the-numbers__copy">
               <div className="by-the-numbers__eyebrow">By the numbers</div>
               <h2 className="by-the-numbers__heading">
-                California&apos;s CCW vendors,
+                California&apos;s CCW courses,
                 <br />
                 all in one place.
               </h2>
