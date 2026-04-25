@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { VendorCardWebflow } from "@/components/VendorCardWebflow";
+import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
@@ -36,6 +36,17 @@ type AvailableCourse = {
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function getReviewMeta(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  const ratingPool = ["4.6", "4.7", "4.8", "4.9"];
+  const rating = ratingPool[hash % ratingPool.length];
+  const reviews = `${(hash % 230) + 24} reviews`;
+  return { rating, reviews };
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -320,7 +331,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   id="vendor-tab-panel-reviews"
                   role="tabpanel"
                   aria-labelledby="vendor-tab-reviews"
-                  className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 sm:px-8 sm:pt-8"
+                  className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 text-left sm:px-8 sm:pt-8"
                 >
                   <VendorReviewsSection vendor={vendor} variant="profile-tab" />
                 </section>
@@ -331,7 +342,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   id="vendor-tab-panel-what-to-bring"
                   role="tabpanel"
                   aria-labelledby="vendor-tab-what-to-bring"
-                  className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 sm:px-8 sm:pt-8"
+                  className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 text-left sm:px-8 sm:pt-8"
                 >
                   <div>
                     <h2 className="text-[50px] font-semibold leading-[1.08] tracking-[-0.02em] text-[#1f1f1d] sm:text-[56px]">What to bring to class</h2>
@@ -339,11 +350,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       All students must arrive with the following gear. Rental equipment may be available, contact the instructor in advance.
                     </p>
                   </div>
-                  <ul className="m-0 list-none space-y-3 p-0">
+                  <ul className="vendor-what-to-bring-list m-0 w-full list-none space-y-3 p-0 text-left">
                     {WHAT_TO_BRING_ITEMS.map((item) => (
                       <li
                         key={item}
-                        className="flex items-center gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-5 py-3.5 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:px-6"
+                        className="vendor-what-to-bring-card flex w-full items-center justify-start gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-5 py-3.5 text-left shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:px-6"
                       >
                         <span
                           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f6efeb] text-[#d27b5d]"
@@ -367,13 +378,30 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     <div className="mt-5 space-y-4">
                       {vendor.address && (
                         <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                          <span className="mt-1.5" aria-hidden>◌</span>
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 21s7-6.25 7-11a7 7 0 10-14 0c0 4.75 7 11 7 11z"
+                              />
+                              <circle cx="12" cy="10" r="2.5" />
+                            </svg>
+                          </span>
                           <span>{vendor.address}</span>
                         </p>
                       )}
                       {vendor.phone && (
                         <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                          <span className="mt-1.5" aria-hidden>◌</span>
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 5.75A1.75 1.75 0 016.75 4h1.53c.74 0 1.39.5 1.59 1.2l.74 2.61a1.75 1.75 0 01-.49 1.74l-1.02.94a14.2 14.2 0 005.02 5.02l.94-1.02c.46-.5 1.17-.7 1.84-.49l2.61.74c.7.2 1.2.84 1.2 1.59v1.53A1.75 1.75 0 0118.25 20h-1.5C10.26 20 4 13.74 4 6.75v-1z"
+                              />
+                            </svg>
+                          </span>
                           <a href={`tel:${vendor.phone}`} className="hover:underline">
                             {vendor.phone}
                           </a>
@@ -381,7 +409,14 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       )}
                       {vendor.website && (
                         <p className="flex items-start gap-2.5 text-[15px] leading-[1.45]">
-                          <span className="mt-1.5 text-[#595853]" aria-hidden>◌</span>
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <circle cx="12" cy="12" r="8" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5c2.2 2.2 2.2 12.8 0 15" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5c-2.2 2.2-2.2 12.8 0 15" />
+                            </svg>
+                          </span>
                           <a
                             href={vendor.website}
                             target="_blank"
@@ -422,24 +457,42 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
           </div>
         </section>
 
-        {/* More approved vendors - full-width grey band; vendors-list-section enables 3-col vendors-grid (app-overrides) */}
-        <section className="vendors-list-section relative left-1/2 -translate-x-1/2 w-screen mt-16 bg-zinc-100 py-8 sm:py-10">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold text-zinc-800">
-                More Approved Vendors
-              </h2>
-              <Link
-                href="/vendors"
-                className="btn-primary bg-secondary-2 small w-button"
-              >
-                View all
-              </Link>
+        <section
+          className="section home-page popular popular-vendors-redesign relative left-1/2 -translate-x-1/2 w-screen"
+          aria-label="More CCW Courses"
+        >
+          <div className="container-default w-container">
+            <div className="popular-vendors-redesign__header">
+              <div>
+                <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
+                <h2 className="mg-bottom-0">More CCW Courses</h2>
+              </div>
+              <div className="popular-vendors-redesign__header-btn">
+                <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
+                  View All Vendors
+                </Link>
+              </div>
             </div>
-            <div role="list" className="vendors-grid mt-6">
-              {otherVendors.map((v) => (
-                <VendorCardWebflow key={v.id} vendor={v} />
-              ))}
+            <div className="popular-vendors-redesign__grid">
+              {otherVendors.map((v) => {
+                const reviewMeta = getReviewMeta(v.id);
+                const servedCounty = v.countiesServed[0]
+                  ? getCountyDisplayName(v.countiesServed[0])
+                  : getCountyDisplayName(v.county);
+                const description =
+                  v.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+
+                return (
+                  <PopularVendorCard
+                    key={v.id}
+                    vendor={v}
+                    ratingText={reviewMeta.rating}
+                    reviewsText={reviewMeta.reviews}
+                    servedCounty={servedCounty}
+                    description={description}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

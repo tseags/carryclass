@@ -5,6 +5,7 @@ import { GearCtaSection } from "@/components/GearCtaSection";
 import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
+import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
 import { getAllVendors } from "@/lib/vendors-db";
 import { filterVendors } from "@/lib/filter-vendors";
@@ -34,6 +35,7 @@ function getReviewMeta(seed: string) {
 
 export default async function VendorsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;
+
   const filters = {
     county: resolved.county as string | undefined,
     city: resolved.city as string | undefined,
@@ -45,6 +47,17 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   };
 
   const allVendors = await getAllVendors();
+  const cityOptions = Array.from(
+    new Set(
+      allVendors
+        .filter((vendor) =>
+          filters.county
+            ? vendor.countiesServed.some((served) => served.toLowerCase() === filters.county!.toLowerCase())
+            : true
+        )
+        .map((vendor) => vendor.city)
+    )
+  ).sort((a, b) => a.localeCompare(b));
   let vendors = filterVendors(allVendors, filters);
   const sort = resolved.sort as string | undefined;
   if (sort === "name") {
@@ -60,6 +73,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   }
 
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
+  const topVendorIds = new Set(vendors.slice(0, 3).map((vendor) => vendor.id));
+  const nonTopVendors = vendors.filter((vendor) => !topVendorIds.has(vendor.id));
+  const fallbackVendors = allVendors.filter(
+    (vendor) => !topVendorIds.has(vendor.id) && !nonTopVendors.some((candidate) => candidate.id === vendor.id)
+  );
+  const moreApprovedVendors = [...nonTopVendors, ...fallbackVendors].slice(0, 3);
 
   const hasFilter = Boolean(
     filters.county ||
@@ -134,17 +153,15 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   />
                 </label>
 
-                <label className="vendors-filter-group">
-                  <span>County</span>
-                  <select name="county" defaultValue={filters.county ?? ""}>
-                    <option value="">Any county</option>
-                    {CALIFORNIA_COUNTIES.map((county) => (
-                      <option key={county} value={county}>
-                        {getCountyDisplayName(county)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <VendorsCountyCityDropdowns
+                  initialCounty={filters.county}
+                  initialCity={filters.city}
+                  counties={CALIFORNIA_COUNTIES.map((county) => ({
+                    value: county,
+                    label: getCountyDisplayName(county),
+                  }))}
+                  cities={cityOptions}
+                />
 
                 <label className="vendors-filter-group">
                   <span>Course type</span>
@@ -181,7 +198,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                 </label>
 
                 {sort && <input type="hidden" name="sort" value={sort} />}
-                {filters.city && <input type="hidden" name="city" value={filters.city} />}
                 <input type="hidden" name="view" value={view} />
                 <button type="submit" className="btn-primary w-button vendors-filters-submit">
                   Apply filters
@@ -321,6 +337,45 @@ export default async function VendorsPage({ searchParams }: PageProps) {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="section home-page popular popular-vendors-redesign" aria-label="More approved vendors">
+        <div className="container-default w-container">
+          <div className="popular-vendors-redesign__header">
+            <div>
+              <div className="popular-vendors-redesign__eyebrow">Approved instructors</div>
+              <h2 className="mg-bottom-0">More Approved Vendors</h2>
+            </div>
+            <div className="popular-vendors-redesign__header-btn">
+              <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
+                View All Vendors
+              </Link>
+            </div>
+          </div>
+          {moreApprovedVendors.length > 0 && (
+            <div className="popular-vendors-redesign__grid">
+              {moreApprovedVendors.map((vendor) => {
+                const servedCounty = vendor.countiesServed[0]
+                  ? getCountyDisplayName(vendor.countiesServed[0])
+                  : getCountyDisplayName(vendor.county);
+                const description =
+                  vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+                const reviewMeta = getReviewMeta(vendor.id);
+
+                return (
+                  <PopularVendorCard
+                    key={vendor.id}
+                    vendor={vendor}
+                    ratingText={reviewMeta.rating}
+                    reviewsText={reviewMeta.reviews}
+                    servedCounty={servedCounty}
+                    description={description}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
