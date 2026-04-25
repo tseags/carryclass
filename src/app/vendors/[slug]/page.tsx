@@ -167,7 +167,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
               Vendors
             </Link>
             <span className="mx-2 vendor-profile-hero-breadcrumb-separator !text-[#c96442]">/</span>
-            <span className="vendor-profile-hero-breadcrumb-current font-medium !text-[#c96442]">{vendor.name}</span>
+            <span className="vendor-profile-hero-breadcrumb-current !font-bold !text-[#c96442]">{vendor.name}</span>
           </nav>
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-10 lg:items-stretch">
             <div className="flex flex-col justify-center">
