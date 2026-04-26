@@ -430,27 +430,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-[#ebe9e2] bg-white p-6 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:p-7">
-                    <h3 className="text-[38px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[42px]">Verification</h3>
-                    <ul className="mt-5 m-0 list-none space-y-3 p-0">
-                      <li className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                        <span className="mt-1.5" aria-hidden>◌</span>
-                        Sheriff-approved {getCountyDisplayName(vendor.county)} County
-                      </li>
-                      <li className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                        <span className="mt-1.5" aria-hidden>◌</span>
-                        Active CCW instructor credentials
-                      </li>
-                      <li className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                        <span className="mt-1.5" aria-hidden>◌</span>
-                        Background checked
-                      </li>
-                      <li className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                        <span className="mt-1.5" aria-hidden>◌</span>
-                        Student reviews verified
-                      </li>
-                    </ul>
-                  </section>
                 </div>
               </div>
             </div>
@@ -464,7 +443,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
           <div className="container-default w-container">
             <div className="popular-vendors-redesign__header">
               <div>
-                <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
                 <h2 className="mg-bottom-0">More CCW Courses</h2>
               </div>
               <div className="popular-vendors-redesign__header-btn">
@@ -490,6 +468,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     reviewsText={reviewMeta.reviews}
                     servedCounty={servedCounty}
                     description={description}
+                    showFeaturedBadge={false}
                   />
                 );
               })}

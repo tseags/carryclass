@@ -7,6 +7,7 @@ interface PopularVendorCardProps {
   reviewsText: string;
   servedCounty: string;
   description: string;
+  showFeaturedBadge?: boolean;
 }
 
 export function PopularVendorCard({
@@ -15,10 +16,11 @@ export function PopularVendorCard({
   reviewsText,
   servedCounty,
   description,
+  showFeaturedBadge = true,
 }: PopularVendorCardProps) {
   return (
     <Link href={`/vendors/${vendor.slug}`} className="popular-vendors-redesign__card">
-      <div className="popular-vendors-redesign__featured">Featured</div>
+      {showFeaturedBadge ? <div className="popular-vendors-redesign__featured">Featured</div> : null}
       <div className="popular-vendors-redesign__title-row">
         <h3 className="popular-vendors-redesign__title">{vendor.name}</h3>
       </div>
