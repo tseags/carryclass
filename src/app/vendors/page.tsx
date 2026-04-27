@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { GearCtaSection } from "@/components/GearCtaSection";
-import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
 import { getAllVendors } from "@/lib/vendors-db";
 import { filterVendors } from "@/lib/filter-vendors";
+import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -42,11 +41,15 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     classType: resolved.classType as "initial" | "renewal" | "both" | undefined,
     format: resolved.format as "in-person" | "online" | "hybrid" | undefined,
     category: resolved.category as "initial" | "renewal" | "add-gun" | "online" | undefined,
+    savedOnly: resolved.savedOnly === "1",
     priceMax: resolved.priceMax ? Number(resolved.priceMax) : undefined,
     search: resolved.search as string | undefined,
   };
 
   const allVendors = await getAllVendors();
+  const allSavedIds = new Set(
+    await getCurrentUserSavedVendorIds(allVendors.map((vendor) => vendor.id))
+  );
   const cityOptions = Array.from(
     new Set(
       allVendors
@@ -59,6 +62,9 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     )
   ).sort((a, b) => a.localeCompare(b));
   let vendors = filterVendors(allVendors, filters);
+  if (filters.savedOnly) {
+    vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
+  }
   const sort = resolved.sort as string | undefined;
   if (sort === "name") {
     vendors = [...vendors].sort((a, b) => a.name.localeCompare(b.name));
@@ -73,12 +79,11 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   }
 
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
-  const topVendorIds = new Set(vendors.slice(0, 3).map((vendor) => vendor.id));
-  const nonTopVendors = vendors.filter((vendor) => !topVendorIds.has(vendor.id));
-  const fallbackVendors = allVendors.filter(
-    (vendor) => !topVendorIds.has(vendor.id) && !nonTopVendors.some((candidate) => candidate.id === vendor.id)
+  const savedIds = new Set(
+    [...allSavedIds].filter((id) =>
+      vendors.some((vendor) => vendor.id === id)
+    )
   );
-  const moreApprovedVendors = [...nonTopVendors, ...fallbackVendors].slice(0, 3);
 
   const hasFilter = Boolean(
     filters.county ||
@@ -86,6 +91,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
       filters.classType ||
       filters.format ||
       filters.category ||
+      filters.savedOnly ||
       filters.priceMax != null ||
       (filters.search && filters.search.trim().length > 0)
   );
@@ -98,6 +104,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     if (filters.classType) params.set("classType", filters.classType);
     if (filters.format) params.set("format", filters.format);
     if (filters.category) params.set("category", filters.category);
+    if (filters.savedOnly) params.set("savedOnly", "1");
     if (filters.priceMax != null) params.set("priceMax", String(filters.priceMax));
     if (sort) params.set("sort", sort);
     params.set("view", nextView);
@@ -180,6 +187,14 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                     <option value="in-person">In person</option>
                     <option value="online">Online</option>
                     <option value="hybrid">Hybrid</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Saved</span>
+                  <select name="savedOnly" defaultValue={filters.savedOnly ? "1" : "0"}>
+                    <option value="0">All listings</option>
+                    <option value="1">Saved only</option>
                   </select>
                 </label>
 
@@ -273,6 +288,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   {filters.classType && (
                     <input type="hidden" name="classType" value={filters.classType} />
                   )}
+                  {filters.savedOnly && <input type="hidden" name="savedOnly" value="1" />}
                   {filters.format && <input type="hidden" name="format" value={filters.format} />}
                   {filters.priceMax != null && (
                     <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
@@ -311,13 +327,18 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                         reviewsText={reviewMeta.reviews}
                         servedCounty={servedCounty}
                         description={description}
+                        initialSaved={savedIds.has(vendor.id)}
                       />
                     );
                   })}
                 </div>
                 {vendors.length === 0 && (
                   <div className="empty-state w-dyn-empty">
-                    <div>No instructors match your search. Try adjusting your filters.</div>
+                    <div>
+                      {filters.savedOnly && allSavedIds.size === 0
+                        ? "No saved listings yet. Sign in and tap hearts to save vendors."
+                        : "No instructors match your search. Try adjusting your filters."}
+                    </div>
                   </div>
                 )}
               </>
@@ -339,48 +360,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
           </div>
         </div>
       </section>
-
-      <section className="section home-page popular popular-vendors-redesign" aria-label="More approved vendors">
-        <div className="container-default w-container">
-          <div className="popular-vendors-redesign__header">
-            <div>
-              <div className="popular-vendors-redesign__eyebrow">Approved instructors</div>
-              <h2 className="mg-bottom-0">More Approved Vendors</h2>
-            </div>
-            <div className="popular-vendors-redesign__header-btn">
-              <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
-                View All Vendors
-              </Link>
-            </div>
-          </div>
-          {moreApprovedVendors.length > 0 && (
-            <div className="popular-vendors-redesign__grid">
-              {moreApprovedVendors.map((vendor) => {
-                const servedCounty = vendor.countiesServed[0]
-                  ? getCountyDisplayName(vendor.countiesServed[0])
-                  : getCountyDisplayName(vendor.county);
-                const description =
-                  vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
-                const reviewMeta = getReviewMeta(vendor.id);
-
-                return (
-                  <PopularVendorCard
-                    key={vendor.id}
-                    vendor={vendor}
-                    ratingText={reviewMeta.rating}
-                    reviewsText={reviewMeta.reviews}
-                    servedCounty={servedCounty}
-                    description={description}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <GearCtaSection />
-      <HomeNewsletter />
 
       <Footer />
     </>
