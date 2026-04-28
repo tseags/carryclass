@@ -1037,6 +1037,27 @@ img.county-hero-image-fill {
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
+.home-testimonials__submit-cta {
+  min-height: 40px;
+}
+.home-testimonials__cta-row {
+  margin-top: 48px;
+  display: flex;
+  justify-content: center;
+}
+.home-testimonials__submit-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.3);
+}
+.home-testimonials__status {
+  margin: 0 auto 18px;
+  max-width: 1040px;
+  color: #2f5135;
+  font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
 .home-testimonials__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1105,6 +1126,119 @@ img.county-hero-image-fill {
   line-height: 1.4;
 }
 
+.submit-entry-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 20, 19, 0.58);
+}
+.submit-entry-modal {
+  position: relative;
+  width: min(100%, 640px);
+  max-height: min(92vh, 760px);
+  overflow-y: auto;
+  border-radius: 14px;
+  border: 1px solid #e8e6dc;
+  background: #ffffff;
+  box-shadow: 0 22px 56px rgba(20, 20, 19, 0.2);
+  padding: 28px 24px 22px;
+}
+.submit-entry-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #ddd9cc;
+  border-radius: 999px;
+  background: #fff;
+  color: #3f3f46;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+}
+.submit-entry-modal__close:hover {
+  border-color: #c96442;
+  color: #141413;
+}
+.submit-entry-modal__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.3);
+}
+.submit-entry-modal__title {
+  margin: 0 40px 10px 0;
+  color: #141413;
+  font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(22px, 2.5vw, 30px);
+  line-height: 1.2;
+}
+.submit-entry-modal__helper {
+  margin: 0 0 18px;
+  color: #5e5d59;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.submit-entry-modal__form {
+  display: grid;
+  gap: 12px;
+}
+.submit-entry-modal__field {
+  display: grid;
+  gap: 6px;
+}
+.submit-entry-modal__field > span {
+  color: #3f3f46;
+  font-size: 12px;
+  font-weight: 600;
+}
+.submit-entry-modal__field input,
+.submit-entry-modal__field select,
+.submit-entry-modal__field textarea {
+  width: 100%;
+  border: 1px solid #d7d4cb;
+  border-radius: 10px;
+  background: #fff;
+  color: #141413;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.submit-entry-modal__field input:focus,
+.submit-entry-modal__field select:focus,
+.submit-entry-modal__field textarea:focus {
+  outline: none;
+  border-color: #c96442;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.14);
+}
+.submit-entry-modal__field input[aria-invalid="true"],
+.submit-entry-modal__field select[aria-invalid="true"],
+.submit-entry-modal__field textarea[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+.submit-entry-modal__error {
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.submit-entry-modal__actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.submit-entry-modal__actions .btn-primary {
+  padding: 12px 22px;
+}
+.submit-entry-modal__actions .w-button[disabled] {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
 @media (max-width: 991px) {
   .home-testimonials {
     padding: 64px 0;
@@ -1113,6 +1247,12 @@ img.county-hero-image-fill {
     grid-template-columns: 1fr;
     gap: 16px;
     max-width: 560px;
+  }
+  .submit-entry-modal {
+    padding: 24px 18px 20px;
+  }
+  .submit-entry-modal__actions {
+    flex-wrap: wrap;
   }
 }
 
