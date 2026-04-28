@@ -95,8 +95,8 @@ function TimelineReportsList({
   return (
     <div className="overflow-hidden rounded-xl border border-[#cfc7b8] bg-white">
       {variant === "inline" ? (
-        <div className="flex items-center justify-between gap-3 border-b border-[#edeae3] bg-[#f0eee7] px-4 pb-2.5 pt-3 sm:px-5">
-          <p className="inline-flex items-center leading-none text-[11px] font-semibold uppercase tracking-[0.11em] text-zinc-700">
+        <div className="flex items-center justify-between gap-3 border-b border-[#edeae3] bg-[#f0eee7] px-4 py-3 sm:px-5">
+          <p className="!m-0 inline-flex items-center leading-none text-[11px] font-semibold uppercase tracking-[0.11em] text-[#c86442]">
             Recent submissions
           </p>
           <button
@@ -247,11 +247,6 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
     [processes, selected]
   );
 
-  const totalSubmissions = useMemo(
-    () => processes.reduce((acc, p) => acc + p.submissionCount, 0),
-    [processes]
-  );
-
   const activeLastSubmitted = active?.lastSubmittedAt ?? lastTimelineSubmittedCounty;
   const timelineEntries = useMemo(() => active?.submissions ?? [], [active]);
   const inlineEntries = useMemo(() => timelineEntries.slice(0, 2), [timelineEntries]);
@@ -287,12 +282,9 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
         <div className="mx-auto py-10 sm:py-12 lg:py-14">
           <div className="grid gap-8 md:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] md:items-start lg:gap-9">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#bb7a5f]">
-                Self-reported
-              </p>
               <h2
                 id="ccw-timeline-heading"
-                className="mt-2 text-[clamp(1.8rem,2.5vw,2.85rem)] font-medium leading-[1.06] text-[#1f1f1e]"
+                className="text-[clamp(1.8rem,2.5vw,2.85rem)] font-medium leading-[1.06] text-[#1f1f1e]"
               >
                 <span className="block">{countyDisplayName} County</span>
                 <span className="block">CCW Timelines</span>
@@ -308,18 +300,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 onClick={openSubmitModal}
               >
                 Submit your timeline
-                <span aria-hidden>→</span>
               </button>
-              <dl className="mt-10 grid max-w-[260px] grid-cols-[1fr,auto] gap-y-2 text-sm text-zinc-600">
-                <dt>Submissions</dt>
-                <dd className="text-right text-zinc-700">{totalSubmissions}</dd>
-                <dt>Last updated</dt>
-                <dd className="text-right text-zinc-700">
-                  {formatShortDate(lastTimelineSubmittedCounty)}
-                </dd>
-                <dt>Verification</dt>
-                <dd className="text-right text-zinc-700">Email-confirmed</dd>
-              </dl>
             </div>
 
             <div ref={feedRef} className="min-w-0 space-y-4 sm:space-y-5">
@@ -359,8 +340,8 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               >
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-5">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                      Median wait
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#c86442]">
+                      Median wait time
                     </p>
                     <div className="mt-1.5 flex items-end gap-2">
                       <span className="text-[clamp(3.05rem,7vw,4.5rem)] font-medium leading-[0.86] tracking-tight text-zinc-900">
