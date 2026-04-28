@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { SmoothScrollTo } from "@/components/SmoothScrollTo";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
+import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import {
   getCountyDisplayName,
   isValidCountySlug,
@@ -72,6 +73,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   };
 
   const sort = resolved.sort as string | undefined;
+  const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
 
   const allSavedIds = new Set(
     await getCurrentUserSavedVendorIds(allVendors.map((vendor) => vendor.id))
@@ -117,6 +119,19 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   );
 
   const countyPath = `/ca/${county}`;
+  const buildViewHref = (nextView: "list" | "map") => {
+    const params = new URLSearchParams();
+    if (filters.search) params.set("search", filters.search);
+    if (filters.city) params.set("city", filters.city);
+    if (filters.classType) params.set("classType", filters.classType);
+    if (filters.savedOnly) params.set("savedOnly", "1");
+    if (filters.format) params.set("format", filters.format);
+    if (filters.priceMax != null) params.set("priceMax", String(filters.priceMax));
+    if (sort) params.set("sort", sort);
+    params.set("view", nextView);
+    const qs = params.toString();
+    return qs ? `${countyPath}?${qs}` : countyPath;
+  };
 
   return (
     <>
@@ -139,7 +154,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
               <h1 className="county-h1">{displayName} County CCW Training</h1>
               <p className="county-sub-heading">
                 Find <strong>sheriff-approved CCW instructors</strong> and{" "}
-                <strong>concealed carry training vendors</strong> in {displayName} County. All
+                <strong>concealed carry training courses</strong> in {displayName} County. All
                 instructors listed below are approved by the{" "}
                 <strong>County Sheriff&apos;s Office</strong> to provide valid training
                 certificates for new applicants and renewals. Compare pricing, locations, and
@@ -150,7 +165,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   targetId="county-vendors"
                   className="btn-primary bg-secondary-2 small w-button"
                 >
-                  View Vendors
+                  View Courses
                 </SmoothScrollTo>
                 <SmoothScrollTo
                   targetId="ccw-timeline"
@@ -258,6 +273,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   </select>
                 </label>
 
+                <input type="hidden" name="view" value={view} />
                 {sort ? <input type="hidden" name="sort" value={sort} /> : null}
                 <button type="submit" className="btn-primary w-button vendors-filters-submit">
                   Apply filters
@@ -275,6 +291,61 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
             <div className="vendors-results-header">
               <h2>{vendors.length} instructors in {displayName} County</h2>
               <div className="vendors-results-header-controls">
+                <div
+                  className="vendors-view-toggle"
+                  role="group"
+                  aria-label="Choose how to view results"
+                >
+                  <Link
+                    href={buildViewHref("list")}
+                    className="vendors-view-toggle__btn"
+                    aria-pressed={view === "list"}
+                    aria-label="View results as a list"
+                    scroll={false}
+                  >
+                    <svg
+                      className="vendors-view-toggle__icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 3.5h12M2 8h12M2 12.5h12"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span>List</span>
+                  </Link>
+                  <Link
+                    href={buildViewHref("map")}
+                    className="vendors-view-toggle__btn"
+                    aria-pressed={view === "map"}
+                    aria-label="View results on a map"
+                    scroll={false}
+                  >
+                    <svg
+                      className="vendors-view-toggle__icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 1 0-9 0C3.5 9.8 8 14 8 14Z"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="8" cy="6.5" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+                    </svg>
+                    <span>Map</span>
+                  </Link>
+                </div>
                 <form action={countyPath} method="get" className="vendors-sort-group">
                   {filters.search ? <input type="hidden" name="search" value={filters.search} /> : null}
                   {filters.city ? <input type="hidden" name="city" value={filters.city} /> : null}
@@ -286,6 +357,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   {filters.priceMax != null ? (
                     <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
                   ) : null}
+                  <input type="hidden" name="view" value={view} />
                   <span>Sort</span>
                   <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
                     <option value="featured">Featured first</option>
@@ -301,48 +373,64 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
               </div>
             </div>
 
-            {vendors.length > 0 ? (
-              <div className="popular-vendors-redesign__grid vendors-results-grid">
-                {vendors.map((vendor) => {
-                  const servedCounty = vendor.countiesServed[0]
-                    ? getCountyDisplayName(vendor.countiesServed[0])
-                    : getCountyDisplayName(vendor.county);
-                  const description =
-                    vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
-                  const reviewMeta = getReviewMeta(vendor.id);
-                  return (
-                    <PopularVendorCard
-                      key={vendor.id}
-                      vendor={vendor}
-                      ratingText={reviewMeta.rating}
-                      reviewsText={reviewMeta.reviews}
-                      servedCounty={servedCounty}
-                      description={description}
-                      showFeaturedBadge={Boolean(vendor.featured)}
-                      initialSaved={savedIds.has(vendor.id)}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="empty-state w-dyn-empty">
-                <div>
-                  {allVendors.length === 0 ? (
-                    <>No instructors found in this county yet.</>
-                  ) : filters.savedOnly && allSavedIds.size === 0 ? (
-                    <>No saved listings yet. Sign in and tap hearts to save vendors.</>
-                  ) : hasActiveFilters ? (
-                    <>
-                      No instructors match your filters. Try adjusting your criteria or{" "}
-                      <Link href={countyPath} className="font-medium underline">
-                        clear filters
-                      </Link>
-                      .
-                    </>
-                  ) : (
-                    <>No instructors match your search.</>
-                  )}
+            {view === "list" ? (
+              vendors.length > 0 ? (
+                <div className="popular-vendors-redesign__grid vendors-results-grid">
+                  {vendors.map((vendor) => {
+                    const servedCounty = vendor.countiesServed[0]
+                      ? getCountyDisplayName(vendor.countiesServed[0])
+                      : getCountyDisplayName(vendor.county);
+                    const description =
+                      vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+                    const reviewMeta = getReviewMeta(vendor.id);
+                    return (
+                      <PopularVendorCard
+                        key={vendor.id}
+                        vendor={vendor}
+                        ratingText={reviewMeta.rating}
+                        reviewsText={reviewMeta.reviews}
+                        servedCounty={servedCounty}
+                        description={description}
+                        showFeaturedBadge={Boolean(vendor.featured)}
+                        initialSaved={savedIds.has(vendor.id)}
+                      />
+                    );
+                  })}
                 </div>
+              ) : (
+                <div className="empty-state w-dyn-empty">
+                  <div>
+                    {allVendors.length === 0 ? (
+                      <>No instructors found in this county yet.</>
+                    ) : filters.savedOnly && allSavedIds.size === 0 ? (
+                      <>No saved listings yet. Sign in and tap hearts to save courses.</>
+                    ) : hasActiveFilters ? (
+                      <>
+                        No instructors match your filters. Try adjusting your criteria or{" "}
+                        <Link href={countyPath} className="font-medium underline">
+                          clear filters
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      <>No instructors match your search.</>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="vendors-results-map" aria-label="Vendor map">
+                {vendors.length > 0 ? (
+                  <VendorsMapDynamic vendors={vendors} hasFilter={hasActiveFilters} />
+                ) : (
+                  <div className="vendors-map-empty" role="status">
+                    <strong>No matching vendors to map</strong>
+                    <p>Try clearing filters or switching back to list view.</p>
+                    <Link href={buildViewHref("list")} className="vendors-map-empty__link">
+                      Back to list
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
           </div>
