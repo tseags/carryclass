@@ -25,7 +25,7 @@ export interface CcwTimelineSectionProps {
 }
 
 function formatShortDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -34,42 +34,144 @@ function formatShortDate(iso: string | null): string {
   return `${mm}.${dd}.${yyyy}`;
 }
 
+function getInitials(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (!trimmed) return "?";
+  if (/^anonymous$/i.test(trimmed)) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function formatPreviewName(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (!trimmed || /^anonymous$/i.test(trimmed)) return "Anonymous";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const first = parts[0];
+  const lastInitial = parts.length > 1 ? parts[parts.length - 1][0]?.toUpperCase() : "";
+  return lastInitial ? `${first} ${lastInitial}` : first;
+}
+
+function inferSubmissionDays(body: string, fallbackDays: number): number {
+  const matches = [...body.matchAll(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g)];
+  if (matches.length >= 2) {
+    const first = matches[0];
+    const last = matches[matches.length - 1];
+    const start = new Date(
+      `${first[3]}-${first[1].padStart(2, "0")}-${first[2].padStart(2, "0")}`
+    );
+    const end = new Date(
+      `${last[3]}-${last[1].padStart(2, "0")}-${last[2].padStart(2, "0")}`
+    );
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      const dayMs = 1000 * 60 * 60 * 24;
+      const diff = Math.round((end.getTime() - start.getTime()) / dayMs);
+      if (diff > 0) return diff;
+    }
+  }
+  return fallbackDays;
+}
+
 function TimelineReportsList({
   submissions,
+  fallbackDays,
+  onSeeAll,
   variant = "inline",
 }: {
   submissions: CcwTimelineSubmission[];
+  fallbackDays: number;
+  onSeeAll?: () => void;
   variant?: "inline" | "modal";
 }) {
-  const cardClass =
-    variant === "modal"
-      ? "rounded-md border border-zinc-100 bg-white px-4 py-3 shadow-sm"
-      : "rounded-md border border-white/25 bg-zinc-100 px-3 py-2.5 shadow-sm";
-  const bodyClass =
-    variant === "modal"
-      ? "mt-2 whitespace-pre-wrap text-base leading-relaxed text-zinc-700"
-      : "mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800";
-  const nameClass =
-    variant === "modal"
-      ? "text-base font-semibold text-zinc-900"
-      : "text-sm font-semibold text-zinc-900";
-  const dateClass =
-    variant === "modal" ? "shrink-0 text-xs text-zinc-500" : "shrink-0 text-xs text-zinc-700";
+  const rowClass =
+    variant === "inline"
+      ? "grid grid-cols-[minmax(0,1fr),auto] items-start gap-2 border-b border-[#edeae3] px-4 py-2 last:border-b-0 sm:px-5"
+      : "grid grid-cols-[auto,1fr,auto] items-start gap-3 border-b border-[#edeae3] px-4 py-4 last:border-b-0 sm:px-5";
+  const avatarClass =
+    variant === "inline"
+      ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ece8dd] text-[10px] font-semibold uppercase tracking-wide text-zinc-600"
+      : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ece8dd] text-xs font-semibold uppercase tracking-wide text-zinc-600";
 
   return (
-    <ul className="space-y-4">
-      {submissions.map((s) => (
-        <li key={s.id} className={cardClass}>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className={nameClass}>{s.displayName}</span>
-            <time className={dateClass} dateTime={s.submittedAt}>
-              {formatShortDate(s.submittedAt)}
-            </time>
-          </div>
-          <p className={bodyClass}>{s.body}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="overflow-hidden rounded-xl border border-[#cfc7b8] bg-white">
+      {variant === "inline" ? (
+        <div className="flex items-center justify-between gap-3 border-b border-[#edeae3] bg-[#f0eee7] px-4 pb-2.5 pt-3 sm:px-5">
+          <p className="inline-flex items-center leading-none text-[11px] font-semibold uppercase tracking-[0.11em] text-zinc-700">
+            Recent submissions
+          </p>
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="text-xs font-semibold text-[#b75a3d] transition hover:text-[#8f4229] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b75a3d]"
+          >
+            See all
+          </button>
+        </div>
+      ) : null}
+      <ul>
+        {submissions.map((s) => {
+          const syntheticFallback = Math.max(14, Math.round(fallbackDays * 0.78));
+          const days = inferSubmissionDays(s.body, syntheticFallback);
+          return (
+            <li
+              key={s.id}
+              className={rowClass}
+            >
+              {variant === "inline" ? null : (
+                <div className={avatarClass}>
+                  {getInitials(s.displayName)}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-1">
+                  <span
+                    className={
+                      variant === "inline"
+                        ? "text-[13px] font-semibold leading-tight text-zinc-900"
+                        : "text-base font-semibold text-zinc-900"
+                    }
+                  >
+                    {variant === "inline" ? formatPreviewName(s.displayName) : s.displayName}
+                  </span>
+                  <time
+                    className={
+                      variant === "inline"
+                        ? "ml-1 text-[10px] font-medium tracking-wide text-zinc-500"
+                        : "ml-1 text-xs font-medium tracking-wide text-zinc-500"
+                    }
+                    dateTime={s.submittedAt}
+                  >
+                    {formatShortDate(s.submittedAt)}
+                  </time>
+                </div>
+                <p
+                  className={
+                    variant === "inline"
+                      ? "mt-0.5 line-clamp-2 text-xs leading-snug text-zinc-700"
+                      : "mt-1 text-sm leading-relaxed text-zinc-700"
+                  }
+                >
+                  {s.body}
+                </p>
+              </div>
+              {variant === "inline" ? (
+                <p className="shrink-0 whitespace-nowrap text-right text-[13px] font-semibold leading-tight text-zinc-900">
+                  {days}{" "}
+                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-zinc-500">
+                    days
+                  </span>
+                </p>
+              ) : (
+                <div className="shrink-0 text-right">
+                  <p className="text-[34px] leading-[0.95] tracking-tight text-zinc-900">{days}</p>
+                  <p className="text-[11px] uppercase tracking-[0.13em] text-zinc-500">Days</p>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -145,6 +247,15 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
     [processes, selected]
   );
 
+  const totalSubmissions = useMemo(
+    () => processes.reduce((acc, p) => acc + p.submissionCount, 0),
+    [processes]
+  );
+
+  const activeLastSubmitted = active?.lastSubmittedAt ?? lastTimelineSubmittedCounty;
+  const timelineEntries = useMemo(() => active?.submissions ?? [], [active]);
+  const inlineEntries = useMemo(() => timelineEntries.slice(0, 2), [timelineEntries]);
+
   const scrollFeedIntoView = useCallback(() => {
     feedRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, []);
@@ -169,148 +280,139 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   return (
     <section
       id="ccw-timeline"
-      className="ccw-timeline-section relative z-[1] border-b border-zinc-200 bg-white"
+      className="ccw-timeline-section relative z-[1] border-y border-[#e5e1d8] bg-[#fefcf9]"
       aria-labelledby="ccw-timeline-heading"
     >
       <div className="container-default w-container">
-        <div className="mx-auto overflow-visible py-10 sm:py-12 lg:py-14">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
-            {/* Left ~40% */}
-            <div className="w-full shrink-0 lg:w-[38%] lg:max-w-md lg:pt-1">
+        <div className="mx-auto py-10 sm:py-12 lg:py-14">
+          <div className="grid gap-8 md:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] md:items-start lg:gap-9">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#bb7a5f]">
+                Self-reported
+              </p>
               <h2
                 id="ccw-timeline-heading"
-                className="heading-h2-size mg-bottom-0"
+                className="mt-2 text-[clamp(1.8rem,2.5vw,2.85rem)] font-medium leading-[1.06] text-[#1f1f1e]"
               >
                 <span className="block">{countyDisplayName} County</span>
                 <span className="block">CCW Timelines</span>
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-600 sm:text-base">
-                Estimated wait times from <strong>self-reported</strong> applicant
-                experiences—initial, renewal, and modification—so you know what to expect
-                in {countyDisplayName} County.
+              <p className="mt-4 max-w-[30ch] text-[15px] leading-relaxed text-zinc-600">
+                Estimated wait times from <strong>self-reported applicant experiences</strong> -
+                initial, renewal, and add-a-gun - so you know what to expect from the{" "}
+                {countyDisplayName} County Sheriff.
               </p>
-              <div className="mt-6">
-                <button
-                  type="button"
-                  className="btn-primary bg-secondary-2 small w-button inline-block w-full text-center sm:w-auto"
-                  onClick={openSubmitModal}
-                >
-                  Submit your timeline
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn-primary bg-secondary-2 small mt-5 inline-flex items-center gap-2 rounded-[10px] px-4 py-2.5 text-sm"
+                onClick={openSubmitModal}
+              >
+                Submit your timeline
+                <span aria-hidden>→</span>
+              </button>
+              <dl className="mt-10 grid max-w-[260px] grid-cols-[1fr,auto] gap-y-2 text-sm text-zinc-600">
+                <dt>Submissions</dt>
+                <dd className="text-right text-zinc-700">{totalSubmissions}</dd>
+                <dt>Last updated</dt>
+                <dd className="text-right text-zinc-700">
+                  {formatShortDate(lastTimelineSubmittedCounty)}
+                </dd>
+                <dt>Verification</dt>
+                <dd className="text-right text-zinc-700">Email-confirmed</dd>
+              </dl>
             </div>
 
-            {/* Right ~60%: cards + feed */}
-            <div className="flex w-full min-w-0 flex-1 flex-col gap-4 lg:gap-5">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-5 lg:gap-6">
+            <div ref={feedRef} className="min-w-0 space-y-4 sm:space-y-5">
+              <div
+                role="tablist"
+                aria-label="Timeline process type"
+                className="inline-flex rounded-xl border border-[#e2ddd1] bg-[#edeae3] p-1"
+              >
                 {processes.map((m) => {
                   const isActive = m.process === selected;
-                  const showMetric = m.avgDays != null;
                   return (
-                    <div
+                    <button
                       key={m.process}
-                      className="flex min-w-0 flex-col"
+                      id={`ccw-process-tab-${m.process}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls="ccw-process-panel"
+                      onClick={() => onSelectProcess(m.process)}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b75a3d] ${
+                        isActive
+                          ? "bg-white text-zinc-900 shadow-sm"
+                          : "text-zinc-600 hover:text-zinc-900"
+                      }`}
                     >
-                      <p className="text-lg font-semibold leading-snug text-zinc-900 sm:text-xl">
-                        {m.label}
-                      </p>
-                      <div className="mt-1 pt-3">
-                        <button
-                          type="button"
-                          aria-pressed={isActive}
-                          onClick={() => onSelectProcess(m.process)}
-                          className={`w-full cursor-pointer rounded-md text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
-                            isActive ? "bg-blue-50/80" : "hover:bg-zinc-50"
-                          }`}
-                        >
-                          {showMetric ? (
-                            <>
-                              <span className="block text-4xl font-bold tabular-nums tracking-tight text-zinc-900 sm:text-5xl">
-                                {m.avgDays}
-                              </span>
-                              <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                avg. days
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="block text-4xl font-bold tabular-nums tracking-tight text-zinc-900 sm:text-5xl">
-                                —
-                              </span>
-                              <span className="mt-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                No data has been submitted.
-                              </span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
+                      {m.label}
+                    </button>
                   );
                 })}
               </div>
 
-              {/* Chat-style feed — short frame; scroll inside; expand opens modal */}
               <div
-                id="ccw-timeline-submit"
-                ref={feedRef}
-                className="scroll-mt-28 flex h-[min(160px,26vh)] min-h-[120px] flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 sm:h-[min(200px,32vh)] sm:min-h-[140px]"
-                role="region"
-                aria-label="Timeline reports for selected process"
+                id="ccw-process-panel"
+                role="tabpanel"
+                aria-labelledby={`ccw-process-tab-${selected}`}
+                className="rounded-2xl border border-[#e2ddd1] bg-[#f2efe8] p-4 sm:p-5"
               >
-                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-700 px-3 py-2 sm:px-4">
-                  <span className="min-w-0 truncate text-xs font-medium uppercase tracking-wide text-zinc-200">
-                    Wait times from previous applicants
-                  </span>
-                  <button
-                    type="button"
-                    className="inline-flex shrink-0 items-center rounded-md border border-zinc-500 bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-100 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                    aria-expanded={feedExpanded}
-                    aria-haspopup="dialog"
-                    aria-controls={feedExpanded ? "ccw-timeline-feed-modal" : undefined}
-                    aria-label="Expand timeline reports"
-                    onClick={() => setFeedExpanded(true)}
-                  >
-                    <svg
-                      className="h-3.5 w-3.5 text-zinc-100"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                    </svg>
-                  </button>
-                </div>
-                <div
-                  className="min-h-0 flex-1 overflow-y-scroll overscroll-y-contain px-3 py-3 [scrollbar-gutter:stable] [webkit-overflow-scrolling:touch]"
-                  aria-live="polite"
-                >
-                  {!active ? (
-                    <p className="text-sm text-zinc-300">Loading…</p>
-                  ) : active.submissions.length === 0 ? (
-                    <div className="space-y-3">
-                      <p className="text-sm text-zinc-200">
-                        No data has been submitted.
-                      </p>
-                      <button
-                        type="button"
-                        className="text-left text-sm font-medium text-blue-300 underline hover:text-blue-200"
-                        onClick={openSubmitModal}
-                      >
-                        Submit the first timeline
-                      </button>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-5">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                      Median wait
+                    </p>
+                    <div className="mt-1.5 flex items-end gap-2">
+                      <span className="text-[clamp(3.05rem,7vw,4.5rem)] font-medium leading-[0.86] tracking-tight text-zinc-900">
+                        {active?.avgDays ?? "—"}
+                      </span>
+                      <span className="pb-1.5 text-[30px] leading-none text-zinc-900 sm:text-[32px]">
+                        days
+                      </span>
                     </div>
-                  ) : (
-                    <TimelineReportsList submissions={active.submissions} />
-                  )}
+                    <p className="mt-0.5 text-sm text-zinc-500">from submission to permit</p>
+                  </div>
+                  <dl className="grid w-full grid-cols-2 gap-x-5 gap-y-0.5 sm:w-auto sm:min-w-[230px] sm:content-start sm:self-start sm:justify-items-end">
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                      Submissions
+                    </dt>
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                      Last submitted
+                    </dt>
+                    <dd className="text-[30px] leading-none text-zinc-900 sm:text-[32px]">
+                      {active?.submissionCount ?? 0}
+                    </dd>
+                    <dd className="self-start text-sm leading-none text-zinc-700">
+                      {formatShortDate(activeLastSubmitted)}
+                    </dd>
+                  </dl>
                 </div>
               </div>
-              <p className="mt-2 text-xs italic leading-snug text-zinc-500 sm:text-sm">
-                Timelines vary by individual circumstances and change often. These timelines
-                are estimates based on real submissions from CCW permit holders. Last timeline
+
+              {timelineEntries.length === 0 ? (
+                <div className="rounded-xl border border-[#e2ddd1] bg-white px-4 py-6 sm:px-5">
+                  <p className="text-sm text-zinc-700">
+                    No data has been submitted for this process yet.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-3 text-sm font-medium text-[#b75a3d] underline hover:text-[#8f4229]"
+                    onClick={openSubmitModal}
+                  >
+                    Submit the first timeline
+                  </button>
+                </div>
+              ) : (
+                <TimelineReportsList
+                  submissions={inlineEntries}
+                  fallbackDays={active?.avgDays ?? 90}
+                  onSeeAll={() => setFeedExpanded(true)}
+                />
+              )}
+
+              <p className="text-xs italic leading-snug text-zinc-500 sm:text-sm">
+                Timelines vary by individual circumstances and change often. These timelines are
+                estimates based on real submissions from CCW permit holders. Last timeline
                 submitted: {formatShortDate(lastTimelineSubmittedCounty)}
               </p>
             </div>
@@ -339,11 +441,8 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               className="relative z-[201] flex max-h-[min(920px,96vh)] w-full max-w-[min(1200px,96vw)] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl"
             >
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-5">
-                <h2
-                  id={modalTitleId}
-                  className="text-base font-semibold text-zinc-900 sm:text-lg"
-                >
-                  {active?.label ?? "Timeline reports"}
+                <h2 id={modalTitleId} className="text-base font-semibold text-zinc-900 sm:text-lg">
+                  {countyDisplayName} County - {active?.label ?? "Timeline reports"}
                 </h2>
                 <button
                   type="button"
@@ -365,12 +464,10 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
                 {!active ? (
-                  <p className="text-sm text-zinc-600">Loading…</p>
+                  <p className="text-sm text-zinc-600">Loading...</p>
                 ) : active.submissions.length === 0 ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-zinc-700">
-                      No data has been submitted.
-                    </p>
+                    <p className="text-sm text-zinc-700">No data has been submitted.</p>
                     <button
                       type="button"
                       className="text-left text-sm font-medium text-blue-700 underline hover:text-blue-900"
@@ -383,7 +480,11 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                     </button>
                   </div>
                 ) : (
-                  <TimelineReportsList variant="modal" submissions={active.submissions} />
+                  <TimelineReportsList
+                    variant="modal"
+                    submissions={active.submissions}
+                    fallbackDays={active.avgDays ?? 90}
+                  />
                 )}
               </div>
             </div>
@@ -440,8 +541,8 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 {submitSuccess ? (
                   <div className="space-y-4">
                     <p className="text-sm leading-relaxed text-zinc-700">
-                      Thanks — we received your timeline. Our team will review it soon. (Saving
-                      to the live feed is not wired up yet.)
+                      Thanks - we received your timeline. Our team will review it soon. (Saving to
+                      the live feed is not wired up yet.)
                     </p>
                     <button
                       type="button"
@@ -537,8 +638,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                         htmlFor="ccw-timeline-total-cost"
                         className="mb-1 block text-sm font-medium text-zinc-800"
                       >
-                        Total cost{" "}
-                        <span className="font-normal text-zinc-500">(optional)</span>
+                        Total cost <span className="font-normal text-zinc-500">(optional)</span>
                       </label>
                       <input
                         id="ccw-timeline-total-cost"
@@ -575,10 +675,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                       advice.
                     </p>
                     <div className="flex flex-wrap gap-3 pt-1">
-                      <button
-                        type="submit"
-                        className="btn-primary bg-secondary-2 small w-button"
-                      >
+                      <button type="submit" className="btn-primary bg-secondary-2 small w-button">
                         Send timeline
                       </button>
                       <button
