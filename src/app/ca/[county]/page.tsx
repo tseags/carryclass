@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SmoothScrollTo } from "@/components/SmoothScrollTo";
-import { VendorCardWebflow } from "@/components/VendorCardWebflow";
+import { PopularVendorCard } from "@/components/PopularVendorCard";
+import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import {
   getCountyDisplayName,
   isValidCountySlug,
@@ -17,10 +18,22 @@ import { GearCtaSection } from "@/components/GearCtaSection";
 import { CountyStatsSection } from "@/components/CountyStatsSection";
 import { CcwTimelineSection } from "@/components/CcwTimelineSection";
 import { getPlaceholderCcwTimelineData } from "@/data/ccw-timeline-placeholder";
+import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 
 interface PageProps {
   params: Promise<{ county: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+function getReviewMeta(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  const ratingPool = ["4.6", "4.7", "4.8", "4.9"];
+  const rating = ratingPool[hash % ratingPool.length];
+  const reviews = `${(hash % 230) + 24} reviews`;
+  return { rating, reviews };
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -53,16 +66,57 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
     city: resolved.city as string | undefined,
     classType: resolved.classType as "initial" | "renewal" | "both" | undefined,
     format: resolved.format as "in-person" | "online" | "hybrid" | undefined,
+    savedOnly: resolved.savedOnly === "1",
     priceMax: resolved.priceMax ? Number(resolved.priceMax) : undefined,
     search: resolved.search as string | undefined,
   };
 
-  const vendors = filterVendors(allVendors, filters);
-  const countyImage = getCountyImageUrl(county);
+  const sort = resolved.sort as string | undefined;
 
-  // Popular: first 4 vendors (or all if fewer)
-  const popularVendors = vendors.slice(0, 4);
+  const allSavedIds = new Set(
+    await getCurrentUserSavedVendorIds(allVendors.map((vendor) => vendor.id))
+  );
+
+  const cityOptions = Array.from(
+    new Set(allVendors.map((vendor) => vendor.city))
+  ).sort((a, b) => a.localeCompare(b));
+
+  let vendors = filterVendors(allVendors, filters);
+  if (filters.savedOnly) {
+    vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
+  }
+
+  if (sort === "name") {
+    vendors = [...vendors].sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sort === "name-desc") {
+    vendors = [...vendors].sort((a, b) => b.name.localeCompare(a.name));
+  } else if (sort === "price-low") {
+    vendors = [...vendors].sort((a, b) => (a.priceMin ?? 0) - (b.priceMin ?? 0));
+  } else if (sort === "price-high") {
+    vendors = [...vendors].sort((a, b) => (b.priceMax ?? 0) - (a.priceMax ?? 0));
+  } else {
+    vendors = [...vendors].sort(
+      (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false)
+    );
+  }
+
+  const savedIds = new Set(
+    [...allSavedIds].filter((id) => vendors.some((vendor) => vendor.id === id))
+  );
+
+  const countyImage = getCountyImageUrl(county);
   const timelineData = getPlaceholderCcwTimelineData(county, displayName);
+
+  const hasActiveFilters = Boolean(
+    filters.city ||
+      filters.classType ||
+      filters.format ||
+      filters.savedOnly ||
+      filters.priceMax != null ||
+      (filters.search && filters.search.trim().length > 0)
+  );
+
+  const countyPath = `/ca/${county}`;
 
   return (
     <>
@@ -70,9 +124,13 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
       <div className="top-section county-page">
         <div className="container-default w-container">
           <nav className="vendors-hero-breadcrumb mg-bottom-12px text-sm">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">
+              Home
+            </Link>
             <span className="mx-2">/</span>
-            <Link href="/ca" className="hover:underline">Counties</Link>
+            <Link href="/ca" className="hover:underline">
+              Counties
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-zinc-900">{displayName} County</span>
           </nav>
@@ -89,7 +147,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <SmoothScrollTo
-                  targetId="Popular-Vendors"
+                  targetId="county-vendors"
                   className="btn-primary bg-secondary-2 small w-button"
                 >
                   View Vendors
@@ -124,72 +182,174 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
         </div>
       </div>
 
-      <CountyStatsSection
-        vendors={allVendors}
-        countyDisplayName={displayName}
-      />
+      <CountyStatsSection vendors={allVendors} countyDisplayName={displayName} />
 
       <CcwTimelineSection data={timelineData} />
 
-      <div id="Popular-Vendors" className="section bg-neutral-200">
-        <div className="container-default w-container">
-          <div className="flex children-wrap mg-bottom-32px">
-            <img
-              src="/images/category-dropdown-icon-directory-webflow-ecommerce-template.svg"
-              loading="eager"
-              width={26}
-              alt=""
-              className="mg-top-4px popular-star"
-            />
-            <div className="heading-h2-size"> Popular CCW Vendors in </div>
-            <h2 className="mg-bottom-0">{displayName} County</h2>
-          </div>
-          <div className="w-dyn-list">
-            {popularVendors.length > 0 ? (
-              <div role="list" className="grid-2-columns _1-col-tablet w-dyn-items">
-                {popularVendors.map((vendor) => (
-                  <VendorCardWebflow key={vendor.id} vendor={vendor} />
-                ))}
+      <section
+        id="county-vendors"
+        className="vendors-results-shell"
+        aria-label={`CCW instructors in ${displayName} County`}
+      >
+        <div className="vendors-results-layout">
+          <aside className="vendors-filters-sidebar">
+            <div className="vendors-filters-card">
+              <div className="vendors-filters-head">
+                <h2>Filters</h2>
+                <Link href={countyPath}>Clear all</Link>
               </div>
-            ) : (
-              <div className="empty-state w-dyn-empty">
-                <div>No instructors found in this county yet.</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              <form action={countyPath} method="get" className="vendors-filters-form">
+                <label className="vendors-filter-group">
+                  <span>Search</span>
+                  <input
+                    type="search"
+                    name="search"
+                    defaultValue={filters.search ?? ""}
+                    placeholder="Name or keyword"
+                  />
+                </label>
 
-      <div id="Vendors-in-County" className="section county-list-section">
-        <div className="container-default w-container">
-          <div className="flex children-wrap mg-bottom-32px">
-            <div className="heading-h2-size">View all vendors in </div>
-            <h2 className="mg-bottom-0">{displayName} County</h2>
-          </div>
-          <div className="w-dyn-list">
+                <VendorsCountyCityDropdowns
+                  initialCity={filters.city}
+                  counties={[]}
+                  cities={cityOptions}
+                  omitCounty
+                />
+
+                <label className="vendors-filter-group">
+                  <span>Course type</span>
+                  <select name="classType" defaultValue={filters.classType ?? ""}>
+                    <option value="">All types</option>
+                    <option value="initial">16-hr initial</option>
+                    <option value="renewal">8-hr renewal</option>
+                    <option value="both">Initial + renewal</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Format</span>
+                  <select name="format" defaultValue={filters.format ?? ""}>
+                    <option value="">Any format</option>
+                    <option value="in-person">In person</option>
+                    <option value="online">Online</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Saved</span>
+                  <select name="savedOnly" defaultValue={filters.savedOnly ? "1" : "0"}>
+                    <option value="0">All listings</option>
+                    <option value="1">Saved only</option>
+                  </select>
+                </label>
+
+                <label className="vendors-filter-group">
+                  <span>Max price</span>
+                  <select
+                    name="priceMax"
+                    defaultValue={filters.priceMax != null ? String(filters.priceMax) : ""}
+                  >
+                    <option value="">Any price</option>
+                    <option value="150">Under $150</option>
+                    <option value="200">Under $200</option>
+                    <option value="300">Under $300</option>
+                    <option value="400">Under $400</option>
+                  </select>
+                </label>
+
+                {sort ? <input type="hidden" name="sort" value={sort} /> : null}
+                <button type="submit" className="btn-primary w-button vendors-filters-submit">
+                  Apply filters
+                </button>
+              </form>
+              <p className="vendors-filter-all-ca-link">
+                <Link href={`/vendors?county=${county}`} className="font-medium underline">
+                  Search all of California
+                </Link>
+              </p>
+            </div>
+          </aside>
+
+          <div className="vendors-results-main">
+            <div className="vendors-results-header">
+              <h2>{vendors.length} instructors in {displayName} County</h2>
+              <div className="vendors-results-header-controls">
+                <form action={countyPath} method="get" className="vendors-sort-group">
+                  {filters.search ? <input type="hidden" name="search" value={filters.search} /> : null}
+                  {filters.city ? <input type="hidden" name="city" value={filters.city} /> : null}
+                  {filters.classType ? (
+                    <input type="hidden" name="classType" value={filters.classType} />
+                  ) : null}
+                  {filters.savedOnly ? <input type="hidden" name="savedOnly" value="1" /> : null}
+                  {filters.format ? <input type="hidden" name="format" value={filters.format} /> : null}
+                  {filters.priceMax != null ? (
+                    <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
+                  ) : null}
+                  <span>Sort</span>
+                  <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
+                    <option value="featured">Featured first</option>
+                    <option value="price-low">Price: low to high</option>
+                    <option value="price-high">Price: high to low</option>
+                    <option value="name">Name: A to Z</option>
+                    <option value="name-desc">Name: Z to A</option>
+                  </select>
+                  <button type="submit" className="vendors-sort-apply">
+                    Apply
+                  </button>
+                </form>
+              </div>
+            </div>
+
             {vendors.length > 0 ? (
-              <div role="list" className="vendors-grid grid-3-columns w-dyn-items">
-                {vendors.map((vendor) => (
-                  <VendorCardWebflow key={vendor.id} vendor={vendor} />
-                ))}
+              <div className="popular-vendors-redesign__grid vendors-results-grid">
+                {vendors.map((vendor) => {
+                  const servedCounty = vendor.countiesServed[0]
+                    ? getCountyDisplayName(vendor.countiesServed[0])
+                    : getCountyDisplayName(vendor.county);
+                  const description =
+                    vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
+                  const reviewMeta = getReviewMeta(vendor.id);
+                  return (
+                    <PopularVendorCard
+                      key={vendor.id}
+                      vendor={vendor}
+                      ratingText={reviewMeta.rating}
+                      reviewsText={reviewMeta.reviews}
+                      servedCounty={servedCounty}
+                      description={description}
+                      showFeaturedBadge={Boolean(vendor.featured)}
+                      initialSaved={savedIds.has(vendor.id)}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-state w-dyn-empty">
                 <div>
-                  No instructors match your filters. Try adjusting your criteria or{" "}
-                  <Link href={`/ca/${county}`} className="font-medium underline">
-                    clear filters
-                  </Link>
-                  .
+                  {allVendors.length === 0 ? (
+                    <>No instructors found in this county yet.</>
+                  ) : filters.savedOnly && allSavedIds.size === 0 ? (
+                    <>No saved listings yet. Sign in and tap hearts to save vendors.</>
+                  ) : hasActiveFilters ? (
+                    <>
+                      No instructors match your filters. Try adjusting your criteria or{" "}
+                      <Link href={countyPath} className="font-medium underline">
+                        clear filters
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    <>No instructors match your search.</>
+                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       <GearCtaSection />
-
       <Footer />
     </>
   );

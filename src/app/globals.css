@@ -18,8 +18,8 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Hero “View Vendors” → #Popular-Vendors; offset so heading clears sticky header */
-#Popular-Vendors {
+/* County hero “View Vendors” → #county-vendors; offset so content clears sticky header */
+#county-vendors {
   scroll-margin-top: var(--header-offset);
 }
 
@@ -49,7 +49,7 @@ body {
 /* Without this, Next/Image `fill` can expand and hide headline/copy.         */
 /* -------------------------------------------------------------------------- */
 .top-section.county-page {
-  background-color: #fafafa;
+  background-color: #141413 !important;
   /* Same value in public/css/ccw-directory.webflow.css (loads after this bundle) */
   padding-bottom: 90px !important;
 }
@@ -69,23 +69,70 @@ body {
   z-index: 2;
 }
 .county-h1 {
-  color: #141413 !important;
+  color: #f8fafc !important;
   font-size: clamp(1.75rem, 3vw, 2.75rem);
   font-weight: 700;
   line-height: 1.15;
   margin: 0 0 0.75rem;
 }
 .county-sub-heading {
-  color: #4b5563 !important;
+  color: #b0aea5 !important;
   font-size: 1rem;
   line-height: 1.65;
   margin: 0 0 1.25rem;
 }
+.county-sub-heading strong {
+  color: #b0aea5 !important;
+}
+
+.top-section.county-page .vendors-hero-breadcrumb,
+.top-section.county-page .vendors-hero-breadcrumb a,
+.top-section.county-page .vendors-hero-breadcrumb span {
+  color: #c96442 !important;
+}
+
+.top-section.county-page .vendors-hero-breadcrumb a:hover,
+.top-section.county-page .vendors-hero-breadcrumb a:focus-visible {
+  color: #d97757 !important;
+  text-decoration: underline;
+}
+
+.top-section.county-page .vendors-hero-breadcrumb .text-zinc-900 {
+  color: #c96442 !important;
+  font-weight: 700;
+}
+
+.top-section.county-page .btn-primary.bg-secondary-2.small.w-button,
+.top-section.county-page a.btn-primary.bg-secondary-2.small.w-button {
+  background-color: #c96442 !important;
+  color: #ffffff !important;
+  border-color: #c96442 !important;
+}
+
+.top-section.county-page .btn-primary.bg-secondary-2.small.w-button:hover,
+.top-section.county-page a.btn-primary.bg-secondary-2.small.w-button:hover,
+.top-section.county-page .btn-primary.bg-secondary-2.small.w-button:focus-visible,
+.top-section.county-page a.btn-primary.bg-secondary-2.small.w-button:focus-visible {
+  background-color: #d97757 !important;
+  border-color: #d97757 !important;
+  color: #ffffff !important;
+}
+
 /* Same footprint as adjacent .btn-primary.small (View Vendors) — Webflow .btn-secondary.small uses 16px type */
 .top-section.county-page a.county-hero-timeline-btn.btn-secondary.small {
+  background: transparent !important;
+  color: #d6d3c8 !important;
+  border: 1px solid #3b3a35 !important;
   font-size: 14px;
   line-height: 16px;
   font-weight: 700;
+}
+
+.top-section.county-page a.county-hero-timeline-btn.btn-secondary.small:hover,
+.top-section.county-page a.county-hero-timeline-btn.btn-secondary.small:focus-visible {
+  color: #f3f2ed !important;
+  border-color: #5a5850 !important;
+  background: rgba(239, 238, 232, 0.06) !important;
 }
 .county-hero-image {
   flex: 0 1 min(540px, 48vw);
@@ -101,6 +148,9 @@ body {
   aspect-ratio: 5 / 3;
   min-height: 180px;
   border-radius: 12px;
+  border: 1px solid #3b3a35;
+  background: #1f1f1d;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
   overflow: hidden;
 }
 img.county-hero-image-fill {
@@ -397,13 +447,11 @@ img.county-hero-image-fill {
   position: relative;
   z-index: 2;
   overflow: visible;
-  background-color: #09090b;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  background-color: #f2efe8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .county-stats-section .county-stats-section-heading {
-  color: #ffffff !important;
+  color: #141413 !important;
   font-weight: 700 !important;
   font-size: clamp(0.95rem, 2.6vw + 0.35rem, 4rem) !important;
   line-height: 1.12 !important;
@@ -413,7 +461,12 @@ img.county-hero-image-fill {
   max-width: none;
   margin-left: auto;
   margin-right: auto;
-  white-space: nowrap;
+  white-space: normal;
+}
+@media (min-width: 640px) {
+  .county-stats-section .county-stats-section-heading {
+    white-space: nowrap;
+  }
 }
 .ccw-timeline-section {
   display: block !important;
@@ -631,6 +684,14 @@ img.county-hero-image-fill {
   box-shadow: 0 2px 12px 0 var(--general--shadow-03) !important;
 }
 
+.vendors-filter-all-ca-link {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  padding-bottom: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
 /* Vendor detail "Gear Needed" icons should render as white on dark tiles */
 .vendor-gear-icon .vendor-gear-icon-img {
   filter: brightness(0) invert(1);
@@ -701,6 +762,9 @@ img.county-hero-image-fill {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.popular-vendors-redesign__featured.is-placeholder {
+  visibility: hidden;
 }
 .popular-vendors-redesign__title-row {
   margin-bottom: 8px;
@@ -1283,4 +1347,3 @@ img.county-hero-image-fill {
     max-width: 560px;
   }
 }
-
