@@ -50,3 +50,10 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# local / tooling exports (not required for builds)
+.cursor/
+.tmp-ccw-ref/
+/repomix-output.xml
+/ccw-all-images-bundle.zip
+/claude-design-safe-bundle.xml

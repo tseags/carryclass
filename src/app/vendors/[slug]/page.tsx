@@ -6,6 +6,8 @@ import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
+import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
+import { SaveHeartButton } from "@/components/SaveHeartButton";
 import { getCountyDisplayName } from "@/data/counties";
 
 const WHAT_TO_BRING_ITEMS = [
@@ -151,6 +153,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     ? vendor.description
     : `${vendor.name} provides CCW instruction in ${vendor.city}, ${getCountyDisplayName(vendor.county)} County.`;
   const showAboutSupportCopy = Boolean(vendor.description);
+  const savedVendorIds = await getCurrentUserSavedVendorIds([
+    vendor.id,
+    ...otherVendors.map((entry) => entry.id),
+  ]);
+  const initialSaved = savedVendorIds.includes(vendor.id);
 
   return (
     <div className="min-h-screen bg-white">
@@ -197,20 +204,38 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                 )}
               </p>
               {vendor.acceptsBookings ? (
-                <Link href={`/vendors/${vendor.slug}/book`} className={heroButtonClassName}>
-                  Book Now
-                </Link>
+                <div className="mt-6 flex items-center gap-3">
+                  <Link href={`/vendors/${vendor.slug}/book`} className={heroButtonClassName}>
+                    Book Now
+                  </Link>
+                  <SaveHeartButton
+                    vendorId={vendor.id}
+                    initialSaved={initialSaved}
+                    size="md"
+                    showFilledWhenSaved={false}
+                    colorVariant="burnt"
+                  />
+                </div>
               ) : (
-                vendor.website && (
-                  <a
-                    href={vendor.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={heroButtonClassName}
-                  >
-                    Visit website
-                  </a>
-                )
+                <div className="mt-6 flex items-center gap-3">
+                  {vendor.website && (
+                    <a
+                      href={vendor.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={heroButtonClassName}
+                    >
+                      Visit website
+                    </a>
+                  )}
+                  <SaveHeartButton
+                    vendorId={vendor.id}
+                    initialSaved={initialSaved}
+                    size="md"
+                    showFilledWhenSaved={false}
+                    colorVariant="burnt"
+                  />
+                </div>
               )}
             </div>
             <div
@@ -469,6 +494,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     servedCounty={servedCounty}
                     description={description}
                     showFeaturedBadge={false}
+                  initialSaved={savedVendorIds.includes(v.id)}
                   />
                 );
               })}

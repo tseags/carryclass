@@ -1,67 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { GEAR_HERO } from "@/data/gear-page";
 
-/**
- * Returns object-position x% so the gun stays visible on the right. At large
- * viewport widths, 140% pushes the image too far; we use smaller values so the
- * right side of the image (gun) stays in frame.
- */
-function getObjectPositionX(width: number): string {
-  if (width >= 1280) return "95%";
-  if (width >= 1024) return "110%";
-  if (width >= 768) return "125%";
-  return "140%";
-}
-
 export function GearHeroClient() {
-  const [objectPositionX, setObjectPositionX] = useState("140%");
-
-  useEffect(() => {
-    const update = () => {
-      const w = typeof window !== "undefined" ? window.innerWidth : 0;
-      setObjectPositionX(getObjectPositionX(w));
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
   return (
     <section
-      className="relative flex min-h-[380px] items-center justify-start overflow-hidden bg-zinc-900 sm:min-h-[460px] md:min-h-[520px] lg:min-h-[560px] xl:min-h-[600px]"
+      className="relative isolate overflow-hidden border-b border-zinc-800 bg-zinc-950"
       aria-label="Gear"
     >
-      <img
-        src={GEAR_HERO.backgroundImage}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover opacity-90"
-        style={{
-          objectPosition: `${objectPositionX} 55%`,
-          transform: "scale(1.15)",
-        }}
-        fetchPriority="high"
-      />
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 opacity-80"
+        aria-hidden="true"
         style={{
           background:
-            "linear-gradient(to right, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.65) 25%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.15) 70%, transparent 85%), linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 100%)",
+            "radial-gradient(circle at 82% 44%, rgba(244,114,22,0.18) 0%, rgba(244,114,22,0.06) 14%, transparent 26%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)",
         }}
       />
-      <div className="relative z-10 w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10 md:px-12 md:py-12 lg:px-16 lg:py-14 xl:px-20 xl:py-16">
-        <div className="max-w-xl text-left">
-          <h1
-            className="text-4xl font-bold tracking-tight drop-shadow-lg sm:text-5xl md:text-6xl"
-            style={{ color: "#ffffff", fontWeight: 700 }}
-          >
-            {GEAR_HERO.title}
-          </h1>
-          <p className="mt-4 text-lg text-white drop-shadow sm:text-xl">
-            Holsters, belts, eye & ear protection, and more — trusted for CCW
-            training and everyday carry.
-          </p>
+
+      <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_180px]">
+          <div className="max-w-2xl">
+            <p className="text-xs text-zinc-400">
+            Home <span className="mx-1 text-zinc-600">/</span> Gear
+            </p>
+            <p className="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-[#c96442]">
+              CCW Training Essentials
+            </p>
+            <h1
+              className="mt-4 max-w-[26ch] text-[2.2rem] font-medium leading-[1.06] tracking-tight sm:text-[2.7rem] md:text-[3rem]"
+              style={{ color: "#ffffff", fontFamily: '"Lora", Georgia, serif' }}
+            >
+              {GEAR_HERO.title}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+              View the best holsters, belts, PPE, and more — tested by CCW
+              instructors and curated for your training day.
+            </p>
+          </div>
+
+          <div className="hidden justify-self-end lg:block" aria-hidden="true">
+            <div className="relative h-36 w-44 opacity-75">
+              <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-orange-300/30" />
+              <div className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-orange-300/40 bg-orange-300/10" />
+              <div className="absolute bottom-3 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-orange-300/70" />
+              <div className="absolute bottom-0 left-1/2 h-8 w-24 -translate-x-1/2 rounded-[100%] border-t border-orange-200/30" />
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -2,10 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { getCountyDisplayName } from "@/data/counties";
 import { getCountyImageUrl } from "@/data/county-images";
-import { GearCtaSection } from "@/components/GearCtaSection";
 import { CALIFORNIA_COUNTIES } from "@/data/counties";
 import { getVendorCountsByCounty } from "@/lib/vendors-db";
 
@@ -202,9 +200,6 @@ export default async function CaliforniaPage({
           </div>
         </div>
       </section>
-
-      <GearCtaSection />
-      <HomeNewsletter />
 
       <Footer />
     </>

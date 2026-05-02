@@ -10,7 +10,9 @@ import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { ByTheNumbersStats } from "@/components/ByTheNumbersStats";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { getAllVendors } from "@/lib/vendors-db";
+import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getCountyDisplayName } from "@/data/counties";
+import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
 
 export const metadata = {
   title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
@@ -30,6 +32,9 @@ export default async function HomePage() {
     { rating: "4.8", reviews: "124 reviews" },
     { rating: "4.9", reviews: "47 reviews" },
   ];
+  const savedIds = new Set(
+    await getCurrentUserSavedVendorIds(featuredVendors.map((vendor) => vendor.id))
+  );
 
   return (
     <>
@@ -102,6 +107,8 @@ export default async function HomePage() {
                   reviewsText={reviewMeta.reviews}
                   servedCounty={servedCounty}
                   description={cardDescription}
+                  showFeaturedBadge={Boolean(vendor.featured)}
+                  initialSaved={savedIds.has(vendor.id)}
                 />
               );
             })}
@@ -146,9 +153,9 @@ export default async function HomePage() {
 
       <HomeTestimonials />
 
-      <GearCtaSection />
+      {SHOW_GEAR_SECTIONS ? <GearCtaSection /> : null}
 
-      <HomeNewsletter />
+      {SHOW_SUBSCRIBE_SECTIONS ? <HomeNewsletter /> : null}
 
       <Footer />
     </>

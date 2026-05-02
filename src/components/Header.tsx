@@ -13,7 +13,6 @@ export function Header() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/gear", label: "Gear" },
     { href: "/ca", label: "Counties" },
   ];
 
@@ -31,14 +30,15 @@ export function Header() {
           <a
             href="/"
             aria-current={pathname === "/" ? "page" : undefined}
-            className={`logo-link w-nav-brand ${pathname === "/" ? "w--current" : ""}`}
+            className={`header-logo-link w-nav-brand ${pathname === "/" ? "w--current" : ""}`}
           >
-            <img
-              src="/images/Screen-Shot-2025-10-19-at-4.28.10-PM.png"
-              loading="lazy"
-              width={223}
-              sizes="(max-width: 479px) 93vw, 223px"
-              alt="CCW Courses"
+            <Image
+              src="/images/carryclass-logo.png"
+              width={153}
+              height={28}
+              sizes="(max-width: 479px) 72vw, 153px"
+              alt="CarryClass"
+              priority
             />
           </a>
           <div className="header-right-side">

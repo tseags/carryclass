@@ -47,10 +47,43 @@ model Vendor {
 
   classSessions ClassSession[]
   bookings      Booking[]
+  reviews       VendorReview[]
+  savedByUsers  SavedVendor[]
 
   @@index([county])
   @@index([slug])
   @@index([featured])
+}
+
+model SavedVendor {
+  id        String   @id @default(cuid())
+  userId    String
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, vendorId])
+  @@index([userId, createdAt])
+  @@index([vendorId])
+}
+
+enum VendorReviewStatus {
+  PENDING
+  APPROVED
+}
+
+model VendorReview {
+  id         String             @id @default(cuid())
+  vendorId   String
+  vendor     Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  rating     Int
+  authorName String
+  body       String
+  status     VendorReviewStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+
+  @@index([vendorId])
+  @@index([vendorId, status, createdAt])
 }
 
 model ClassSession {

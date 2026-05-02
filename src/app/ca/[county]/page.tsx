@@ -20,6 +20,7 @@ import { CountyStatsSection } from "@/components/CountyStatsSection";
 import { CcwTimelineSection } from "@/components/CcwTimelineSection";
 import { getPlaceholderCcwTimelineData } from "@/data/ccw-timeline-placeholder";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
+import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 
 interface PageProps {
   params: Promise<{ county: string }>;
@@ -437,7 +438,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
         </div>
       </section>
 
-      <GearCtaSection />
+      {SHOW_GEAR_SECTIONS ? <GearCtaSection /> : null}
       <Footer />
     </>
   );

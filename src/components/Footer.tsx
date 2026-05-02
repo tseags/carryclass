@@ -5,22 +5,12 @@ type FooterLink = { label: string; href: string };
 const DIRECTORY_LINKS: FooterLink[] = [
   { label: "Find courses", href: "/vendors" },
   { label: "Browse counties", href: "/ca" },
-  { label: "Gear", href: "/gear" },
-  { label: "About", href: "/about" },
 ];
 
 const STUDENT_LINKS: FooterLink[] = [
-  { label: "Initial courses", href: "/vendors" },
-  { label: "Renewal courses", href: "/vendors" },
-  { label: "Virtual options", href: "/vendors" },
-  { label: "FAQs", href: "/faqs" },
-];
-
-const INSTRUCTOR_LINKS: FooterLink[] = [
-  { label: "List your course", href: "/vendors/claim" },
-  { label: "Update listing", href: "/dashboard/vendor" },
-  { label: "Sign in", href: "/sign-in" },
-  { label: "Sign up", href: "/sign-up" },
+  { label: "Initial courses", href: "/vendors?classType=initial" },
+  { label: "Renewal courses", href: "/vendors?classType=renewal" },
+  { label: "Virtual options", href: "/vendors?format=online" },
 ];
 
 function FooterColumn({
@@ -59,13 +49,11 @@ export function Footer() {
           <div className="md:pr-6">
             <Link
               href="/"
-              aria-label="CCW Directory"
-              className="site-footer__wordmark inline-flex items-baseline font-serif text-[26px] leading-none tracking-[-0.01em]"
+              aria-label="CarryClass home"
+              className="inline-flex items-baseline text-[32px] font-extrabold leading-none tracking-[-0.02em]"
             >
-              <span className="font-medium">CCW</span>
-              <span className="site-footer__wordmark-accent ml-[0.35em] font-normal">
-                Directory
-              </span>
+              <span className="text-[#f2f0e8]">Carry</span>
+              <span className="text-[#d56f49]">Class</span>
             </Link>
             <p className="site-footer__tagline mt-10 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
               California&apos;s most complete directory of sheriff-approved CCW
@@ -73,24 +61,20 @@ export function Footer() {
             </p>
           </div>
 
-          <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
+          <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-2">
             <FooterColumn title="Directory" links={DIRECTORY_LINKS} />
             <FooterColumn title="For students" links={STUDENT_LINKS} />
-            <FooterColumn title="Instructors" links={INSTRUCTOR_LINKS} />
           </div>
         </div>
 
         <div className="flex flex-col items-start justify-between gap-3 border-t border-[#30302e] pt-6 text-[13px] text-[#87867f] sm:flex-row sm:flex-wrap sm:items-center">
           <p>&copy; 2026 CCW Directory. All rights reserved.</p>
           <nav className="flex items-center gap-6">
-            <Link href="/terms-conditions" className="site-footer__link">
+            <Link href="/privacy" className="site-footer__link">
               Privacy
             </Link>
-            <Link href="/terms-conditions" className="site-footer__link">
+            <Link href="/terms" className="site-footer__link">
               Terms
-            </Link>
-            <Link href="/terms-conditions" className="site-footer__link">
-              Accessibility
             </Link>
           </nav>
         </div>

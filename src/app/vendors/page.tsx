@@ -327,6 +327,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                         reviewsText={reviewMeta.reviews}
                         servedCounty={servedCounty}
                         description={description}
+                        showFeaturedBadge={Boolean(vendor.featured)}
                         initialSaved={savedIds.has(vendor.id)}
                       />
                     );

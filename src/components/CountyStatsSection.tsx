@@ -19,7 +19,7 @@ export function CountyStatsSection({
   const cards = [
     {
       key: "vendors",
-      eyebrow: "APPROVED VENDORS",
+      eyebrow: "APPROVED COURSES",
       value: vendorCount > 0 ? String(vendorCount) : "0",
     },
     {

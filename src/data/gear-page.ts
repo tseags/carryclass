@@ -3,7 +3,7 @@
  */
 
 export const GEAR_HERO = {
-  title: "CCW Gear & Everyday Carry Essentials",
+  title: "The best gear for CCW training & everyday carry",
   backgroundImage: "/images/gear-hero.png",
   objectPosition: "140% 55%",
 };
@@ -27,6 +27,10 @@ export interface GearProduct {
   price?: string;
   buyUrl: string;
   category: string;
+  badge?: "Top Pick" | "Budget Pick";
+  rating?: number;
+  reviewCount?: number;
+  categoryLabel?: string;
   /** Amazon ASIN for live price lookup (optional). Set env AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_PARTNER_TAG. */
   amazonAsin?: string;
 }
@@ -41,6 +45,10 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=we+the+people+holster",
     category: "holsters",
+    badge: "Top Pick",
+    rating: 4.8,
+    reviewCount: 234,
+    categoryLabel: "Holsters",
     amazonAsin: "B07D1G2C1K",
   },
   {
@@ -52,6 +60,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=stop+box+gun+safe",
     category: "storage",
+    rating: 4.7,
+    reviewCount: 189,
+    categoryLabel: "Storage",
     amazonAsin: "B01N2RORU2",
   },
   {
@@ -63,6 +74,10 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=snap+caps+9mm",
     category: "ammo-training",
+    badge: "Budget Pick",
+    rating: 4.5,
+    reviewCount: 412,
+    categoryLabel: "Ammo & Training",
     amazonAsin: "B0002KLZR8",
   },
   {
@@ -74,6 +89,10 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=5.11+tactical+belt",
     category: "belts",
+    badge: "Top Pick",
+    rating: 4.8,
+    reviewCount: 167,
+    categoryLabel: "Belts",
     amazonAsin: "B001KZ3Q2E",
   },
   {
@@ -85,6 +104,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=walkers+razor+ear+muffs",
     category: "ear-protection",
+    rating: 4.9,
+    reviewCount: 891,
+    categoryLabel: "Ear Protection",
     amazonAsin: "B001T7QJ9O",
   },
   {
@@ -98,6 +120,10 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     buyUrl:
       "https://www.amazon.com/s?k=Xaegistac+Shooting+Glasses+with+Case+Anti+Fog+Hunting+Safety+Glasses+for+Adults",
     category: "eye-protection",
+    badge: "Top Pick",
+    rating: 4.7,
+    reviewCount: 304,
+    categoryLabel: "Eye Protection",
   },
   {
     id: "7",
@@ -108,6 +134,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=vedder+owb+holster",
     category: "holsters",
+    rating: 4.6,
+    reviewCount: 98,
+    categoryLabel: "Holsters",
   },
   {
     id: "8",
@@ -118,6 +147,10 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=caldwell+paper+targets+shooting",
     category: "ammo-training",
+    badge: "Budget Pick",
+    rating: 4.4,
+    reviewCount: 213,
+    categoryLabel: "Ammo & Training",
   },
   {
     id: "9",
@@ -128,6 +161,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=double+mag+pouch+belt",
     category: "ammo-training",
+    rating: 4.5,
+    reviewCount: 76,
+    categoryLabel: "Ammo & Training",
   },
   {
     id: "10",
@@ -138,6 +174,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=range+bag+handgun",
     category: "storage",
+    rating: 4.6,
+    reviewCount: 245,
+    categoryLabel: "Storage",
   },
   {
     id: "11",
@@ -148,6 +187,9 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     price: "Check price",
     buyUrl: "https://www.amazon.com/s?k=hoppes+handgun+cleaning+kit",
     category: "ammo-training",
+    rating: 4.7,
+    reviewCount: 321,
+    categoryLabel: "Ammo & Training",
   },
   {
     id: "12",
@@ -161,5 +203,8 @@ export const GEAR_PRODUCTS: GearProduct[] = [
     buyUrl:
       "https://www.amazon.com/s?k=Condition+1+18+5+Pistol+Case+Model+801+Heavy+Duty+Waterproof+Hard+Gun+Case",
     category: "storage",
+    rating: 4.8,
+    reviewCount: 104,
+    categoryLabel: "Storage",
   },
 ];

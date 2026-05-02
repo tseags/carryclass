@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -36,7 +37,9 @@ export default function RootLayout({
           <link href="/css/app-overrides.css" rel="stylesheet" />
         </head>
         <body className="min-h-screen antialiased">
-          <div className="page-wrapper">{children}</div>
+          <ToastProvider>
+            <div className="page-wrapper">{children}</div>
+          </ToastProvider>
         </body>
       </html>
     </ClerkProvider>

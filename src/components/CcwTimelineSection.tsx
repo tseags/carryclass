@@ -496,9 +496,9 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-5">
                 <h2
                   id={submitModalTitleId}
-                  className="text-base font-semibold text-zinc-900 sm:text-lg"
+                  className="!text-base font-semibold leading-tight text-zinc-900 sm:!text-[1.06rem]"
                 >
-                  Submit your {countyDisplayName} County timeline
+                  How long did it take to get your permit, from application to issuance?
                 </h2>
                 <button
                   type="button"

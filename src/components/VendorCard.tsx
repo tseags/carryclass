@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Vendor } from "@/types";
 import { formatInitialRenewalPrices } from "@/lib/utils";
+import { SaveHeartButton } from "@/components/SaveHeartButton";
 
 interface VendorCardProps {
   vendor: Vendor;
@@ -11,7 +12,10 @@ export function VendorCard({ vendor, variant = "default" }: VendorCardProps) {
   const prices = formatInitialRenewalPrices(vendor);
 
   return (
-    <div className="card-link-image-top---text-container pd-36px---24px outline h-full transition-shadow hover:shadow-md">
+    <div className="relative card-link-image-top---text-container pd-36px---24px outline h-full transition-shadow hover:shadow-md">
+      <div className="absolute right-3 top-3">
+        <SaveHeartButton vendorId={vendor.id} />
+      </div>
       <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name mg-bottom-0">
         {vendor.name}
       </h3>

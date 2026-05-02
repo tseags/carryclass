@@ -1,20 +1,25 @@
 import Link from "next/link";
 import type { Vendor } from "@/types";
 import { getCountyDisplayName } from "@/data/counties";
+import { SaveHeartButton } from "@/components/SaveHeartButton";
 
 interface VendorCardWebflowProps {
   vendor: Vendor;
+  initialSaved?: boolean;
 }
 
-export function VendorCardWebflow({ vendor }: VendorCardWebflowProps) {
+export function VendorCardWebflow({ vendor, initialSaved = false }: VendorCardWebflowProps) {
   return (
     <div
       role="listitem"
-      className="w-dyn-item vendor-card-webflow-root"
+      className="relative w-dyn-item vendor-card-webflow-root"
       data-name={vendor.name}
       data-county={vendor.county}
       data-city={vendor.city}
     >
+      <div className="absolute right-3 top-3 z-20">
+        <SaveHeartButton vendorId={vendor.id} initialSaved={initialSaved} />
+      </div>
       <Link
         href={`/vendors/${vendor.slug}`}
         className="w-inline-block"

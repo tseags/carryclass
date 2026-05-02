@@ -58,6 +58,7 @@ export type VendorFilters = {
   classType?: ClassType;
   format?: ClassFormat;
   category?: CourseCategory;
+  savedOnly?: boolean;
   priceMin?: number;
   priceMax?: number;
   search?: string;
