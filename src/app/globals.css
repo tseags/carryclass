@@ -1029,13 +1029,14 @@ img.county-hero-image-fill {
 }
 .home-testimonials__heading {
   margin: 0 auto;
-  max-width: 760px;
+  max-width: none;
   color: #141413 !important;
   font-family: Thicccboi, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(28px, 3.2vw, 40px);
+  font-size: clamp(24px, 2.6vw, 32px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 .home-testimonials__submit-cta {
   min-height: 40px;
@@ -1242,6 +1243,9 @@ img.county-hero-image-fill {
 @media (max-width: 991px) {
   .home-testimonials {
     padding: 64px 0;
+  }
+  .home-testimonials__heading {
+    white-space: normal;
   }
   .home-testimonials__grid {
     grid-template-columns: 1fr;
