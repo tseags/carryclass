@@ -10,7 +10,7 @@ import { getVendorCountsByCounty } from "@/lib/vendors-db";
 export const metadata = {
   title: "Find California CCW Training by County | CCW Courses CA",
   description:
-    "Browse all California counties to find approved CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
+    "Browse California counties with listed CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
 };
 
 /** One-line blurb under each county name — count is rendered bold by the caller. */
@@ -37,11 +37,15 @@ export default async function CaliforniaPage({
 
   const vendorCountsByCounty = await getVendorCountsByCounty();
 
-  const filteredCounties = query
+  const nameFiltered = query
     ? CALIFORNIA_COUNTIES.filter((slug) =>
         getCountyDisplayName(slug).toLowerCase().includes(query)
       )
     : CALIFORNIA_COUNTIES.slice();
+
+  const filteredCounties = nameFiltered.filter(
+    (slug) => (vendorCountsByCounty[slug] ?? 0) > 0
+  );
 
   const counties = filteredCounties.slice().sort((a, b) => {
     const nameA = getCountyDisplayName(a);
@@ -78,11 +82,11 @@ export default async function CaliforniaPage({
             </h1>
             <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
               <span className="vendors-hero-description-line">
-                Browse all California counties to find approved CCW instructors and training vendors near you.
+                Browse California counties that currently have listed CCW instructors and training vendors near you.
               </span>
               <br aria-hidden="true" />
               <span className="vendors-hero-description-line">
-                Each county below links to its own sheriff-approved vendor list and renewal information.
+                Each county below links to its sheriff-approved vendor list and renewal information.
               </span>
             </p>
           </div>
@@ -189,11 +193,31 @@ export default async function CaliforniaPage({
             ) : (
               <div className="empty-state w-dyn-empty">
                 <div>
-                  No counties match &quot;{query}&quot;. Try adjusting your filters or{" "}
-                  <Link href="/ca" className="font-medium underline">
-                    view all counties
-                  </Link>
-                  .
+                  {query && nameFiltered.length > 0 ? (
+                    <>
+                      No counties matching &quot;{query}&quot; currently have listed CCW courses.{" "}
+                      <Link href="/ca" className="font-medium underline">
+                        Clear search
+                      </Link>
+                      .
+                    </>
+                  ) : query ? (
+                    <>
+                      No counties match &quot;{query}&quot;. Try adjusting your filters or{" "}
+                      <Link href="/ca" className="font-medium underline">
+                        view all counties
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    <>
+                      There are no counties with listed CCW courses yet.{" "}
+                      <Link href="/" className="font-medium underline">
+                        Back to home
+                      </Link>
+                      .
+                    </>
+                  )}
                 </div>
               </div>
             )}
