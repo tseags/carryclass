@@ -92,8 +92,6 @@ export default async function HomePage() {
               const servedCounty = vendor.countiesServed[0]
                 ? getCountyDisplayName(vendor.countiesServed[0])
                 : getCountyDisplayName(vendor.county);
-              const cardDescription =
-                vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
 
               return (
                 <PopularVendorCard
@@ -102,7 +100,6 @@ export default async function HomePage() {
                   ratingText={reviewMeta.rating}
                   reviewsText={reviewMeta.reviews}
                   servedCounty={servedCounty}
-                  description={cardDescription}
                   showFeaturedBadge={Boolean(vendor.featured)}
                   initialSaved={savedIds.has(vendor.id)}
                 />

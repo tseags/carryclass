@@ -238,6 +238,29 @@ function boolFromRow(row: Record<string, unknown>, keys: string[]): boolean {
   return false;
 }
 
+const VENDOR_DESCRIPTION_COLUMN_KEYS = [
+  "vendor_description",
+  "Vendor Description",
+  "vendor description",
+  "vendorDescription",
+] as const;
+
+const INSTRUCTOR_NAME_COLUMN_KEYS = [
+  "instructor_names",
+  "instructor_name",
+  "Instructor Names",
+  "instructors",
+] as const;
+
+function listingCardTextFromVendorFields(
+  vendorDescription: string | undefined,
+  instructorLine: string | undefined
+): string | undefined {
+  if (vendorDescription) return vendorDescription;
+  if (instructorLine) return `Instructors: ${instructorLine}`;
+  return undefined;
+}
+
 function mapLegacyVendorRow(row: Record<string, unknown>): Vendor | null {
   const id = pick(row, "id", "id");
   const slug = pick(row, "slug", "slug");
@@ -272,6 +295,10 @@ function mapLegacyVendorRow(row: Record<string, unknown>): Vendor | null {
   const photosList = strArr(photosRaw);
 
   const stripeRaw = pick(row, "stripeConnectAccountId", "stripe_connect_account_id");
+
+  const vendorDesc = optionalString(row, [...VENDOR_DESCRIPTION_COLUMN_KEYS]);
+  const instructorLine = optionalString(row, [...INSTRUCTOR_NAME_COLUMN_KEYS]);
+  const listingCardText = listingCardTextFromVendorFields(vendorDesc, instructorLine);
 
   return {
     id,
@@ -322,7 +349,14 @@ function mapLegacyVendorRow(row: Record<string, unknown>): Vendor | null {
     website: optionalString(row, ["website", "website_url", "url", "URL", "web_site", "Website"]),
     phone: (pick(row, "phone", "phone") as string | null) ?? undefined,
     email: (pick(row, "email", "email") as string | null) ?? undefined,
-    description: (pick(row, "description", "description") as string | null) ?? undefined,
+    description: optionalString(row, [
+      ...VENDOR_DESCRIPTION_COLUMN_KEYS,
+      "description",
+      "notes",
+      "bio",
+      "Details",
+    ]),
+    listingCardText,
     imageUrl: (pick(row, "imageUrl", "image_url") as string | null) ?? undefined,
     photos: photosList.length ? photosList : undefined,
     googleReviewsUrl: (pick(row, "googleReviewsUrl", "google_reviews_url") as string | null) ?? undefined,
@@ -376,16 +410,14 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
   const slugSuffix = fingerprint.slice(0, 10);
   const slug = slugBase ? `${slugBase}-${slugSuffix}` : `vendor-${slugSuffix}`;
 
-  const instructorLine = optionalString(row, [
-    "instructor_names",
-    "instructor_name",
-    "Instructor Names",
-    "instructors",
-  ]);
+  const instructorLine = optionalString(row, [...INSTRUCTOR_NAME_COLUMN_KEYS]);
+  const vendorDesc = optionalString(row, [...VENDOR_DESCRIPTION_COLUMN_KEYS]);
   const descExtra = optionalString(row, ["description", "notes", "bio", "Details"]);
+  const listingCardText = listingCardTextFromVendorFields(vendorDesc, instructorLine);
 
+  const bodyForProfile = vendorDesc || descExtra;
   const description =
-    [descExtra, instructorLine ? `Instructors: ${instructorLine}` : ""].filter(Boolean).join("\n\n") ||
+    [bodyForProfile, instructorLine ? `Instructors: ${instructorLine}` : ""].filter(Boolean).join("\n\n") ||
     undefined;
 
   const typeRaw = pick(row, "type", "type");
@@ -495,6 +527,7 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
     phone: optionalString(row, ["phone", "Phone", "telephone", "phone_number"]),
     email: optionalString(row, ["email", "Email", "contact_email"]),
     description,
+    listingCardText,
     imageUrl: optionalString(row, ["imageUrl", "image_url", "photo", "logo_url"]),
     photos: photosList.length ? photosList : undefined,
     googleReviewsUrl: optionalString(row, ["googleReviewsUrl", "google_reviews_url"]),
@@ -638,7 +671,9 @@ function applyVendorFiltersToSupabaseQuery(query: any, filters: VendorFilters): 
   if (filters.search?.trim()) {
     const raw = filters.search.trim();
     const pat = `%${escapeIlikePattern(raw)}%`;
-    q = q.or(`name.ilike.${pat},city.ilike.${pat},description.ilike.${pat}`);
+    q = q.or(
+      `name.ilike.${pat},city.ilike.${pat},description.ilike.${pat},vendor_description.ilike.${pat}`
+    );
   }
 
   return q;

@@ -56,18 +56,24 @@ body {
   flex: 1;
   min-width: 0;
 }
-.hero-search__input-plain {
+/* Webflow: `.input` uses min-height 70px; base `.w-input` uses height 38px + 8px 12px padding + 14px type.
+   Match `.btn-primary` (18px 24px padding, 1.125em line-height) and align hint with that inset. */
+.hero-search__field-row .hero-search__input-plain.input.w-input {
   width: 100%;
   min-width: 0;
-  min-height: 56px;
-  line-height: 1.5;
-  margin-bottom: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 18px 24px !important;
+  font-size: 16px !important;
+  line-height: 1.125em;
   color: #141413;
+  box-sizing: border-box;
 }
 .hero-search__overlay-hint {
   position: absolute;
-  left: 16px;
-  right: 16px;
+  left: 24px;
+  right: 24px;
   top: 50%;
   transform: translateY(-50%);
   color: #7a7a74;
@@ -871,7 +877,19 @@ img.county-hero-image-fill {
   color: #4b5563;
   font-size: 16px;
   line-height: 1.55;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  align-self: stretch;
+  /* Fixed preview block so cards share the same description height in a row */
+  height: calc(4 * 1.55 * 1em);
+  min-height: calc(4 * 1.55 * 1em);
+  max-height: calc(4 * 1.55 * 1em);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .popular-vendors-redesign__prices {
   display: flex;
@@ -880,6 +898,10 @@ img.county-hero-image-fill {
   gap: 22px;
   padding-top: 16px;
   border-top: 1px solid rgba(17, 24, 39, 0.08);
+  margin-top: auto;
+  /* Match one price column (clamp + label) so contact-only cards keep CTA / rule alignment */
+  min-height: calc(clamp(20px, 1.5vw, 27px) + 4px + 13px * 1.45);
+  box-sizing: border-box;
 }
 .popular-vendors-redesign__contact-pricing {
   margin: 0;
@@ -887,19 +909,52 @@ img.county-hero-image-fill {
   font-size: 13px;
   line-height: 1.45;
 }
+/* Same footprint as two price columns so the rule + CTA line up with priced cards */
+.popular-vendors-redesign__prices-contact {
+  display: grid;
+  grid-template-areas: "overlap";
+  width: 100%;
+  align-items: center;
+}
+.popular-vendors-redesign__prices-ghost {
+  grid-area: overlap;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 22px;
+  visibility: hidden;
+  user-select: none;
+}
+.popular-vendors-redesign__prices-contact .popular-vendors-redesign__contact-pricing {
+  grid-area: overlap;
+  z-index: 1;
+  align-self: center;
+}
 .popular-vendors-redesign__prices > div {
   text-align: left;
 }
 .popular-vendors-redesign__price {
   color: #141413;
-  font-size: 30px;
-  font-size: clamp(24px, 1.8vw, 32px);
+  font-size: clamp(20px, 1.5vw, 27px);
+  font-weight: 600;
   line-height: 1;
 }
 .popular-vendors-redesign__price-label {
   margin-top: 4px;
   color: #6b7280;
   font-size: 13px;
+}
+
+/* Webflow vendor cards: reserve two paragraph-small rows + gap so “Contact for pricing” matches priced cards */
+.vendor-card-pricing-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: calc(0.875rem * 1.714 * 2 + 10px);
+  box-sizing: border-box;
+}
+.vendor-card-pricing-rows--contact-fallback {
+  justify-content: center;
 }
 
 @media (max-width: 991px) {

@@ -24,6 +24,8 @@ export interface Vendor {
   phone?: string;
   email?: string;
   description?: string;
+  /** Directory card blurb: `vendor_description` from DB, else instructor names. */
+  listingCardText?: string;
   imageUrl?: string;
   /** Optional gallery photos for "About the Experience". Section hidden if empty. */
   photos?: string[];

@@ -482,8 +482,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                 const servedCounty = v.countiesServed[0]
                   ? getCountyDisplayName(v.countiesServed[0])
                   : getCountyDisplayName(v.county);
-                const description =
-                  v.description ?? "Sheriff-approved CCW instruction and renewal classes.";
 
                 return (
                   <PopularVendorCard
@@ -492,9 +490,8 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     ratingText={reviewMeta.rating}
                     reviewsText={reviewMeta.reviews}
                     servedCounty={servedCounty}
-                    description={description}
                     showFeaturedBadge={false}
-                  initialSaved={savedVendorIds.includes(v.id)}
+                    initialSaved={savedVendorIds.includes(v.id)}
                   />
                 );
               })}

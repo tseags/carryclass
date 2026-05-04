@@ -366,8 +366,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                     const servedCounty = vendor.countiesServed[0]
                       ? getCountyDisplayName(vendor.countiesServed[0])
                       : getCountyDisplayName(vendor.county);
-                    const description =
-                      vendor.description ?? "Sheriff-approved CCW instruction and renewal classes.";
                     const reviewMeta = getReviewMeta(vendor.id);
                     return (
                       <PopularVendorCard
@@ -376,7 +374,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                         ratingText={reviewMeta.rating}
                         reviewsText={reviewMeta.reviews}
                         servedCounty={servedCounty}
-                        description={description}
                         showFeaturedBadge={Boolean(vendor.featured)}
                         initialSaved={savedIds.has(vendor.id)}
                       />

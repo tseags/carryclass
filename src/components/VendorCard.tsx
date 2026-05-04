@@ -38,15 +38,23 @@ export function VendorCard({ vendor, variant = "default" }: VendorCardProps) {
             )}
           </div>
         </div>
-        {prices.initial && (
-          <div className="paragraph-small color-neutral-600">{prices.initial}</div>
-        )}
-        {prices.renewal && (
-          <div className="paragraph-small color-neutral-600">{prices.renewal}</div>
-        )}
-        {!prices.initial && !prices.renewal && (
-          <div className="paragraph-small color-neutral-600">Contact for pricing</div>
-        )}
+        <div
+          className={
+            !prices.initial && !prices.renewal
+              ? "vendor-card-pricing-rows vendor-card-pricing-rows--contact-fallback"
+              : "vendor-card-pricing-rows"
+          }
+        >
+          {prices.initial && (
+            <div className="paragraph-small color-neutral-600">{prices.initial}</div>
+          )}
+          {prices.renewal && (
+            <div className="paragraph-small color-neutral-600">{prices.renewal}</div>
+          )}
+          {!prices.initial && !prices.renewal && (
+            <div className="paragraph-small color-neutral-600">Contact for pricing</div>
+          )}
+        </div>
       </div>
       <div className="flex-align-left flex-align-stretch-mbp mg-top-auto">
         <Link href={`/vendors/${vendor.slug}`} className="w-inline-block w-full">
