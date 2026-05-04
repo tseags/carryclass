@@ -50,28 +50,34 @@ export function VendorCardWebflow({ vendor, initialSaved = false }: VendorCardWe
                 {vendor.countiesServed.map((c) => getCountyDisplayName(c)).join(", ")}
               </div>
             </div>
-            <div className="flex align-start gap-column-8px">
-              <div className="paragraph-small color-neutral-600">
-                <strong className="bold-text-2">$</strong>
-              </div>
-              <div className="paragraph-small color-neutral-600">
-                16-Hour Initial:{" "}
-                <strong>
-                  {vendor.priceInitial != null ? `$${vendor.priceInitial}` : "Contact"}
-                </strong>
-              </div>
-            </div>
-            <div className="flex align-start gap-column-8px">
-              <div className="paragraph-small color-neutral-600">
-                <strong className="bold-text-2">$</strong>
-              </div>
-              <div className="paragraph-small color-neutral-600">
-                8-Hour Renewal:{" "}
-                <strong>
-                  {vendor.priceRenewal != null ? `$${vendor.priceRenewal}` : "Contact"}
-                </strong>
-              </div>
-            </div>
+            {vendor.priceInitial == null && vendor.priceRenewal == null ? (
+              <div className="paragraph-small color-neutral-600">Contact for pricing</div>
+            ) : (
+              <>
+                <div className="flex align-start gap-column-8px">
+                  <div className="paragraph-small color-neutral-600">
+                    <strong className="bold-text-2">$</strong>
+                  </div>
+                  <div className="paragraph-small color-neutral-600">
+                    16-Hour Initial:{" "}
+                    <strong>
+                      {vendor.priceInitial != null ? `$${vendor.priceInitial}` : "Contact"}
+                    </strong>
+                  </div>
+                </div>
+                <div className="flex align-start gap-column-8px">
+                  <div className="paragraph-small color-neutral-600">
+                    <strong className="bold-text-2">$</strong>
+                  </div>
+                  <div className="paragraph-small color-neutral-600">
+                    8-Hour Renewal:{" "}
+                    <strong>
+                      {vendor.priceRenewal != null ? `$${vendor.priceRenewal}` : "Contact"}
+                    </strong>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex-align-left flex-align-stretch-mbp mg-top-auto">
             <div className="btn-primary vendor-card">View Now</div>

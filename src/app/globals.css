@@ -736,13 +736,17 @@ img.county-hero-image-fill {
   background: #ffffff;
   border: 1px solid rgba(17, 24, 39, 0.35);
   border-radius: 16px;
-  padding: 22px;
+  /* Match heart wrapper (top-3 / 12px) so title shares the top band with SaveHeartButton */
+  padding: 12px 22px 22px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   transition:
     transform 0.24s ease,
     box-shadow 0.24s ease,
     border-color 0.24s ease,
     background-color 0.24s ease;
+}
+.popular-vendors-redesign__card.popular-vendors-redesign__card--has-featured-badge {
+  padding: 22px;
 }
 .popular-vendors-redesign__card:hover {
   transform: translateY(-4px);
@@ -763,11 +767,13 @@ img.county-hero-image-fill {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.popular-vendors-redesign__featured.is-placeholder {
-  visibility: hidden;
-}
 .popular-vendors-redesign__title-row {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
   margin-bottom: 8px;
+  /* right-3 + h-8 heart + small gap — keep long titles clear of the button */
+  padding-right: calc(0.75rem + 2rem + 0.25rem);
 }
 .popular-vendors-redesign__title {
   margin: 0;
@@ -820,6 +826,12 @@ img.county-hero-image-fill {
   gap: 22px;
   padding-top: 16px;
   border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+.popular-vendors-redesign__contact-pricing {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
 }
 .popular-vendors-redesign__prices > div {
   text-align: left;
