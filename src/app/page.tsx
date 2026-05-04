@@ -14,6 +14,7 @@ import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getCountyDisplayName } from "@/data/counties";
 import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
 import { SupabaseDebugProbe } from "@/components/SupabaseDebugProbe";
+import { HeroSearchBar } from "@/components/HeroSearchBar";
 
 export const metadata = {
   title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
@@ -57,14 +58,7 @@ export default async function HomePage() {
                   reviews, and availability — all in one place, no account required.
                 </p>
               </div>
-              <div className="buttons-row">
-                <Link href="/vendors" className="btn-primary button-row w-button">
-                  Find CCW Courses
-                </Link>
-                <Link href="/ca" className="btn-secondary w-button">
-                  View Counties
-                </Link>
-              </div>
+              <HeroSearchBar />
             </div>
             <HeroImages />
           </div>
