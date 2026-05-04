@@ -12,8 +12,11 @@ import {
   isValidCountySlug,
   CALIFORNIA_COUNTIES,
 } from "@/data/counties";
-import { getVendorsByCounty } from "@/lib/vendors-db";
-import { filterVendors } from "@/lib/filter-vendors";
+import {
+  getCitiesForCountyFilter,
+  getVendorsByCounty,
+  queryVendorsForListing,
+} from "@/lib/vendors-db";
 import { getCountyImageUrl } from "@/data/county-images";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { CountyStatsSection } from "@/components/CountyStatsSection";
@@ -76,31 +79,13 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   const sort = resolved.sort as string | undefined;
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
 
-  const allSavedIds = new Set(
-    await getCurrentUserSavedVendorIds(allVendors.map((vendor) => vendor.id))
-  );
+  const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
 
-  const cityOptions = Array.from(
-    new Set(allVendors.map((vendor) => vendor.city))
-  ).sort((a, b) => a.localeCompare(b));
+  const cityOptions = await getCitiesForCountyFilter(county);
 
-  let vendors = filterVendors(allVendors, filters);
+  let vendors = await queryVendorsForListing(filters, sort);
   if (filters.savedOnly) {
     vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
-  }
-
-  if (sort === "name") {
-    vendors = [...vendors].sort((a, b) => a.name.localeCompare(b.name));
-  } else if (sort === "name-desc") {
-    vendors = [...vendors].sort((a, b) => b.name.localeCompare(a.name));
-  } else if (sort === "price-low") {
-    vendors = [...vendors].sort((a, b) => (a.priceMin ?? 0) - (b.priceMin ?? 0));
-  } else if (sort === "price-high") {
-    vendors = [...vendors].sort((a, b) => (b.priceMax ?? 0) - (a.priceMax ?? 0));
-  } else {
-    vendors = [...vendors].sort(
-      (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false)
-    );
   }
 
   const savedIds = new Set(

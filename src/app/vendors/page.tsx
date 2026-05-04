@@ -5,8 +5,7 @@ import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
-import { getAllVendors } from "@/lib/vendors-db";
-import { filterVendors } from "@/lib/filter-vendors";
+import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 
 interface PageProps {
@@ -46,36 +45,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     search: resolved.search as string | undefined,
   };
 
-  const allVendors = await getAllVendors();
-  const allSavedIds = new Set(
-    await getCurrentUserSavedVendorIds(allVendors.map((vendor) => vendor.id))
-  );
-  const cityOptions = Array.from(
-    new Set(
-      allVendors
-        .filter((vendor) =>
-          filters.county
-            ? vendor.countiesServed.some((served) => served.toLowerCase() === filters.county!.toLowerCase())
-            : true
-        )
-        .map((vendor) => vendor.city)
-    )
-  ).sort((a, b) => a.localeCompare(b));
-  let vendors = filterVendors(allVendors, filters);
+  const sort = resolved.sort as string | undefined;
+  const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
+  const cityOptions = await getCitiesForCountyFilter(filters.county);
+  let vendors = await queryVendorsForListing(filters, sort);
   if (filters.savedOnly) {
     vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
-  }
-  const sort = resolved.sort as string | undefined;
-  if (sort === "name") {
-    vendors = [...vendors].sort((a, b) => a.name.localeCompare(b.name));
-  } else if (sort === "name-desc") {
-    vendors = [...vendors].sort((a, b) => b.name.localeCompare(a.name));
-  } else if (sort === "price-low") {
-    vendors = [...vendors].sort((a, b) => (a.priceMin ?? 0) - (b.priceMin ?? 0));
-  } else if (sort === "price-high") {
-    vendors = [...vendors].sort((a, b) => (b.priceMax ?? 0) - (a.priceMax ?? 0));
-  } else {
-    vendors = [...vendors].sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
   }
 
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";

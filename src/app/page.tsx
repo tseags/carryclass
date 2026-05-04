@@ -13,6 +13,7 @@ import { getAllVendors } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getCountyDisplayName } from "@/data/counties";
 import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
+import { SupabaseDebugProbe } from "@/components/SupabaseDebugProbe";
 
 export const metadata = {
   title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
@@ -38,6 +39,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <SupabaseDebugProbe />
       <Header />
       {/* Hero - section-2 */}
       <div className="section-2">
