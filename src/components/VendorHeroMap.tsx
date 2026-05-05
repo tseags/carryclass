@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { getCoordinatesForVendor } from "@/data/vendor-coordinates";
-
-/** Google Maps brand red */
-const GOOGLE_RED = "#EA4335";
+import { buildVendorLocationQueries } from "@/lib/vendor-location";
 
 interface VendorHeroMapProps {
   vendorName: string;
@@ -18,49 +13,6 @@ interface VendorHeroMapProps {
   address?: string;
 }
 
-function KeepMapSized() {
-  const map = useMap();
-
-  useEffect(() => {
-    const invalidate = () => map.invalidateSize();
-    const timeoutId = window.setTimeout(invalidate, 100);
-    const onWindowResize = () => invalidate();
-
-    window.addEventListener("resize", onWindowResize);
-
-    const mapElement = map.getContainer();
-    const observer = new ResizeObserver(() => invalidate());
-    observer.observe(mapElement);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.removeEventListener("resize", onWindowResize);
-      observer.disconnect();
-    };
-  }, [map]);
-
-  return null;
-}
-
-function useGoogleStylePinIcon() {
-  return useMemo(
-    () =>
-      L.divIcon({
-        className: "vendor-hero-map-marker",
-        html: `<div class="vendor-hero-map-marker-inner" aria-hidden="true">
-  <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
-    <path fill="${GOOGLE_RED}" stroke="#fff" stroke-width="1.25" d="M16 2C10.5 2 6 6.5 6 12c0 6.5 8 16.5 10 19 2-2.5 10-12.5 10-19 0-5.5-4.5-10-10-10z"/>
-    <circle cx="16" cy="12" r="3.5" fill="#fff"/>
-  </svg>
-</div>`,
-        iconSize: [32, 42],
-        iconAnchor: [16, 42],
-        popupAnchor: [0, -40],
-      }),
-    []
-  );
-}
-
 export function VendorHeroMap({
   vendorName,
   city,
@@ -68,13 +20,50 @@ export function VendorHeroMap({
   state,
   address,
 }: VendorHeroMapProps) {
-  const coordinates = useMemo(() => getCoordinatesForVendor(city, county), [city, county]);
-  const pinIcon = useGoogleStylePinIcon();
+  const [hasEmbedError, setHasEmbedError] = useState(false);
+  const [resolvedQuery, setResolvedQuery] = useState(() => {
+    const fallback = buildVendorLocationQueries({ address, city, county, state });
+    return fallback.googleMapsQuery;
+  });
 
-  const mapQuery = address ? `${address}, ${city}, ${state}` : `${city}, ${state}, USA`;
-  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+  useEffect(() => {
+    let canceled = false;
+    const controller = new AbortController();
+    const fallback = buildVendorLocationQueries({ address, city, county, state });
 
-  if (!coordinates) {
+    setResolvedQuery(fallback.googleMapsQuery);
+    setHasEmbedError(false);
+
+    const params = new URLSearchParams();
+    if (address?.trim()) params.set("address", address.trim());
+    if (city?.trim()) params.set("city", city.trim());
+    if (county?.trim()) params.set("county", county.trim());
+    if (state?.trim()) params.set("state", state.trim());
+
+    void fetch(`/api/vendor-location?${params.toString()}`, {
+      method: "GET",
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload: { coordinates?: [number, number] | null; googleMapsQuery?: string; resolvedQuery?: string } | null) => {
+        if (canceled || !payload) return;
+        setResolvedQuery(payload.googleMapsQuery || payload.resolvedQuery || fallback.googleMapsQuery);
+      })
+      .catch(() => {
+        // Keep local fallback if the API call fails.
+      });
+
+    return () => {
+      canceled = true;
+      controller.abort();
+    };
+  }, [address, city, county, state]);
+
+  const googleEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(resolvedQuery)}&output=embed`;
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedQuery)}`;
+
+  if (!resolvedQuery || hasEmbedError) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-100 p-4 text-center">
         <p className="text-sm font-medium text-zinc-700">Map preview unavailable for this location.</p>
@@ -91,34 +80,16 @@ export function VendorHeroMap({
   }
 
   return (
-    <MapContainer
-      center={coordinates}
-      zoom={14}
-      className="vendor-hero-map absolute inset-0 h-full w-full"
-      style={{ display: "block" }}
-      scrollWheelZoom={false}
-      attributionControl
-      zoomControl
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-        maxZoom={20}
-        maxNativeZoom={19}
-      />
-      <Marker position={coordinates} icon={pinIcon}>
-        <Popup className="vendor-hero-map-popup">
-          <strong>{vendorName}</strong>
-          <br />
-          {city}, {state}
-          <br />
-          <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-            Open in Google Maps
-          </a>
-        </Popup>
-      </Marker>
-      <KeepMapSized />
-    </MapContainer>
+    <iframe
+      title={`Google map for ${vendorName}`}
+      src={googleEmbedUrl}
+      className="vendor-hero-map absolute inset-0 h-full w-full border-0"
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      onError={() => {
+        setHasEmbedError(true);
+      }}
+      allowFullScreen
+    />
   );
 }
