@@ -6,7 +6,9 @@ import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
+import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
+import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { SaveHeartButton } from "@/components/SaveHeartButton";
 import { getCountyDisplayName } from "@/data/counties";
 
@@ -40,17 +42,6 @@ interface PageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function getReviewMeta(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
-  }
-  const ratingPool = ["4.6", "4.7", "4.8", "4.9"];
-  const rating = ratingPool[hash % ratingPool.length];
-  const reviews = `${(hash % 230) + 24} reviews`;
-  return { rating, reviews };
-}
-
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const vendor = await getVendorBySlug(slug);
@@ -75,9 +66,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     notFound();
   }
 
-  // Other vendors (exclude current)
   const allVendors = await getAllVendors();
-  const otherVendors = allVendors.filter((v) => v.slug !== slug).slice(0, 3);
+  const otherVendors = getRelatedVendorsForVendorProfile(vendor, allVendors, 3);
+  const otherVendorListingReviews = await getApprovedReviewStatsByVendorIds(
+    otherVendors.map((v) => v.id)
+  );
 
   const heroButtonClassName =
     "vendor-profile-hero-cta btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block self-start text-center !bg-[#c96442] !text-white hover:!bg-[#d97757] focus-visible:!bg-[#d97757]";
@@ -269,6 +262,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                 <Link
                   key={tab.id}
                   href={tabHref(tab.id)}
+                  prefetch={tab.id === "reviews" ? false : undefined}
                   role="tab"
                   aria-selected={active}
                   aria-controls={`vendor-tab-panel-${tab.id}`}
@@ -351,6 +345,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                 </section>
               )}
 
+              {/* Reviews (and Google Places fetch) mount only on this tab — avoids Places billing when browsing About / What To Bring */}
               {selectedTab === "reviews" && (
                 <section
                   id="vendor-tab-panel-reviews"
@@ -358,7 +353,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   aria-labelledby="vendor-tab-reviews"
                   className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 text-left sm:px-8 sm:pt-8"
                 >
-                  <VendorReviewsSection vendor={vendor} variant="profile-tab" />
+                  <VendorReviewsSection
+                    vendor={vendor}
+                    variant="profile-tab"
+                    fetchGoogleReviews
+                  />
                 </section>
               )}
 
@@ -461,43 +460,43 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
           </div>
         </section>
 
-        <section
-          className="section home-page popular popular-vendors-redesign relative left-1/2 -translate-x-1/2 w-screen"
-          aria-label="More CCW Courses"
-        >
-          <div className="container-default w-container">
-            <div className="popular-vendors-redesign__header">
-              <div>
-                <h2 className="mg-bottom-0">More CCW Courses</h2>
+        {otherVendors.length > 0 ? (
+          <section
+            className="section home-page popular popular-vendors-redesign relative left-1/2 -translate-x-1/2 w-screen"
+            aria-label="More CCW Courses"
+          >
+            <div className="container-default w-container">
+              <div className="popular-vendors-redesign__header">
+                <div>
+                  <h2 className="mg-bottom-0">More CCW Courses</h2>
+                </div>
+                <div className="popular-vendors-redesign__header-btn">
+                  <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
+                    View All Vendors
+                  </Link>
+                </div>
               </div>
-              <div className="popular-vendors-redesign__header-btn">
-                <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
-                  View All Vendors
-                </Link>
-              </div>
-            </div>
-            <div className="popular-vendors-redesign__grid">
-              {otherVendors.map((v) => {
-                const reviewMeta = getReviewMeta(v.id);
-                const servedCounty = v.countiesServed[0]
-                  ? getCountyDisplayName(v.countiesServed[0])
-                  : getCountyDisplayName(v.county);
+              <div className="popular-vendors-redesign__grid">
+                {otherVendors.map((v) => {
+                  const servedCounty = v.countiesServed[0]
+                    ? getCountyDisplayName(v.countiesServed[0])
+                    : getCountyDisplayName(v.county);
 
-                return (
-                  <PopularVendorCard
-                    key={v.id}
-                    vendor={v}
-                    ratingText={reviewMeta.rating}
-                    reviewsText={reviewMeta.reviews}
-                    servedCounty={servedCounty}
-                    showFeaturedBadge={false}
-                    initialSaved={savedVendorIds.includes(v.id)}
-                  />
-                );
-              })}
+                  return (
+                    <PopularVendorCard
+                      key={v.id}
+                      vendor={v}
+                      listingReviews={otherVendorListingReviews.get(v.id) ?? null}
+                      servedCounty={servedCounty}
+                      showFeaturedBadge={false}
+                      initialSaved={savedVendorIds.includes(v.id)}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <Footer />
       </main>

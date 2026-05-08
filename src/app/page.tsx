@@ -11,10 +11,12 @@ import { ByTheNumbersStats } from "@/components/ByTheNumbersStats";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { getAllVendors } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
+import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { getCountyDisplayName } from "@/data/counties";
 import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
 import { SupabaseDebugProbe } from "@/components/SupabaseDebugProbe";
 import { HeroSearchBar } from "@/components/HeroSearchBar";
+import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
 
 export const metadata = {
   title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
@@ -25,15 +27,17 @@ export const metadata = {
 
 export default async function HomePage() {
   const vendors = await getAllVendors();
-  const featuredVendors = [...vendors]
-    .filter((v) => v.featured)
-    .concat(vendors.filter((v) => !v.featured))
-    .slice(0, 3);
-  const popularVendorReviewStats = [
-    { rating: "4.9", reviews: "87 reviews" },
-    { rating: "4.8", reviews: "124 reviews" },
-    { rating: "4.9", reviews: "47 reviews" },
-  ];
+  const popularPicks = pickHomePopularVendors(vendors);
+  const featuredVendors =
+    popularPicks.length >= 3
+      ? popularPicks
+      : [...vendors]
+          .filter((v) => v.featured)
+          .concat(vendors.filter((v) => !v.featured))
+          .slice(0, 3);
+  const featuredListingReviewStats = await getApprovedReviewStatsByVendorIds(
+    featuredVendors.map((v) => v.id)
+  );
   const savedIds = new Set(
     await getCurrentUserSavedVendorIds(featuredVendors.map((vendor) => vendor.id))
   );
@@ -85,10 +89,7 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="popular-vendors-redesign__grid">
-            {featuredVendors.map((vendor, index) => {
-              const reviewMeta =
-                popularVendorReviewStats[index] ??
-                popularVendorReviewStats[popularVendorReviewStats.length - 1];
+            {featuredVendors.map((vendor) => {
               const servedCounty = vendor.countiesServed[0]
                 ? getCountyDisplayName(vendor.countiesServed[0])
                 : getCountyDisplayName(vendor.county);
@@ -97,10 +98,11 @@ export default async function HomePage() {
                 <PopularVendorCard
                   key={vendor.id}
                   vendor={vendor}
-                  ratingText={reviewMeta.rating}
-                  reviewsText={reviewMeta.reviews}
+                  listingReviews={featuredListingReviewStats.get(vendor.id) ?? null}
                   servedCounty={servedCounty}
-                  showFeaturedBadge={Boolean(vendor.featured)}
+                  showFeaturedBadge={
+                    popularPicks.length >= 3 ? true : Boolean(vendor.featured)
+                  }
                   initialSaved={savedIds.has(vendor.id)}
                 />
               );

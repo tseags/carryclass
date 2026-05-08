@@ -16,7 +16,7 @@ export function VendorCard({ vendor, variant = "default" }: VendorCardProps) {
       <div className="absolute right-3 top-3">
         <SaveHeartButton vendorId={vendor.id} />
       </div>
-      <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name mg-bottom-0">
+      <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name mg-bottom-0 pt-1">
         {vendor.name}
       </h3>
       <div className="grid-1-column gap-row-10px mg-bottom-24px">

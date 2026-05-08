@@ -135,6 +135,48 @@ export async function getApprovedVendorReviews(vendorId: string): Promise<Approv
   }));
 }
 
+export type VendorListingReviewStats = {
+  averageRating: number;
+  count: number;
+};
+
+/**
+ * One query for listing pages: approved review count + average per vendor.
+ * Vendors with no approved reviews are omitted from the returned map.
+ */
+export async function getApprovedReviewStatsByVendorIds(
+  vendorIds: string[]
+): Promise<Map<string, VendorListingReviewStats>> {
+  const unique = [...new Set(vendorIds.filter((id) => id.trim()))];
+  if (unique.length === 0) return new Map();
+
+  try {
+    const grouped = await prisma.vendorReview.groupBy({
+      by: ["vendorId"],
+      where: {
+        vendorId: { in: unique },
+        status: "APPROVED",
+      },
+      _count: { _all: true },
+      _avg: { rating: true },
+    });
+
+    const map = new Map<string, VendorListingReviewStats>();
+    for (const row of grouped) {
+      const count = row._count._all;
+      const avg = row._avg.rating;
+      if (count < 1 || avg == null) continue;
+      map.set(row.vendorId, { count, averageRating: avg });
+    }
+    return map;
+  } catch (error) {
+    if (isMissingVendorReviewsTableError(error)) {
+      return new Map();
+    }
+    throw error;
+  }
+}
+
 export async function createVendorReview(input: Partial<CreateVendorReviewInput>) {
   const validated = validateCreateVendorReviewInput(input);
   if (!validated.ok) {

@@ -1,14 +1,38 @@
 import Link from "next/link";
 import type { Vendor } from "@/types";
+import type { VendorListingReviewStats } from "@/lib/vendor-reviews";
 import { SaveHeartButton } from "@/components/SaveHeartButton";
 
 const LISTING_CARD_FALLBACK =
   "Sheriff-approved CCW instruction and renewal classes.";
 
+function ListingStarCluster({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[12px] leading-none tracking-[0.04em]" aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={
+            i <= full
+              ? "text-[#c96442]"
+              : half && i === full + 1
+                ? "text-[#c96442] opacity-[0.82]"
+                : "text-[#d8d4cb]"
+          }
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
 interface PopularVendorCardProps {
   vendor: Vendor;
-  ratingText: string;
-  reviewsText: string;
+  /** Listing cards only show stars when there is at least one approved directory review. */
+  listingReviews: VendorListingReviewStats | null;
   servedCounty: string;
   showFeaturedBadge?: boolean;
   initialSaved?: boolean;
@@ -16,8 +40,7 @@ interface PopularVendorCardProps {
 
 export function PopularVendorCard({
   vendor,
-  ratingText,
-  reviewsText,
+  listingReviews,
   servedCounty,
   showFeaturedBadge = false,
   initialSaved = false,
@@ -41,12 +64,18 @@ export function PopularVendorCard({
           <h3 className="popular-vendors-redesign__title">{vendor.name}</h3>
         </div>
 
-        <div className="popular-vendors-redesign__rating-row">
-          <span className="popular-vendors-redesign__stars">★★★★★</span>
-          <span className="popular-vendors-redesign__rating-copy">
-            {ratingText} · {reviewsText}
-          </span>
-        </div>
+        {listingReviews && listingReviews.count > 0 ? (
+          <div
+            className="popular-vendors-redesign__rating-row"
+            aria-label={`${listingReviews.averageRating.toFixed(1)} out of 5 stars, ${listingReviews.count} reviews`}
+          >
+            <ListingStarCluster rating={listingReviews.averageRating} />
+            <span className="popular-vendors-redesign__rating-copy">
+              {listingReviews.averageRating.toFixed(1)} · {listingReviews.count} review
+              {listingReviews.count !== 1 ? "s" : ""}
+            </span>
+          </div>
+        ) : null}
 
         <div className="popular-vendors-redesign__location-row">
           <img

@@ -20,11 +20,29 @@ export interface GooglePlaceReviewsResult {
 
 const FIELDS = "rating,user_ratings_total,reviews";
 
-export async function getPlaceReviews(
+export type GoogleReviewsErrorReason =
+  | "missing_api_key"
+  | "not_found"
+  | "invalid_request"
+  | "upstream_error";
+
+export type GetPlaceReviewsResult =
+  | { ok: true; data: GooglePlaceReviewsResult }
+  | { ok: false; reason: GoogleReviewsErrorReason };
+
+function mapGoogleStatusToReason(status: string): GoogleReviewsErrorReason {
+  if (status === "NOT_FOUND") return "not_found";
+  if (status === "INVALID_REQUEST") return "invalid_request";
+  return "upstream_error";
+}
+
+export async function getPlaceReviewsResult(
   placeId: string
-): Promise<GooglePlaceReviewsResult | null> {
+): Promise<GetPlaceReviewsResult> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key?.trim()) return null;
+  if (!key?.trim()) {
+    return { ok: false, reason: "missing_api_key" };
+  }
 
   const url = new URL("https://maps.googleapis.com/maps/api/place/details/json");
   url.searchParams.set("place_id", placeId);
@@ -37,7 +55,9 @@ export async function getPlaceReviews(
     });
     const data = await res.json();
 
-    if (data.status !== "OK" || !data.result) return null;
+    if (data.status !== "OK" || !data.result) {
+      return { ok: false, reason: mapGoogleStatusToReason(String(data.status ?? "")) };
+    }
 
     const r = data.result;
     const rating = typeof r.rating === "number" ? r.rating : 0;
@@ -58,8 +78,18 @@ export async function getPlaceReviews(
       profilePhotoUrl: rev.profile_photo_url,
     }));
 
-    return { rating, userRatingsTotal, reviews };
+    return {
+      ok: true,
+      data: { rating, userRatingsTotal, reviews },
+    };
   } catch {
-    return null;
+    return { ok: false, reason: "upstream_error" };
   }
+}
+
+export async function getPlaceReviews(
+  placeId: string
+): Promise<GooglePlaceReviewsResult | null> {
+  const result = await getPlaceReviewsResult(placeId);
+  return result.ok ? result.data : null;
 }

@@ -29,7 +29,7 @@ export function VendorCardWebflow({ vendor, initialSaved = false }: VendorCardWe
           className="vendor-card-hover card-link-image-top---text-container pd-36px---24px outline popular home"
           style={{ height: "100%", display: "flex", flexDirection: "column" }}
         >
-          <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name">
+          <h3 className="link-item-text---hover-secondary-2 heading-h4-size vendor-name pt-1">
             {vendor.name}
           </h3>
           <div className="grid-1-column gap-row-10px mg-bottom-24px">

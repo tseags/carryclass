@@ -76,7 +76,7 @@ export function Header() {
                     href="/vendors"
                     className="btn-primary bg-secondary-2 small w-button"
                   >
-                    Find CCW Courses
+                    Find Classes
                   </Link>
                 </li>
                 <li className="header-nav-list-item show-in-tablet">
@@ -103,7 +103,7 @@ export function Header() {
             </nav>
             <div className="header-btn-right-wrapper flex items-center justify-end gap-3">
               <Link href="/vendors" className="btn-primary bg-secondary-2 small w-button">
-                Find CCW Courses
+                Find Classes
               </Link>
               <div className="hidden ml-1 flex items-center gap-2 sm:flex">
                 {user ? (

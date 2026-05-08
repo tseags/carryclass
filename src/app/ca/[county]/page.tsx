@@ -24,21 +24,11 @@ import { CcwTimelineSection } from "@/components/CcwTimelineSection";
 import { getPlaceholderCcwTimelineData } from "@/data/ccw-timeline-placeholder";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
+import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 
 interface PageProps {
   params: Promise<{ county: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-function getReviewMeta(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
-  }
-  const ratingPool = ["4.6", "4.7", "4.8", "4.9"];
-  const rating = ratingPool[hash % ratingPool.length];
-  const reviews = `${(hash % 230) + 24} reviews`;
-  return { rating, reviews };
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -87,6 +77,8 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   if (filters.savedOnly) {
     vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
   }
+
+  const listingReviewStats = await getApprovedReviewStatsByVendorIds(vendors.map((v) => v.id));
 
   const savedIds = new Set(
     [...allSavedIds].filter((id) => vendors.some((vendor) => vendor.id === id))
@@ -366,13 +358,11 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                     const servedCounty = vendor.countiesServed[0]
                       ? getCountyDisplayName(vendor.countiesServed[0])
                       : getCountyDisplayName(vendor.county);
-                    const reviewMeta = getReviewMeta(vendor.id);
                     return (
                       <PopularVendorCard
                         key={vendor.id}
                         vendor={vendor}
-                        ratingText={reviewMeta.rating}
-                        reviewsText={reviewMeta.reviews}
+                        listingReviews={listingReviewStats.get(vendor.id) ?? null}
                         servedCounty={servedCounty}
                         showFeaturedBadge={Boolean(vendor.featured)}
                         initialSaved={savedIds.has(vendor.id)}

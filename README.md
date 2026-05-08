@@ -63,6 +63,26 @@ npm run pull:county-images
 
 `npm run build` runs that copy step automatically, then regenerates `src/data/county-images-local.generated.ts`. Counties without a file in `County Images/` still use Unsplash fallbacks from `src/data/county-images.ts`.
 
+### Google Reviews integration
+
+Vendor profile pages can show Google Business reviews in the `Reviews` tab.
+
+- **Required env var**
+  - `GOOGLE_PLACES_API_KEY` (server-only): used by `src/app/api/google-reviews/route.ts`
+- **Vendor data mapping**
+  - Provide `googlePlaceId`/`google_place_id` on vendor rows
+  - Optional `googleReviewsUrl`/`google_reviews_url` is used for "View all on Google" links
+- **Behavior**
+  - On vendor profiles, the Reviews UI (including Google Places fetch) mounts **only when** `?tab=reviews`: viewing About or What To Bring does not call Places API.
+  - The Reviews tab link uses `prefetch={false}` so Next.js doesn’t prefetch that route in the background.
+  - If `googlePlaceId` exists and `fetchGoogleReviews` is enabled on that route, the client fetches `/api/google-reviews?placeId=...` once after mount (opening Reviews tab or landing directly on `?tab=reviews`).
+  - If missing, the UI shows a connected-account empty state and falls back to directory-native reviews
+  - If Google API fails, the UI shows a non-blocking fallback message and still renders directory-native reviews
+- **Caching and quota**
+  - The API route keeps a per-instance in-memory cache for 15 minutes per place id
+  - Upstream Google Place Details calls also use Next.js fetch revalidation (`revalidate: 3600`)
+  - This reduces repeated calls and helps manage Places API quotas/costs
+
 ## Project Structure
 
 ```

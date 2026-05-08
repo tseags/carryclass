@@ -831,6 +831,7 @@ img.county-hero-image-fill {
   display: flex;
   align-items: center;
   min-height: 2rem;
+  padding-top: 6px;
   margin-bottom: 8px;
   /* right-3 + h-8 heart + small gap — keep long titles clear of the button */
   padding-right: calc(0.75rem + 2rem + 0.25rem);
