@@ -617,6 +617,40 @@ function sortByName(vendors: Vendor[]): Vendor[] {
   return [...vendors].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function vendorHasListedCoursePrice(v: Vendor): boolean {
+  return (
+    v.priceMin != null ||
+    v.priceMax != null ||
+    v.priceInitial != null ||
+    v.priceRenewal != null
+  );
+}
+
+function comparableCoursePrice(v: Vendor, direction: "asc" | "desc"): number | undefined {
+  const prices = [v.priceMin, v.priceMax, v.priceInitial, v.priceRenewal].filter(
+    (p): p is number => p != null
+  );
+  if (prices.length === 0) return undefined;
+  return direction === "asc" ? Math.min(...prices) : Math.max(...prices);
+}
+
+function sortByComparablePrice(vendors: Vendor[], direction: "asc" | "desc"): Vendor[] {
+  const sign = direction === "asc" ? 1 : -1;
+  return [...vendors].sort((a, b) => {
+    const aHasPrice = vendorHasListedCoursePrice(a);
+    const bHasPrice = vendorHasListedCoursePrice(b);
+    if (aHasPrice !== bHasPrice) return aHasPrice ? -1 : 1;
+
+    const aPrice = comparableCoursePrice(a, direction);
+    const bPrice = comparableCoursePrice(b, direction);
+    if (aPrice != null && bPrice != null && aPrice !== bPrice) {
+      return (aPrice - bPrice) * sign;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function escapeIlikePattern(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
@@ -687,10 +721,10 @@ function applySort(vendors: Vendor[], sort: string | undefined): Vendor[] {
     return [...vendors].sort((a, b) => b.name.localeCompare(a.name));
   }
   if (sort === "price-low") {
-    return [...vendors].sort((a, b) => (a.priceMin ?? 0) - (b.priceMin ?? 0));
+    return sortByComparablePrice(vendors, "asc");
   }
   if (sort === "price-high") {
-    return [...vendors].sort((a, b) => (b.priceMax ?? 0) - (a.priceMax ?? 0));
+    return sortByComparablePrice(vendors, "desc");
   }
   return [...vendors].sort(
     (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false)
