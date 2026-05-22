@@ -6,9 +6,19 @@ import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
+import { sortCountyListingVendors } from "@/lib/county-listing-sort";
 import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
+import type { CourseCategory } from "@/types";
+
+const CATEGORY_FILTER_OPTIONS: { value: "" | CourseCategory; label: string }[] = [
+  { value: "", label: "All categories" },
+  { value: "initial", label: "16-Hour Initial" },
+  { value: "renewal", label: "8-Hour Renewal" },
+  { value: "add-gun", label: "Add a Gun" },
+  { value: "online", label: "Virtual Courses" },
+];
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -46,9 +56,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   const sort = resolved.sort as string | undefined;
   const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
   const cityOptions = await getCitiesForCountyFilter(filters.county);
-  const vendors = await queryVendorsForListing(filters, sort);
+  const vendorsFromQuery = await queryVendorsForListing(filters, sort);
 
-  const listingReviewStats = await getApprovedReviewStatsByVendorIds(vendors.map((v) => v.id));
+  const listingReviewStats = await getApprovedReviewStatsByVendorIds(
+    vendorsFromQuery.map((v) => v.id)
+  );
+  const vendors = sortCountyListingVendors(vendorsFromQuery, listingReviewStats, sort);
 
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
   const savedIds = new Set(
@@ -172,6 +185,17 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   </select>
                 </label>
 
+                <label className="vendors-filter-group">
+                  <span>Category</span>
+                  <select name="category" defaultValue={filters.category ?? ""}>
+                    {CATEGORY_FILTER_OPTIONS.map((opt) => (
+                      <option key={opt.value || "all"} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 {sort && <input type="hidden" name="sort" value={sort} />}
                 <input type="hidden" name="view" value={view} />
                 <button type="submit" className="btn-primary w-button vendors-filters-submit">
@@ -248,6 +272,9 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                     <input type="hidden" name="classType" value={filters.classType} />
                   )}
                   {filters.format && <input type="hidden" name="format" value={filters.format} />}
+                  {filters.category && (
+                    <input type="hidden" name="category" value={filters.category} />
+                  )}
                   {filters.priceMax != null && (
                     <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
                   )}
