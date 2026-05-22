@@ -26,6 +26,7 @@ import { getPlaceholderCcwTimelineData } from "@/data/ccw-timeline-placeholder";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
+import { sortCountyListingVendors } from "@/lib/county-listing-sort";
 
 interface PageProps {
   params: Promise<{ county: string }>;
@@ -81,9 +82,12 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
   const cityOptions = await getCitiesForCountyFilter(county);
 
-  const vendors = await queryVendorsForListing(filters, sort);
+  const vendorsFromQuery = await queryVendorsForListing(filters, sort);
 
-  const listingReviewStats = await getApprovedReviewStatsByVendorIds(vendors.map((v) => v.id));
+  const listingReviewStats = await getApprovedReviewStatsByVendorIds(
+    vendorsFromQuery.map((v) => v.id)
+  );
+  const vendors = sortCountyListingVendors(vendorsFromQuery, listingReviewStats, sort);
 
   const savedIds = new Set(
     [...allSavedIds].filter((id) => vendors.some((vendor) => vendor.id === id))

@@ -4,6 +4,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { Vendor, VendorFilters } from "@/types";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { filterVendors } from "@/lib/filter-vendors";
+import { applyListingSort } from "@/lib/vendor-listing-sort";
 import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
 
@@ -686,40 +687,6 @@ function sortByName(vendors: Vendor[]): Vendor[] {
   return [...vendors].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function vendorHasListedCoursePrice(v: Vendor): boolean {
-  return (
-    v.priceMin != null ||
-    v.priceMax != null ||
-    v.priceInitial != null ||
-    v.priceRenewal != null
-  );
-}
-
-function comparableCoursePrice(v: Vendor, direction: "asc" | "desc"): number | undefined {
-  const prices = [v.priceMin, v.priceMax, v.priceInitial, v.priceRenewal].filter(
-    (p): p is number => p != null
-  );
-  if (prices.length === 0) return undefined;
-  return direction === "asc" ? Math.min(...prices) : Math.max(...prices);
-}
-
-function sortByComparablePrice(vendors: Vendor[], direction: "asc" | "desc"): Vendor[] {
-  const sign = direction === "asc" ? 1 : -1;
-  return [...vendors].sort((a, b) => {
-    const aHasPrice = vendorHasListedCoursePrice(a);
-    const bHasPrice = vendorHasListedCoursePrice(b);
-    if (aHasPrice !== bHasPrice) return aHasPrice ? -1 : 1;
-
-    const aPrice = comparableCoursePrice(a, direction);
-    const bPrice = comparableCoursePrice(b, direction);
-    if (aPrice != null && bPrice != null && aPrice !== bPrice) {
-      return (aPrice - bPrice) * sign;
-    }
-
-    return a.name.localeCompare(b.name);
-  });
-}
-
 function escapeIlikePattern(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
@@ -782,24 +749,6 @@ function applyVendorFiltersToSupabaseQuery(query: any, filters: VendorFilters): 
   return q;
 }
 
-function applySort(vendors: Vendor[], sort: string | undefined): Vendor[] {
-  if (sort === "name") {
-    return [...vendors].sort((a, b) => a.name.localeCompare(b.name));
-  }
-  if (sort === "name-desc") {
-    return [...vendors].sort((a, b) => b.name.localeCompare(a.name));
-  }
-  if (sort === "price-low") {
-    return sortByComparablePrice(vendors, "asc");
-  }
-  if (sort === "price-high") {
-    return sortByComparablePrice(vendors, "desc");
-  }
-  return [...vendors].sort(
-    (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false)
-  );
-}
-
 export async function queryVendorsForListing(
   filters: VendorFilters,
   sort: string | undefined
@@ -822,7 +771,7 @@ export async function queryVendorsForListing(
       afterFilterCount: refined.length,
       sort,
     });
-    return applySort(refined, sort);
+    return applyListingSort(refined, sort);
   }
 
   logSupabaseSelectStart("queryVendorsForListing (legacy PostgREST filters)", vendorTable(), filters);
@@ -847,7 +796,7 @@ export async function queryVendorsForListing(
     .filter((v): v is Vendor => v != null);
 
   const refined = filterVendors(mapped, filters);
-  return applySort(refined, sort);
+  return applyListingSort(refined, sort);
 }
 
 export async function getCitiesForCountyFilter(countySlug?: string): Promise<string[]> {

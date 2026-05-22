@@ -1,6 +1,6 @@
 import type { Vendor, VendorFilters } from "@/types";
 
-function vendorHasListedCoursePrice(v: Vendor): boolean {
+export function vendorHasListedCoursePrice(v: Vendor): boolean {
   return (
     v.priceMin != null ||
     v.priceMax != null ||
