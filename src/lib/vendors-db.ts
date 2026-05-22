@@ -5,6 +5,8 @@ import type { Vendor, VendorFilters } from "@/types";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { filterVendors } from "@/lib/filter-vendors";
 import { applyListingSort } from "@/lib/vendor-listing-sort";
+import { mergeCanonicalVendors } from "@/lib/merge-canonical-vendors";
+import { VENDOR_MERGE_OVERRIDES } from "@/data/vendor-merge-overrides";
 import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
 
@@ -480,6 +482,24 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
     createdAt = new Date().toISOString().slice(0, 10);
   }
 
+  const updatedRaw = pick(row, "updatedAt", "updated_at") ?? row["enriched_at"];
+  let updatedAt: string | undefined;
+  if (typeof updatedRaw === "string") {
+    updatedAt = updatedRaw;
+  } else if (updatedRaw instanceof Date) {
+    updatedAt = updatedRaw.toISOString();
+  }
+
+  const confidenceRaw = optionalString(row, [
+    "enrichmentConfidence",
+    "enrichment_confidence",
+  ])?.toLowerCase();
+  const enrichmentConfidence =
+    confidenceRaw === "high" || confidenceRaw === "medium" || confidenceRaw === "low"
+      ? (confidenceRaw as "high" | "medium" | "low")
+      : undefined;
+  const crawlStatus = optionalString(row, ["crawlStatus", "crawl_status"])?.toLowerCase();
+
   const photosRaw = pick(row, "photos", "photos") ?? row["photo_urls"];
   const photosList = parseStringArray(photosRaw);
 
@@ -581,6 +601,9 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
     featured: boolFromRow(row, ["featured", "Featured"]),
     acceptsBookings: boolFromRow(row, ["acceptsBookings", "accepts_bookings"]),
     stripeConnectAccountId: optionalString(row, ["stripeConnectAccountId", "stripe_connect_account_id"]),
+    updatedAt,
+    enrichmentConfidence,
+    crawlStatus,
     createdAt,
   };
 }
@@ -662,10 +685,13 @@ async function fetchRawVendorRows(): Promise<Record<string, unknown>[]> {
 const getCarryClassVendorsCached = cache(async (): Promise<Vendor[]> => {
   const rows = await fetchRawVendorRows();
   const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
+  const merged = mergeCanonicalVendors(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
   console.log("📋 getCarryClassVendorsCached:", {
     rawRows: rows.length,
     mappedVendors: mapped.length,
+    canonicalVendors: merged.length,
     droppedByMapper: rows.length - mapped.length,
+    collapsedByMerge: mapped.length - merged.length,
   });
   if (
     process.env.NODE_ENV === "development" &&
@@ -677,10 +703,10 @@ const getCarryClassVendorsCached = cache(async (): Promise<Vendor[]> => {
       Object.keys(rows[0] ?? {})
     );
   }
-  if (process.env.NODE_ENV === "development" && mapped.length > 0) {
-    console.log("[vendors-db] mapped vendor count:", mapped.length);
+  if (process.env.NODE_ENV === "development" && merged.length > 0) {
+    console.log("[vendors-db] canonical vendor count:", merged.length);
   }
-  return mapped;
+  return merged;
 });
 
 function sortByName(vendors: Vendor[]): Vendor[] {

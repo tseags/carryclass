@@ -9,8 +9,13 @@ import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
 import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
+import {
+  formatCountyContactLabel,
+  sortVendorCountyContacts,
+} from "@/lib/merge-canonical-vendors";
 import { SaveHeartButton } from "@/components/SaveHeartButton";
 import { getCountyDisplayName } from "@/data/counties";
+import type { VendorCountyContact } from "@/types";
 
 const WHAT_TO_BRING_ITEMS = [
   "Firearm (must be on your permit application)",
@@ -151,6 +156,21 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     ...otherVendors.map((entry) => entry.id),
   ]);
   const initialSaved = savedVendorIds.includes(vendor.id);
+
+  const fallbackContactBlock: VendorCountyContact = {
+    counties: vendor.county ? [vendor.county] : vendor.countiesServed.slice(0, 1),
+    address: vendor.address,
+    phone: vendor.phone,
+    city: vendor.city,
+  };
+  const contactBlocksRaw =
+    vendor.countyContacts && vendor.countyContacts.length > 0
+      ? vendor.countyContacts
+      : fallbackContactBlock.address || fallbackContactBlock.phone
+        ? [fallbackContactBlock]
+        : [];
+  const contactBlocks = sortVendorCountyContacts(contactBlocksRaw);
+  const showCountyLabels = contactBlocks.length > 1;
 
   return (
     <div className="min-h-screen bg-white">
@@ -400,37 +420,58 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   <section className="rounded-2xl border border-[#ebe9e2] bg-white p-6 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:p-7">
                     <h3 className="text-[38px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[42px]">Contact</h3>
                     <div className="mt-5 space-y-4">
-                      {vendor.address && (
-                        <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
-                            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 21s7-6.25 7-11a7 7 0 10-14 0c0 4.75 7 11 7 11z"
-                              />
-                              <circle cx="12" cy="10" r="2.5" />
-                            </svg>
-                          </span>
-                          <span>{vendor.address}</span>
-                        </p>
-                      )}
-                      {vendor.phone && (
-                        <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
-                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
-                            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 5.75A1.75 1.75 0 016.75 4h1.53c.74 0 1.39.5 1.59 1.2l.74 2.61a1.75 1.75 0 01-.49 1.74l-1.02.94a14.2 14.2 0 005.02 5.02l.94-1.02c.46-.5 1.17-.7 1.84-.49l2.61.74c.7.2 1.2.84 1.2 1.59v1.53A1.75 1.75 0 0118.25 20h-1.5C10.26 20 4 13.74 4 6.75v-1z"
-                              />
-                            </svg>
-                          </span>
-                          <a href={`tel:${vendor.phone}`} className="hover:underline">
-                            {vendor.phone}
-                          </a>
-                        </p>
-                      )}
+                      {contactBlocks.map((block, idx) => {
+                        const label = formatCountyContactLabel(block.counties);
+                        const labelId = `vendor-contact-block-${idx}`;
+                        return (
+                          <div
+                            key={`${block.counties.join("-")}-${idx}`}
+                            className="space-y-2"
+                            aria-labelledby={showCountyLabels ? labelId : undefined}
+                            role={showCountyLabels ? "group" : undefined}
+                          >
+                            {showCountyLabels && label && (
+                              <h4
+                                id={labelId}
+                                className="text-sm font-semibold text-[#1f1f1d]"
+                              >
+                                {label}
+                              </h4>
+                            )}
+                            {block.address && (
+                              <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
+                                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M12 21s7-6.25 7-11a7 7 0 10-14 0c0 4.75 7 11 7 11z"
+                                    />
+                                    <circle cx="12" cy="10" r="2.5" />
+                                  </svg>
+                                </span>
+                                <span>{block.address}</span>
+                              </p>
+                            )}
+                            {block.phone && (
+                              <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
+                                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 5.75A1.75 1.75 0 016.75 4h1.53c.74 0 1.39.5 1.59 1.2l.74 2.61a1.75 1.75 0 01-.49 1.74l-1.02.94a14.2 14.2 0 005.02 5.02l.94-1.02c.46-.5 1.17-.7 1.84-.49l2.61.74c.7.2 1.2.84 1.2 1.59v1.53A1.75 1.75 0 0118.25 20h-1.5C10.26 20 4 13.74 4 6.75v-1z"
+                                    />
+                                  </svg>
+                                </span>
+                                <a href={`tel:${block.phone}`} className="hover:underline">
+                                  {block.phone}
+                                </a>
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                       {vendor.website && (
                         <p className="flex items-start gap-2.5 text-[15px] leading-[1.45]">
                           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>

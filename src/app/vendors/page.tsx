@@ -301,9 +301,11 @@ export default async function VendorsPage({ searchParams }: PageProps) {
               <>
                 <div className="popular-vendors-redesign__grid vendors-results-grid">
                   {vendors.map((vendor) => {
-                    const servedCounty = vendor.countiesServed[0]
-                      ? getCountyDisplayName(vendor.countiesServed[0])
-                      : getCountyDisplayName(vendor.county);
+                    const servedCounty = filters.county
+                      ? getCountyDisplayName(filters.county)
+                      : vendor.countiesServed[0]
+                        ? getCountyDisplayName(vendor.countiesServed[0])
+                        : getCountyDisplayName(vendor.county);
                     return (
                       <PopularVendorCard
                         key={vendor.id}

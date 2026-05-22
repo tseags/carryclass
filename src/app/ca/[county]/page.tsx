@@ -352,21 +352,16 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
             {view === "list" ? (
               vendors.length > 0 ? (
                 <div className="popular-vendors-redesign__grid vendors-results-grid">
-                  {vendors.map((vendor) => {
-                    const servedCounty = vendor.countiesServed[0]
-                      ? getCountyDisplayName(vendor.countiesServed[0])
-                      : getCountyDisplayName(vendor.county);
-                    return (
-                      <PopularVendorCard
-                        key={vendor.id}
-                        vendor={vendor}
-                        listingReviews={listingReviewStats.get(vendor.id) ?? null}
-                        servedCounty={servedCounty}
-                        showFeaturedBadge={Boolean(vendor.featured)}
-                        initialSaved={savedIds.has(vendor.id)}
-                      />
-                    );
-                  })}
+                  {vendors.map((vendor) => (
+                    <PopularVendorCard
+                      key={vendor.id}
+                      vendor={vendor}
+                      listingReviews={listingReviewStats.get(vendor.id) ?? null}
+                      servedCounty={displayName}
+                      showFeaturedBadge={Boolean(vendor.featured)}
+                      initialSaved={savedIds.has(vendor.id)}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="empty-state w-dyn-empty">

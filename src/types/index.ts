@@ -2,6 +2,19 @@ export type ClassType = "initial" | "renewal" | "both";
 export type ClassFormat = "in-person" | "online" | "hybrid";
 export type CourseCategory = "initial" | "renewal" | "add-gun" | "online";
 
+/**
+ * One contact block on a vendor profile after canonical merge.
+ * Multiple counties that share the same normalized address+phone collapse into
+ * a single block whose `counties` array lists every county represented.
+ */
+export interface VendorCountyContact {
+  /** County slugs (canonical CA slugs) that share this address/phone block. */
+  counties: string[];
+  address?: string;
+  phone?: string;
+  city?: string;
+}
+
 export interface Vendor {
   id: string;
   slug: string;
@@ -36,6 +49,17 @@ export interface Vendor {
   acceptsBookings?: boolean;
   /** Stripe Connect account id (acct_...) — required for paid checkout */
   stripeConnectAccountId?: string;
+  /**
+   * Per-county contact blocks (after canonical-vendor merge + address/phone dedupe).
+   * Populated by `mergeCanonicalVendors`; absent for un-merged or single-county vendors.
+   */
+  countyContacts?: VendorCountyContact[];
+  /** Source row freshness (ISO date) — used as merge tie-break, may surface in UI later. */
+  updatedAt?: string;
+  /** Enrichment confidence from upstream pipeline; influences canonical winner scoring. */
+  enrichmentConfidence?: "high" | "medium" | "low";
+  /** Upstream crawl status (e.g. "success", "failed"); rows with failures are dropped before merge. */
+  crawlStatus?: string;
   createdAt: string;
 }
 
