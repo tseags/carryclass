@@ -75,13 +75,13 @@ function inferSubmissionDays(body: string, fallbackDays: number): number {
 function TimelineReportsList({
   submissions,
   fallbackDays,
-  onSeeAll,
   variant = "inline",
+  bordered = true,
 }: {
   submissions: CcwTimelineSubmission[];
   fallbackDays: number;
-  onSeeAll?: () => void;
   variant?: "inline" | "modal";
+  bordered?: boolean;
 }) {
   const rowClass =
     variant === "inline"
@@ -92,86 +92,71 @@ function TimelineReportsList({
       ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ece8dd] text-[10px] font-semibold uppercase tracking-wide text-zinc-600"
       : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ece8dd] text-xs font-semibold uppercase tracking-wide text-zinc-600";
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-[#cfc7b8] bg-white">
-      {variant === "inline" ? (
-        <div className="flex items-center justify-between gap-3 border-b border-[#edeae3] bg-[#f0eee7] px-4 py-3 sm:px-5">
-          <p className="!m-0 inline-flex items-center leading-none text-[11px] font-semibold uppercase tracking-[0.11em] text-[#c86442]">
-            Recent submissions
-          </p>
-          <button
-            type="button"
-            onClick={onSeeAll}
-            className="text-xs font-semibold text-[#b75a3d] transition hover:text-[#8f4229] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b75a3d]"
-          >
-            See all
-          </button>
-        </div>
-      ) : null}
-      <ul>
-        {submissions.map((s) => {
-          const syntheticFallback = Math.max(14, Math.round(fallbackDays * 0.78));
-          const days = inferSubmissionDays(s.body, syntheticFallback);
-          return (
-            <li
-              key={s.id}
-              className={rowClass}
-            >
-              {variant === "inline" ? null : (
-                <div className={avatarClass}>
-                  {getInitials(s.displayName)}
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-baseline gap-1">
-                  <span
-                    className={
-                      variant === "inline"
-                        ? "text-[13px] font-semibold leading-tight text-zinc-900"
-                        : "text-base font-semibold text-zinc-900"
-                    }
-                  >
-                    {variant === "inline" ? formatPreviewName(s.displayName) : s.displayName}
-                  </span>
-                  <time
-                    className={
-                      variant === "inline"
-                        ? "ml-1 text-[10px] font-medium tracking-wide text-zinc-500"
-                        : "ml-1 text-xs font-medium tracking-wide text-zinc-500"
-                    }
-                    dateTime={s.submittedAt}
-                  >
-                    {formatShortDate(s.submittedAt)}
-                  </time>
-                </div>
-                <p
+  const list = (
+    <ul>
+      {submissions.map((s) => {
+        const syntheticFallback = Math.max(14, Math.round(fallbackDays * 0.78));
+        const days = inferSubmissionDays(s.body, syntheticFallback);
+        return (
+          <li key={s.id} className={rowClass}>
+            {variant === "inline" ? null : (
+              <div className={avatarClass}>{getInitials(s.displayName)}</div>
+            )}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-baseline gap-1">
+                <span
                   className={
                     variant === "inline"
-                      ? "mt-0.5 line-clamp-2 text-xs leading-snug text-zinc-700"
-                      : "mt-1 text-sm leading-relaxed text-zinc-700"
+                      ? "text-[13px] font-semibold leading-tight text-zinc-900"
+                      : "text-base font-semibold text-zinc-900"
                   }
                 >
-                  {s.body}
-                </p>
+                  {variant === "inline" ? formatPreviewName(s.displayName) : s.displayName}
+                </span>
+                <time
+                  className={
+                    variant === "inline"
+                      ? "ml-1 text-[10px] font-medium tracking-wide text-zinc-500"
+                      : "ml-1 text-xs font-medium tracking-wide text-zinc-500"
+                  }
+                  dateTime={s.submittedAt}
+                >
+                  {formatShortDate(s.submittedAt)}
+                </time>
               </div>
-              {variant === "inline" ? (
-                <p className="shrink-0 whitespace-nowrap text-right text-[13px] font-semibold leading-tight text-zinc-900">
-                  {days}{" "}
-                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-zinc-500">
-                    days
-                  </span>
-                </p>
-              ) : (
-                <div className="shrink-0 text-right">
-                  <p className="text-[34px] leading-[0.95] tracking-tight text-zinc-900">{days}</p>
-                  <p className="text-[11px] uppercase tracking-[0.13em] text-zinc-500">Days</p>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              <p
+                className={
+                  variant === "inline"
+                    ? "mt-0.5 text-xs leading-snug text-zinc-700"
+                    : "mt-1 text-sm leading-relaxed text-zinc-700"
+                }
+              >
+                {s.body}
+              </p>
+            </div>
+            {variant === "inline" ? (
+              <p className="shrink-0 whitespace-nowrap text-right text-[13px] font-semibold leading-tight text-zinc-900">
+                {days}{" "}
+                <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-zinc-500">
+                  days
+                </span>
+              </p>
+            ) : (
+              <div className="shrink-0 text-right">
+                <p className="text-[34px] leading-[0.95] tracking-tight text-zinc-900">{days}</p>
+                <p className="text-[11px] uppercase tracking-[0.13em] text-zinc-500">Days</p>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  if (!bordered) return list;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#cfc7b8] bg-white">{list}</div>
   );
 }
 
@@ -184,7 +169,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   }, [processes]);
 
   const [selected, setSelected] = useState<CcwTimelineProcess>(defaultProcess);
-  const [feedExpanded, setFeedExpanded] = useState(false);
+  const [submissionsExpanded, setSubmissionsExpanded] = useState(false);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [formDisplayName, setFormDisplayName] = useState("");
@@ -195,8 +180,6 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   const [formBody, setFormBody] = useState("");
   const [portalReady, setPortalReady] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
-
-  const anyModalOpen = feedExpanded || submitModalOpen;
 
   const openSubmitModal = useCallback(() => {
     setFormDisplayName("");
@@ -223,24 +206,22 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   }, []);
 
   useEffect(() => {
-    if (!anyModalOpen) return;
+    if (!submitModalOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (submitModalOpen) closeSubmitModal();
-      else setFeedExpanded(false);
+      if (e.key === "Escape") closeSubmitModal();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [anyModalOpen, submitModalOpen, closeSubmitModal]);
+  }, [submitModalOpen, closeSubmitModal]);
 
   useEffect(() => {
-    if (!anyModalOpen) return;
+    if (!submitModalOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [anyModalOpen]);
+  }, [submitModalOpen]);
 
   const active = useMemo(
     () => processes.find((p) => p.process === selected) ?? processes[0],
@@ -249,7 +230,6 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
 
   const activeLastSubmitted = active?.lastSubmittedAt ?? lastTimelineSubmittedCounty;
   const timelineEntries = useMemo(() => active?.submissions ?? [], [active]);
-  const inlineEntries = useMemo(() => timelineEntries.slice(0, 2), [timelineEntries]);
 
   const scrollFeedIntoView = useCallback(() => {
     feedRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -258,12 +238,13 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   const onSelectProcess = useCallback(
     (p: CcwTimelineProcess) => {
       setSelected(p);
+      setSubmissionsExpanded(false);
       queueMicrotask(scrollFeedIntoView);
     },
     [scrollFeedIntoView]
   );
 
-  const modalTitleId = "ccw-timeline-feed-modal-title";
+  const submissionsPanelId = "ccw-timeline-submissions-panel";
   const submitModalTitleId = "ccw-timeline-submit-modal-title";
 
   const handleSubmitTimeline = (e: FormEvent<HTMLFormElement>) => {
@@ -280,8 +261,8 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
     >
       <div className="container-default w-container">
         <div className="mx-auto py-10 sm:py-12 lg:py-14">
-          <div className="grid gap-8 md:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] md:items-start lg:gap-9">
-            <div>
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(360px,480px)] md:items-start lg:grid-cols-[minmax(0,1.2fr)_minmax(400px,520px)] lg:gap-6">
+            <div className="md:max-w-[44ch]">
               <h2
                 id="ccw-timeline-heading"
                 className="text-[clamp(1.8rem,2.5vw,2.85rem)] font-medium leading-[1.06] text-[#1f1f1e]"
@@ -289,7 +270,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 <span className="block">{countyDisplayName} County</span>
                 <span className="block">CCW Timelines</span>
               </h2>
-              <p className="mt-4 max-w-[30ch] text-[15px] leading-relaxed text-zinc-600">
+              <p className="mt-4 text-[15px] leading-relaxed text-zinc-600">
                 Estimated wait times from <strong>self-reported applicant experiences</strong> -
                 initial, renewal, and add-a-gun - so you know what to expect from the{" "}
                 {countyDisplayName} County Sheriff.
@@ -303,7 +284,10 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
               </button>
             </div>
 
-            <div ref={feedRef} className="min-w-0 space-y-4 sm:space-y-5">
+            <div
+              ref={feedRef}
+              className="min-w-0 space-y-4 sm:space-y-5 md:ml-auto md:w-full"
+            >
               <div
                 role="tablist"
                 aria-label="Timeline process type"
@@ -353,7 +337,7 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                     </div>
                     <p className="mt-0.5 text-sm text-zinc-500">from submission to permit</p>
                   </div>
-                  <dl className="grid w-full grid-cols-2 gap-x-5 gap-y-0.5 sm:w-auto sm:min-w-[230px] sm:content-start sm:self-start sm:justify-items-end">
+                  <dl className="grid w-full grid-cols-2 gap-x-5 gap-y-0.5 sm:w-auto sm:min-w-[195px] sm:content-start sm:self-start sm:justify-items-end">
                     <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
                       Submissions
                     </dt>
@@ -384,11 +368,52 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                   </button>
                 </div>
               ) : (
-                <TimelineReportsList
-                  submissions={inlineEntries}
-                  fallbackDays={active?.avgDays ?? 90}
-                  onSeeAll={() => setFeedExpanded(true)}
-                />
+                <div className="overflow-hidden rounded-xl border border-[#cfc7b8] bg-white">
+                  <button
+                    type="button"
+                    aria-expanded={submissionsExpanded}
+                    aria-controls={submissionsPanelId}
+                    onClick={() => setSubmissionsExpanded((v) => !v)}
+                    className="flex w-full items-center justify-between gap-3 bg-[#f0eee7] px-4 py-3 text-left transition hover:bg-[#ece9e1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b75a3d] sm:px-5"
+                  >
+                    <span className="inline-flex items-center leading-none text-[11px] font-semibold uppercase tracking-[0.11em] text-[#c86442]">
+                      {submissionsExpanded ? "Hide recent submissions" : "Read recent submissions"}
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#b75a3d]">
+                      <span className="hidden sm:inline">
+                        {timelineEntries.length}{" "}
+                        {timelineEntries.length === 1 ? "report" : "reports"}
+                      </span>
+                      <svg
+                        className={`h-4 w-4 transition-transform ${
+                          submissionsExpanded ? "rotate-180" : ""
+                        }`}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </span>
+                  </button>
+                  {submissionsExpanded ? (
+                    <div
+                      id={submissionsPanelId}
+                      className="max-h-[420px] overflow-y-auto border-t border-[#edeae3]"
+                    >
+                      <TimelineReportsList
+                        submissions={timelineEntries}
+                        fallbackDays={active?.avgDays ?? 90}
+                        variant="inline"
+                        bordered={false}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               )}
 
               <p className="text-xs italic leading-snug text-zinc-500 sm:text-sm">
@@ -400,78 +425,6 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
           </div>
         </div>
       </div>
-
-      {portalReady &&
-        feedExpanded &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
-            role="presentation"
-          >
-            <button
-              type="button"
-              className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
-              aria-label="Close expanded timeline"
-              onClick={() => setFeedExpanded(false)}
-            />
-            <div
-              id="ccw-timeline-feed-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={modalTitleId}
-              className="relative z-[201] flex max-h-[min(920px,96vh)] w-full max-w-[min(1200px,96vw)] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl"
-            >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-5">
-                <h2 id={modalTitleId} className="text-base font-semibold text-zinc-900 sm:text-lg">
-                  {countyDisplayName} County - {active?.label ?? "Timeline reports"}
-                </h2>
-                <button
-                  type="button"
-                  className="rounded-md p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                  aria-label="Close"
-                  onClick={() => setFeedExpanded(false)}
-                >
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden
-                  >
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-                {!active ? (
-                  <p className="text-sm text-zinc-600">Loading...</p>
-                ) : active.submissions.length === 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-zinc-700">No data has been submitted.</p>
-                    <button
-                      type="button"
-                      className="text-left text-sm font-medium text-blue-700 underline hover:text-blue-900"
-                      onClick={() => {
-                        setFeedExpanded(false);
-                        openSubmitModal();
-                      }}
-                    >
-                      Submit the first timeline
-                    </button>
-                  </div>
-                ) : (
-                  <TimelineReportsList
-                    variant="modal"
-                    submissions={active.submissions}
-                    fallbackDays={active.avgDays ?? 90}
-                  />
-                )}
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
 
       {portalReady &&
         submitModalOpen &&
