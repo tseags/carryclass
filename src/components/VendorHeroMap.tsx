@@ -60,7 +60,9 @@ export function VendorHeroMap({
     };
   }, [address, city, county, state]);
 
-  const googleEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(resolvedQuery)}&output=embed`;
+  // z=11 gives a county/region-level view so users can see where the vendor
+  // sits within the surrounding area instead of a tight street-level zoom.
+  const googleEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(resolvedQuery)}&output=embed&z=11`;
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedQuery)}`;
 
   if (!resolvedQuery || hasEmbedError) {

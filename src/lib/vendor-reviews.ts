@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isPrismaConnectionError } from "@/lib/prisma-connection-error";
 
 const MIN_RATING = 1;
 const MAX_RATING = 5;
@@ -119,7 +120,7 @@ export async function getApprovedVendorReviews(vendorId: string): Promise<Approv
       },
     });
   } catch (error) {
-    if (isMissingVendorReviewsTableError(error)) {
+    if (isMissingVendorReviewsTableError(error) || isPrismaConnectionError(error)) {
       return [];
     }
     throw error;
@@ -170,7 +171,7 @@ export async function getApprovedReviewStatsByVendorIds(
     }
     return map;
   } catch (error) {
-    if (isMissingVendorReviewsTableError(error)) {
+    if (isMissingVendorReviewsTableError(error) || isPrismaConnectionError(error)) {
       return new Map();
     }
     throw error;

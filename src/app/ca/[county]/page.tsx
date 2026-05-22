@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { SmoothScrollTo } from "@/components/SmoothScrollTo";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
+import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import {
   getCountyDisplayName,
@@ -56,13 +57,20 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   const displayName = getCountyDisplayName(county);
   const allVendors = await getVendorsByCounty(county);
 
+  const priceListedOnly = resolved.priceListed === "1";
+  let priceMax: number | undefined;
+  if (!priceListedOnly && resolved.priceMax) {
+    const n = Number(resolved.priceMax);
+    priceMax = Number.isFinite(n) ? n : undefined;
+  }
+
   const filters = {
     county,
     city: resolved.city as string | undefined,
     classType: resolved.classType as "initial" | "renewal" | "both" | undefined,
     format: resolved.format as "in-person" | "online" | "hybrid" | undefined,
-    savedOnly: resolved.savedOnly === "1",
-    priceMax: resolved.priceMax ? Number(resolved.priceMax) : undefined,
+    priceMax,
+    priceListedOnly,
     search: resolved.search as string | undefined,
   };
 
@@ -73,10 +81,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
   const cityOptions = await getCitiesForCountyFilter(county);
 
-  let vendors = await queryVendorsForListing(filters, sort);
-  if (filters.savedOnly) {
-    vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
-  }
+  const vendors = await queryVendorsForListing(filters, sort);
 
   const listingReviewStats = await getApprovedReviewStatsByVendorIds(vendors.map((v) => v.id));
 
@@ -91,8 +96,8 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
     filters.city ||
       filters.classType ||
       filters.format ||
-      filters.savedOnly ||
       filters.priceMax != null ||
+      filters.priceListedOnly ||
       (filters.search && filters.search.trim().length > 0)
   );
 
@@ -102,9 +107,9 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
     if (filters.search) params.set("search", filters.search);
     if (filters.city) params.set("city", filters.city);
     if (filters.classType) params.set("classType", filters.classType);
-    if (filters.savedOnly) params.set("savedOnly", "1");
     if (filters.format) params.set("format", filters.format);
     if (filters.priceMax != null) params.set("priceMax", String(filters.priceMax));
+    if (filters.priceListedOnly) params.set("priceListed", "1");
     if (sort) params.set("sort", sort);
     params.set("view", nextView);
     const qs = params.toString();
@@ -132,18 +137,18 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
               <h1 className="county-h1">{displayName} County CCW Training</h1>
               <p className="county-sub-heading">
                 Find <strong>sheriff-approved CCW instructors</strong> and{" "}
-                <strong>concealed carry training courses</strong> in {displayName} County. All
+                <strong>approved concealed carry training classes</strong> in {displayName} County. All
                 instructors listed below are approved by the{" "}
                 <strong>County Sheriff&apos;s Office</strong> to provide valid training
                 certificates for new applicants and renewals. Compare pricing, locations, and
-                course options.
+                class options.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <SmoothScrollTo
                   targetId="county-vendors"
                   className="btn-primary bg-secondary-2 small w-button"
                 >
-                  View Courses
+                  View Classes
                 </SmoothScrollTo>
                 <SmoothScrollTo
                   targetId="ccw-timeline"
@@ -209,8 +214,18 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   omitCounty
                 />
 
+                <div className="vendors-filter-group">
+                  <span id={`county-price-heading-${county}`}>Price</span>
+                  <VendorsSidebarPriceSelect
+                    selectId={`county-price-select-${county}`}
+                    ariaLabelledBy={`county-price-heading-${county}`}
+                    priceListedOnly={filters.priceListedOnly}
+                    priceMax={filters.priceMax}
+                  />
+                </div>
+
                 <label className="vendors-filter-group">
-                  <span>Course type</span>
+                  <span>Class type</span>
                   <select name="classType" defaultValue={filters.classType ?? ""}>
                     <option value="">All types</option>
                     <option value="initial">16-hr initial</option>
@@ -226,28 +241,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                     <option value="in-person">In person</option>
                     <option value="online">Online</option>
                     <option value="hybrid">Hybrid</option>
-                  </select>
-                </label>
-
-                <label className="vendors-filter-group">
-                  <span>Saved</span>
-                  <select name="savedOnly" defaultValue={filters.savedOnly ? "1" : "0"}>
-                    <option value="0">All listings</option>
-                    <option value="1">Saved only</option>
-                  </select>
-                </label>
-
-                <label className="vendors-filter-group">
-                  <span>Max price</span>
-                  <select
-                    name="priceMax"
-                    defaultValue={filters.priceMax != null ? String(filters.priceMax) : ""}
-                  >
-                    <option value="">Any price</option>
-                    <option value="150">Under $150</option>
-                    <option value="200">Under $200</option>
-                    <option value="300">Under $300</option>
-                    <option value="400">Under $400</option>
                   </select>
                 </label>
 
@@ -267,7 +260,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
           <div className="vendors-results-main">
             <div className="vendors-results-header">
-              <h2>{vendors.length} instructors in {displayName} County</h2>
               <div className="vendors-results-header-controls">
                 <div
                   className="vendors-view-toggle"
@@ -330,10 +322,12 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   {filters.classType ? (
                     <input type="hidden" name="classType" value={filters.classType} />
                   ) : null}
-                  {filters.savedOnly ? <input type="hidden" name="savedOnly" value="1" /> : null}
                   {filters.format ? <input type="hidden" name="format" value={filters.format} /> : null}
                   {filters.priceMax != null ? (
                     <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
+                  ) : null}
+                  {filters.priceListedOnly ? (
+                    <input type="hidden" name="priceListed" value="1" />
                   ) : null}
                   <input type="hidden" name="view" value={view} />
                   <span>Sort</span>
@@ -375,8 +369,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   <div>
                     {allVendors.length === 0 ? (
                       <>No instructors found in this county yet.</>
-                    ) : filters.savedOnly && allSavedIds.size === 0 ? (
-                      <>No saved listings yet. Sign in and tap hearts to save courses.</>
                     ) : hasActiveFilters ? (
                       <>
                         No instructors match your filters. Try adjusting your criteria or{" "}

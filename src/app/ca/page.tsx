@@ -13,15 +13,6 @@ export const metadata = {
     "Browse California counties with listed CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
 };
 
-/** One-line blurb under each county name — count is rendered bold by the caller. */
-function countyCardBlurb(displayName: string, count: number): React.ReactNode {
-  return (
-    <>
-      View <strong>{count}</strong> CCW courses in {displayName} County
-    </>
-  );
-}
-
 export default async function CaliforniaPage({
   searchParams,
 }: {
@@ -177,13 +168,10 @@ export default async function CaliforniaPage({
                       <div className="popular-vendors-redesign__title-row">
                         <h3 className="popular-vendors-redesign__title">{name} County</h3>
                       </div>
-                      <p className="popular-vendors-redesign__description">
-                        {countyCardBlurb(name, vendorCount)}
-                      </p>
                       <div className="popular-vendors-redesign__prices">
                         <div>
                           <div className="popular-vendors-redesign__price">{vendorCount}</div>
-                          <div className="popular-vendors-redesign__price-label">CCW courses</div>
+                          <div className="popular-vendors-redesign__price-label">CCW instructors</div>
                         </div>
                       </div>
                     </Link>

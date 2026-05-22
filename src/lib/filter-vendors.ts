@@ -1,5 +1,14 @@
 import type { Vendor, VendorFilters } from "@/types";
 
+function vendorHasListedCoursePrice(v: Vendor): boolean {
+  return (
+    v.priceMin != null ||
+    v.priceMax != null ||
+    v.priceInitial != null ||
+    v.priceRenewal != null
+  );
+}
+
 export function filterVendors(vendors: Vendor[], filters: VendorFilters): Vendor[] {
   let result = [...vendors];
 
@@ -48,6 +57,10 @@ export function filterVendors(vendors: Vendor[], filters: VendorFilters): Vendor
 
   if (filters.priceMax != null) {
     result = result.filter((v) => (v.priceMin ?? v.priceMax ?? Infinity) <= filters.priceMax!);
+  }
+
+  if (filters.priceListedOnly) {
+    result = result.filter(vendorHasListedCoursePrice);
   }
 
   if (filters.search) {

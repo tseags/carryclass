@@ -148,10 +148,10 @@ export function FilterBar({ countySlug, counties = [], cities = [] }: FilterBarP
           </select>
         </div>
 
-        {/* Price max */}
+        {/* Price */}
         <div>
           <label htmlFor="priceMax" className="sr-only">
-            Max price
+            Price
           </label>
           <select
             id="priceMax"

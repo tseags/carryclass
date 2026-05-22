@@ -1049,7 +1049,7 @@ img.county-hero-image-fill {
 }
 .by-the-numbers__stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   position: relative;
 }
@@ -1069,8 +1069,8 @@ img.county-hero-image-fill {
   animation: byTheNumbersStatIn 0.5s ease-out forwards;
 }
 .by-the-numbers__stat:hover {
-  transform: translateY(-12px) scale(1.1) !important;
-  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.34);
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
   z-index: 1;
 }
 .by-the-numbers__stat-number {
@@ -1090,6 +1090,7 @@ img.county-hero-image-fill {
   color: rgba(15, 15, 16, 0.6);
   font-size: 14px;
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 @keyframes byTheNumbersStatIn {
@@ -1132,9 +1133,6 @@ img.county-hero-image-fill {
 @media (max-width: 576px) {
   .by-the-numbers {
     padding: 56px 0;
-  }
-  .by-the-numbers__stats {
-    grid-template-columns: 1fr;
   }
 }
 

@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
+import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
 import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
@@ -24,24 +25,28 @@ export const metadata = {
 export default async function VendorsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;
 
+  const priceListedOnly = resolved.priceListed === "1";
+  let priceMax: number | undefined;
+  if (!priceListedOnly && resolved.priceMax) {
+    const n = Number(resolved.priceMax);
+    priceMax = Number.isFinite(n) ? n : undefined;
+  }
+
   const filters = {
     county: resolved.county as string | undefined,
     city: resolved.city as string | undefined,
     classType: resolved.classType as "initial" | "renewal" | "both" | undefined,
     format: resolved.format as "in-person" | "online" | "hybrid" | undefined,
     category: resolved.category as "initial" | "renewal" | "add-gun" | "online" | undefined,
-    savedOnly: resolved.savedOnly === "1",
-    priceMax: resolved.priceMax ? Number(resolved.priceMax) : undefined,
+    priceMax,
+    priceListedOnly,
     search: resolved.search as string | undefined,
   };
 
   const sort = resolved.sort as string | undefined;
   const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
   const cityOptions = await getCitiesForCountyFilter(filters.county);
-  let vendors = await queryVendorsForListing(filters, sort);
-  if (filters.savedOnly) {
-    vendors = vendors.filter((vendor) => allSavedIds.has(vendor.id));
-  }
+  const vendors = await queryVendorsForListing(filters, sort);
 
   const listingReviewStats = await getApprovedReviewStatsByVendorIds(vendors.map((v) => v.id));
 
@@ -58,8 +63,8 @@ export default async function VendorsPage({ searchParams }: PageProps) {
       filters.classType ||
       filters.format ||
       filters.category ||
-      filters.savedOnly ||
       filters.priceMax != null ||
+      filters.priceListedOnly ||
       (filters.search && filters.search.trim().length > 0)
   );
 
@@ -71,8 +76,8 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     if (filters.classType) params.set("classType", filters.classType);
     if (filters.format) params.set("format", filters.format);
     if (filters.category) params.set("category", filters.category);
-    if (filters.savedOnly) params.set("savedOnly", "1");
     if (filters.priceMax != null) params.set("priceMax", String(filters.priceMax));
+    if (filters.priceListedOnly) params.set("priceListed", "1");
     if (sort) params.set("sort", sort);
     params.set("view", nextView);
     const qs = params.toString();
@@ -137,6 +142,16 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   cities={cityOptions}
                 />
 
+                <div className="vendors-filter-group">
+                  <span id="vendors-price-heading">Price</span>
+                  <VendorsSidebarPriceSelect
+                    selectId="vendors-price-select"
+                    ariaLabelledBy="vendors-price-heading"
+                    priceListedOnly={filters.priceListedOnly}
+                    priceMax={filters.priceMax}
+                  />
+                </div>
+
                 <label className="vendors-filter-group">
                   <span>Course type</span>
                   <select name="classType" defaultValue={filters.classType ?? ""}>
@@ -157,28 +172,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   </select>
                 </label>
 
-                <label className="vendors-filter-group">
-                  <span>Saved</span>
-                  <select name="savedOnly" defaultValue={filters.savedOnly ? "1" : "0"}>
-                    <option value="0">All listings</option>
-                    <option value="1">Saved only</option>
-                  </select>
-                </label>
-
-                <label className="vendors-filter-group">
-                  <span>Max price</span>
-                  <select
-                    name="priceMax"
-                    defaultValue={filters.priceMax != null ? String(filters.priceMax) : ""}
-                  >
-                    <option value="">Any price</option>
-                    <option value="150">Under $150</option>
-                    <option value="200">Under $200</option>
-                    <option value="300">Under $300</option>
-                    <option value="400">Under $400</option>
-                  </select>
-                </label>
-
                 {sort && <input type="hidden" name="sort" value={sort} />}
                 <input type="hidden" name="view" value={view} />
                 <button type="submit" className="btn-primary w-button vendors-filters-submit">
@@ -190,7 +183,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
 
           <div className="vendors-results-main">
             <div className="vendors-results-header">
-              <h2>{vendors.length} instructors</h2>
               <div className="vendors-results-header-controls">
                 <div
                   className="vendors-view-toggle"
@@ -255,10 +247,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   {filters.classType && (
                     <input type="hidden" name="classType" value={filters.classType} />
                   )}
-                  {filters.savedOnly && <input type="hidden" name="savedOnly" value="1" />}
                   {filters.format && <input type="hidden" name="format" value={filters.format} />}
                   {filters.priceMax != null && (
                     <input type="hidden" name="priceMax" value={String(filters.priceMax)} />
+                  )}
+                  {filters.priceListedOnly && (
+                    <input type="hidden" name="priceListed" value="1" />
                   )}
                   <input type="hidden" name="view" value={view} />
                   <span>Sort</span>
@@ -298,9 +292,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                 {vendors.length === 0 && (
                   <div className="empty-state w-dyn-empty">
                     <div>
-                      {filters.savedOnly && allSavedIds.size === 0
-                        ? "No saved listings yet. Sign in and tap hearts to save vendors."
-                        : "No instructors match your search. Try adjusting your filters."}
+                      No instructors match your search. Try adjusting your filters.
                     </div>
                   </div>
                 )}

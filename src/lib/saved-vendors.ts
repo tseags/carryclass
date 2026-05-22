@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { isPrismaConnectionError } from "@/lib/prisma-connection-error";
 
 export type SavedVendorListItem = {
   id: string;
@@ -57,7 +58,7 @@ export async function getCurrentUserSavedVendorIds(vendorIds?: string[]): Promis
       select: { vendorId: true },
     });
   } catch (error) {
-    if (isMissingSavedVendorTable(error)) {
+    if (isMissingSavedVendorTable(error) || isPrismaConnectionError(error)) {
       return [];
     }
     throw error;
@@ -91,7 +92,7 @@ export async function getCurrentUserSavedListings(): Promise<SavedVendorListItem
       },
     });
   } catch (error) {
-    if (isMissingSavedVendorTable(error)) {
+    if (isMissingSavedVendorTable(error) || isPrismaConnectionError(error)) {
       return [];
     }
     throw error;
@@ -145,7 +146,7 @@ export async function getCurrentUserSavedListingsPage(
       }),
     ]);
   } catch (error) {
-    if (isMissingSavedVendorTable(error)) {
+    if (isMissingSavedVendorTable(error) || isPrismaConnectionError(error)) {
       return { items: [], totalCount: 0, page: safePage, pageSize: safePageSize, totalPages: 0 };
     }
     throw error;

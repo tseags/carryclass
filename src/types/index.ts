@@ -60,7 +60,8 @@ export type VendorFilters = {
   classType?: ClassType;
   format?: ClassFormat;
   category?: CourseCategory;
-  savedOnly?: boolean;
+  /** When true, only vendors with at least one course price field populated */
+  priceListedOnly?: boolean;
   priceMin?: number;
   priceMax?: number;
   search?: string;

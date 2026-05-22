@@ -7,16 +7,38 @@ type Stat = {
   label: string;
 };
 
-const STATS: Stat[] = [
-  { number: "58", label: "California counties" },
-  { number: "400+", label: "Instructor listings" },
-  { number: "4", label: "Course types" },
-  { number: "100%", label: "Sheriff-approved" },
-  { number: "$125", label: "Avg initial price" },
-  { number: "$85", label: "Avg renewal price" },
-];
+export type ByTheNumbersStatsProps = {
+  instructorCount: number;
+  avgInitialPrice: number | null;
+  avgRenewalPrice: number | null;
+};
 
-export function ByTheNumbersStats() {
+function formatPrice(n: number | null): string {
+  return n != null ? `$${n}` : "—";
+}
+
+function buildStats({
+  instructorCount,
+  avgInitialPrice,
+  avgRenewalPrice,
+}: ByTheNumbersStatsProps): Stat[] {
+  return [
+    { number: "58", label: "California counties" },
+    {
+      number: instructorCount.toLocaleString("en-US"),
+      label: "Sheriff-approved instructors",
+    },
+    { number: formatPrice(avgInitialPrice), label: "Avg initial price" },
+    { number: formatPrice(avgRenewalPrice), label: "Avg renewal price" },
+  ];
+}
+
+export function ByTheNumbersStats({
+  instructorCount,
+  avgInitialPrice,
+  avgRenewalPrice,
+}: ByTheNumbersStatsProps) {
+  const stats = buildStats({ instructorCount, avgInitialPrice, avgRenewalPrice });
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -52,7 +74,7 @@ export function ByTheNumbersStats() {
       className={`by-the-numbers__stats${isVisible ? " is-visible" : ""}`}
       role="list"
     >
-      {STATS.map((stat, index) => (
+      {stats.map((stat, index) => (
         <div
           key={stat.label}
           className="by-the-numbers__stat"

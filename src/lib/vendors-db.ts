@@ -4,7 +4,52 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { Vendor, VendorFilters } from "@/types";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { filterVendors } from "@/lib/filter-vendors";
+import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
+
+const VENDOR_DB_TABLES = new Set([
+  "carry_class_vendor_data",
+  "enriched_vendor_county_listings",
+]);
+
+function supabaseProjectRef(): string | null {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!raw) return null;
+  try {
+    return new URL(raw).hostname.split(".")[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+function databaseProjectRef(): string | null {
+  const raw = process.env.DATABASE_URL?.trim();
+  if (!raw) return null;
+  try {
+    const host = new URL(raw).hostname;
+    const direct = host.match(/^db\.([^.]+)\.supabase\.co$/);
+    if (direct) return direct[1];
+    const pooler = raw.match(/postgres\.([^.]+):/);
+    return pooler?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Use Postgres when Supabase REST URL/key do not match DATABASE_URL (e.g. after project migration). */
+function shouldFetchVendorsViaDatabase(): boolean {
+  if (process.env.VENDORS_FETCH_VIA_DATABASE === "1") return true;
+  const dbRef = databaseProjectRef();
+  const sbRef = supabaseProjectRef();
+  if (!dbRef) return false;
+  if (!sbRef) return true;
+  return sbRef !== dbRef;
+}
+
+function vendorDbTable(): string {
+  const table = vendorTable();
+  return VENDOR_DB_TABLES.has(table) ? table : "carry_class_vendor_data";
+}
 
 function sb() {
   return supabaseForVendorReads();
@@ -528,7 +573,7 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
     email: optionalString(row, ["email", "Email", "contact_email"]),
     description,
     listingCardText,
-    imageUrl: optionalString(row, ["imageUrl", "image_url", "photo", "logo_url"]),
+    imageUrl: optionalString(row, ["imageUrl", "image_url", "photo", "logo_url", "logo_path"]),
     photos: photosList.length ? photosList : undefined,
     googleReviewsUrl: optionalString(row, ["googleReviewsUrl", "google_reviews_url"]),
     googlePlaceId: optionalString(row, ["googlePlaceId", "google_place_id"]),
@@ -543,7 +588,27 @@ function mapRow(row: Record<string, unknown>): Vendor | null {
   return isCarryClassVendorShape() ? mapCarryClassVendorRow(row) : mapLegacyVendorRow(row);
 }
 
+async function fetchRawVendorRowsViaDatabase(): Promise<Record<string, unknown>[]> {
+  const table = vendorDbTable();
+  console.log("[vendors-db] fetchRawVendorRowsViaDatabase", { table, dbRef: databaseProjectRef() });
+  try {
+    const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+      `SELECT * FROM public."${table.replace(/"/g, "")}" LIMIT 12000`
+    );
+    console.log("[vendors-db] fetchRawVendorRowsViaDatabase", { rawRowCount: rows.length });
+    if (isCarryClassVendorShape()) logCarryClassSampleOnce(rows);
+    return rows;
+  } catch (e) {
+    console.error("[vendors-db] fetchRawVendorRowsViaDatabase failed", e);
+    return [];
+  }
+}
+
 async function fetchRawVendorRows(): Promise<Record<string, unknown>[]> {
+  if (shouldFetchVendorsViaDatabase()) {
+    return fetchRawVendorRowsViaDatabase();
+  }
+
   const table = vendorTable();
   logSupabaseSelectStart("fetchRawVendorRows", table, "(none — full table select)");
   const { data, error, count } = await sb()
@@ -559,6 +624,10 @@ async function fetchRawVendorRows(): Promise<Record<string, unknown>[]> {
       carryClassShape: isCarryClassVendorShape(),
       ...error,
     });
+    if (databaseProjectRef()) {
+      console.warn("[vendors-db] Supabase REST failed — falling back to DATABASE_URL");
+      return fetchRawVendorRowsViaDatabase();
+    }
     return [];
   }
 

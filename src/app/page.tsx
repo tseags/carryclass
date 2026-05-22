@@ -17,6 +17,7 @@ import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags
 import { SupabaseDebugProbe } from "@/components/SupabaseDebugProbe";
 import { HeroSearchBar } from "@/components/HeroSearchBar";
 import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
+import { getCountyStats } from "@/lib/county-stats";
 
 export const metadata = {
   title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
@@ -41,6 +42,7 @@ export default async function HomePage() {
   const savedIds = new Set(
     await getCurrentUserSavedVendorIds(featuredVendors.map((vendor) => vendor.id))
   );
+  const { vendorCount, avgInitial, avgRenewal } = getCountyStats(vendors);
 
   return (
     <>
@@ -118,13 +120,13 @@ export default async function HomePage() {
             <div className="by-the-numbers__copy">
               <div className="by-the-numbers__eyebrow">By the numbers</div>
               <h2 className="by-the-numbers__heading">
-                California&apos;s CCW courses,
+                California&apos;s CCW classes,
                 <br />
                 all in one place.
               </h2>
               <p className="by-the-numbers__body">
-                Browse CCW training options from every county in one directory —
-                compare course types, pricing, and schedules before you reach out.
+                Find CCW classes near you, compare pricing and reviews, and book
+                directly.
               </p>
               <ul className="by-the-numbers__bullets">
                 <li>
@@ -133,15 +135,19 @@ export default async function HomePage() {
                 </li>
                 <li>
                   <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
-                  Side-by-side pricing &amp; schedules
+                  Only county-approved CCW instructors
                 </li>
                 <li>
                   <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
-                  Reviews and ratings in one place
+                  Compare pricing before you book
                 </li>
               </ul>
             </div>
-            <ByTheNumbersStats />
+            <ByTheNumbersStats
+              instructorCount={vendorCount}
+              avgInitialPrice={avgInitial}
+              avgRenewalPrice={avgRenewal}
+            />
           </div>
         </div>
       </section>
