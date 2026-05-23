@@ -22,7 +22,7 @@ import { getCountyImageUrl } from "@/data/county-images";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { CountyStatsSection } from "@/components/CountyStatsSection";
 import { CcwTimelineSection } from "@/components/CcwTimelineSection";
-import { getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
+import { countyHasTimelineData, getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
@@ -95,6 +95,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
   const countyImage = getCountyImageUrl(county);
   const timelineData = await getCcwTimelineForCounty(county);
+  const hasTimelineData = countyHasTimelineData(timelineData);
 
   const hasActiveFilters = Boolean(
     filters.city ||
@@ -158,7 +159,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   targetId="ccw-timeline"
                   className="btn-secondary small w-button county-hero-timeline-btn"
                 >
-                  Current Wait Times
+                  {hasTimelineData ? "Current Wait Times" : "Submit Wait Times"}
                 </SmoothScrollTo>
               </div>
             </div>
@@ -185,8 +186,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
       </div>
 
       <CountyStatsSection vendors={allVendors} countyDisplayName={displayName} />
-
-      <CcwTimelineSection data={timelineData} />
 
       <section
         id="county-vendors"
@@ -400,6 +399,8 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
           </div>
         </div>
       </section>
+
+      <CcwTimelineSection data={timelineData} />
 
       {SHOW_GEAR_SECTIONS ? <GearCtaSection /> : null}
       <Footer />

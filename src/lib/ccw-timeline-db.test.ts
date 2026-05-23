@@ -21,7 +21,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
+import { countyHasTimelineData, getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
 
 beforeEach(() => {
   findMany.mockReset();
@@ -133,6 +133,18 @@ describe("getCcwTimelineForCounty", () => {
     const initial = data.processes.find((p) => p.process === "initial")!;
     expect(initial.submissions[0]?.durationDays).toBe(142);
     expect(initial.submissions[0]?.body).toContain("142");
+  });
+
+  it("countyHasTimelineData is false when every process is empty", async () => {
+    findMany.mockResolvedValue([]);
+    const data = await getCcwTimelineForCounty("amador");
+    expect(countyHasTimelineData(data)).toBe(false);
+  });
+
+  it("countyHasTimelineData is true when any process has submissions", async () => {
+    findMany.mockResolvedValue([row("RENEWAL", 60, "2026-03-15")]);
+    const data = await getCcwTimelineForCounty("los-angeles");
+    expect(countyHasTimelineData(data)).toBe(true);
   });
 
   it("only queries approved rows for the given county", async () => {

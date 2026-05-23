@@ -174,6 +174,11 @@ export async function getCcwTimelineForCounty(
   };
 }
 
+/** True when the county has at least one approved timeline report to show. */
+export function countyHasTimelineData(payload: CcwTimelineCountyPayload): boolean {
+  return payload.processes.some((p) => p.submissionCount > 0);
+}
+
 /** Used by `/api/ccw-timeline`. Kept here so submission counts are computed in one place. */
 export async function getCcwTimelineApprovedCount(countySlug: string): Promise<number> {
   try {
