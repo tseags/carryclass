@@ -52,7 +52,9 @@ export function SavedListingsSection({
                     {item.vendor.name}
                   </Link>
                   <p className="mt-1 text-xs text-zinc-600">
-                    {item.vendor.city}, {getCountyDisplayName(item.vendor.county)} County
+                    {item.vendor.city?.trim()
+                      ? `${item.vendor.city.trim()}, ${getCountyDisplayName(item.vendor.county)} County`
+                      : `${getCountyDisplayName(item.vendor.county)} County`}
                   </p>
                 </div>
                 <SaveHeartButton

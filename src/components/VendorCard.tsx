@@ -29,7 +29,9 @@ export function VendorCard({ vendor, variant = "default" }: VendorCardProps) {
             className="mg-top-4px shrink-0"
           />
           <div className="paragraph-small color-neutral-600">
-            {vendor.city}, {vendor.county.replace(/-/g, " ")}
+            {vendor.city?.trim()
+              ? `${vendor.city.trim()}, ${vendor.county.replace(/-/g, " ")}`
+              : vendor.county.replace(/-/g, " ")}
             {variant === "outline" && vendor.address && (
               <>
                 <br />

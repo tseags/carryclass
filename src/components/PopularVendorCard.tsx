@@ -86,7 +86,9 @@ export function PopularVendorCard({
             alt=""
           />
           <span>
-            {vendor.city}, {servedCounty} County
+            {vendor.city?.trim()
+              ? `${vendor.city.trim()}, ${servedCounty} County`
+              : `${servedCounty} County`}
           </span>
         </div>
 
