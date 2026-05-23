@@ -1,7 +1,7 @@
 import { getCountyDisplayName } from "@/data/counties";
 import {
+  getCoordinatesForCity,
   getCoordinatesForCounty,
-  getCoordinatesForVendor,
   type Coordinates,
 } from "@/data/vendor-coordinates";
 
@@ -15,8 +15,9 @@ export interface VendorLocationInput {
 export type VendorLocationSource =
   | "address-geocode"
   | "city-geocode"
+  | "county-geocode"
+  | "city-center"
   | "county-center"
-  | "legacy-fallback"
   | "none";
 
 export interface VendorLocationResolution {
@@ -27,7 +28,7 @@ export interface VendorLocationResolution {
 }
 
 interface LocationQuery {
-  source: "address-geocode" | "city-geocode";
+  source: "address-geocode" | "city-geocode" | "county-geocode";
   query: string;
 }
 
@@ -65,6 +66,7 @@ export function buildVendorLocationQueries(input: VendorLocationInput): {
   const geocodeQueries: LocationQuery[] = [];
   if (addressQuery) geocodeQueries.push({ source: "address-geocode", query: addressQuery });
   if (cityQuery) geocodeQueries.push({ source: "city-geocode", query: cityQuery });
+  if (countyQuery) geocodeQueries.push({ source: "county-geocode", query: countyQuery });
 
   const googleMapsQuery = geocodeQueries[0]?.query || countyQuery;
 
@@ -95,7 +97,19 @@ export async function resolveVendorLocation(
     }
   }
 
-  if (!city && county) {
+  if (city) {
+    const cityCenter = getCoordinatesForCity(city);
+    if (cityCenter) {
+      return {
+        coordinates: cityCenter,
+        source: "city-center",
+        resolvedQuery: joinQuery([city, clean(input.state) || "CA", "USA"]),
+        googleMapsQuery,
+      };
+    }
+  }
+
+  if (county) {
     const countyCenter = getCoordinatesForCounty(county);
     if (countyCenter) {
       return {
@@ -105,16 +119,6 @@ export async function resolveVendorLocation(
         googleMapsQuery,
       };
     }
-  }
-
-  const legacy = getCoordinatesForVendor(city, county);
-  if (legacy) {
-    return {
-      coordinates: legacy,
-      source: "legacy-fallback",
-      resolvedQuery: city ? joinQuery([city, clean(input.state) || "CA", "USA"]) : countyQuery,
-      googleMapsQuery,
-    };
   }
 
   return {

@@ -76,4 +76,33 @@ describe("resolveVendorMapPins", () => {
     expect(pins[0].source).toBe("address-geocode");
     expect(pins[0].label).toContain("123 Main St");
   });
+
+  it("falls back to city when no address is listed", async () => {
+    const geocode = vi
+      .fn<(_: string) => Promise<[number, number] | null>>()
+      .mockImplementation(async (query) => {
+        if (query === "Irvine, CA, USA") return [33.68, -117.82];
+        return null;
+      });
+
+    const pins = await resolveVendorMapPins([makeVendor()], { geocode });
+
+    expect(pins).toHaveLength(1);
+    expect(pins[0].source).toBe("city-geocode");
+    expect(pins[0].label).toBe("Irvine, Orange County");
+  });
+
+  it("falls back to county when city geocode fails", async () => {
+    const geocode = vi.fn<(_: string) => Promise<[number, number] | null>>().mockResolvedValue(null);
+
+    const pins = await resolveVendorMapPins(
+      [makeVendor({ city: "Unknown City" })],
+      { geocode }
+    );
+
+    expect(pins).toHaveLength(1);
+    expect(pins[0].source).toBe("county-center");
+    expect(pins[0].coordinates).toEqual([33.7175, -117.8311]);
+    expect(pins[0].label).toBe("Unknown City, Orange County");
+  });
 });
