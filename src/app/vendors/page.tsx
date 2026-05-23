@@ -6,7 +6,9 @@ import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
+import { geocodeWithNominatim } from "@/lib/nominatim-geocode";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
+import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
 import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
@@ -80,6 +82,11 @@ export default async function VendorsPage({ searchParams }: PageProps) {
       filters.priceListedOnly ||
       (filters.search && filters.search.trim().length > 0)
   );
+
+  const mapPins =
+    view === "map" && vendors.length > 0
+      ? await resolveVendorMapPins(vendors, { geocode: geocodeWithNominatim })
+      : [];
 
   const buildViewHref = (nextView: "list" | "map") => {
     const params = new URLSearchParams();
@@ -329,7 +336,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
             ) : (
               <div className="vendors-results-map" aria-label="Vendor map">
                 {vendors.length > 0 ? (
-                  <VendorsMapDynamic vendors={vendors} hasFilter={hasFilter} />
+                  <VendorsMapDynamic pins={mapPins} hasFilter={hasFilter} />
                 ) : (
                   <div className="vendors-map-empty" role="status">
                     <strong>No matching vendors to map</strong>

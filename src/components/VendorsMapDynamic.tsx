@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Vendor } from "@/types";
+import type { VendorMapPin } from "@/lib/vendor-map-pins";
 
 const VendorsMap = dynamic(
   () => import("@/components/VendorsMap").then((m) => m.VendorsMap),
@@ -16,10 +16,10 @@ const VendorsMap = dynamic(
 );
 
 interface VendorsMapDynamicProps {
-  vendors: Vendor[];
+  pins: VendorMapPin[];
   hasFilter: boolean;
 }
 
-export function VendorsMapDynamic({ vendors, hasFilter }: VendorsMapDynamicProps) {
-  return <VendorsMap vendors={vendors} hasFilter={hasFilter} />;
+export function VendorsMapDynamic({ pins, hasFilter }: VendorsMapDynamicProps) {
+  return <VendorsMap pins={pins} hasFilter={hasFilter} />;
 }

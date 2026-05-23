@@ -27,6 +27,8 @@ import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
+import { geocodeWithNominatim } from "@/lib/nominatim-geocode";
+import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
 
 interface PageProps {
   params: Promise<{ county: string }>;
@@ -105,6 +107,11 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
       filters.priceListedOnly ||
       (filters.search && filters.search.trim().length > 0)
   );
+
+  const mapPins =
+    view === "map" && vendors.length > 0
+      ? await resolveVendorMapPins(vendors, { geocode: geocodeWithNominatim })
+      : [];
 
   const countyPath = `/ca/${county}`;
   const buildViewHref = (nextView: "list" | "map") => {
@@ -384,7 +391,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
             ) : (
               <div className="vendors-results-map" aria-label="Vendor map">
                 {vendors.length > 0 ? (
-                  <VendorsMapDynamic vendors={vendors} hasFilter={hasActiveFilters} />
+                  <VendorsMapDynamic pins={mapPins} hasFilter={hasActiveFilters} />
                 ) : (
                   <div className="vendors-map-empty" role="status">
                     <strong>No matching vendors to map</strong>
