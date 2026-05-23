@@ -16,7 +16,7 @@ import type {
  * a human reviews them.
  */
 
-const MIN_FOR_METRICS = 3;
+const MIN_FOR_METRICS = 2;
 const RECENT_SUBMISSIONS_LIMIT = 10;
 
 const PROCESS_LABEL: Record<CcwTimelineProcess, string> = {

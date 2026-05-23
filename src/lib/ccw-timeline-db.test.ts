@@ -84,7 +84,7 @@ describe("getCcwTimelineForCounty", () => {
     expect(data.lastTimelineSubmittedCounty).toBe(initial.lastSubmittedAt);
   });
 
-  it("hides metrics when fewer than 3 approved submissions exist for a process", async () => {
+  it("computes median + min/max when there are 2 rows", async () => {
     findMany.mockResolvedValue([
       row("RENEWAL", 60, "2026-03-15"),
       row("RENEWAL", 80, "2026-03-10"),
@@ -92,10 +92,20 @@ describe("getCcwTimelineForCounty", () => {
     const data = await getCcwTimelineForCounty("los-angeles");
     const renewal = data.processes.find((p) => p.process === "renewal")!;
     expect(renewal.submissionCount).toBe(2);
+    expect(renewal.avgDays).toBe(70);
+    expect(renewal.rangeMin).toBe(60);
+    expect(renewal.rangeMax).toBe(80);
+  });
+
+  it("hides metrics when only 1 approved submission exists for a process", async () => {
+    findMany.mockResolvedValue([row("RENEWAL", 60, "2026-03-15")]);
+    const data = await getCcwTimelineForCounty("los-angeles");
+    const renewal = data.processes.find((p) => p.process === "renewal")!;
+    expect(renewal.submissionCount).toBe(1);
     expect(renewal.avgDays).toBe(null);
     expect(renewal.rangeMin).toBe(null);
     expect(renewal.rangeMax).toBe(null);
-    expect(renewal.freshnessLine.toLowerCase()).toContain("only 2");
+    expect(renewal.freshnessLine.toLowerCase()).toContain("only 1");
   });
 
   it("groups rows by process and chooses the most recent county-wide date", async () => {

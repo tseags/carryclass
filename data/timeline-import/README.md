@@ -38,8 +38,12 @@ every time you run the import.
    npm run seed:ccw-timelines
    ```
 
-   Inserts new rows and updates existing ones (matched on `sourceRef`). Status
-   transitions are conservative:
+   Inserts new rows and updates existing ones (matched on `sourceRef`). For
+   docx imports, `submittedAt` is set from the application completion date
+   (`dateFinished`, else the last date found in the body, else `dateStarted`).
+   User-form submissions keep `submittedAt` as the time they posted on the site.
+
+   Status transitions are conservative:
 
    - PENDING + new high-confidence parse → APPROVED
    - APPROVED stays APPROVED (manual moderation wins)

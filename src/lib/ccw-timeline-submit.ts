@@ -166,6 +166,7 @@ export async function createCcwTimelineSubmission(
 
   const v = validated.value;
   try {
+    // submittedAt defaults to now() — when they posted on the site (not permit dates).
     const created = await prisma.ccwTimelineSubmission.create({
       data: {
         countySlug: v.countySlug,

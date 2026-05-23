@@ -17,6 +17,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PrismaClient, type Prisma } from "@prisma/client";
+import { extractDates } from "../src/lib/ccw-timeline-normalize";
 import type { ImportedReport, ImportSummary } from "./import-ccw-timelines";
 
 const REVIEW_FILE = resolve(__dirname, "..", "data/timeline-import/review.json");
@@ -41,6 +42,15 @@ function processToEnum(p: ImportedReport["process"]): "INITIAL" | "RENEWAL" | "M
     case "modification":
       return "MODIFICATION";
   }
+}
+
+/** Display date for imported rows: application completion, not waitlist start. */
+function importSubmittedAt(r: ImportedReport): Date | null {
+  if (r.dateFinished) return new Date(r.dateFinished);
+  const bodyDates = extractDates(r.body);
+  if (bodyDates.length > 0) return bodyDates[bodyDates.length - 1]!.date;
+  if (r.dateStarted) return new Date(r.dateStarted);
+  return null;
 }
 
 async function main() {
@@ -85,6 +95,8 @@ async function main() {
     const wantStatus: "APPROVED" | "PENDING" =
       r.decision === "auto-approve" ? "APPROVED" : "PENDING";
 
+    const submittedAt = importSubmittedAt(r);
+
     const baseData = {
       countySlug: r.countySlug,
       process: processToEnum(r.process),
@@ -98,6 +110,7 @@ async function main() {
       rawText: r.rawText,
       parseConfidence: r.confidence,
       parseWarnings: r.warnings,
+      ...(submittedAt ? { submittedAt } : {}),
     } satisfies Prisma.CcwTimelineSubmissionUncheckedCreateInput;
 
     const existing = await prisma.ccwTimelineSubmission.findUnique({
