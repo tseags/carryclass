@@ -22,7 +22,7 @@ import { getCountyImageUrl } from "@/data/county-images";
 import { GearCtaSection } from "@/components/GearCtaSection";
 import { CountyStatsSection } from "@/components/CountyStatsSection";
 import { CcwTimelineSection } from "@/components/CcwTimelineSection";
-import { getPlaceholderCcwTimelineData } from "@/data/ccw-timeline-placeholder";
+import { getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
@@ -94,7 +94,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   );
 
   const countyImage = getCountyImageUrl(county);
-  const timelineData = getPlaceholderCcwTimelineData(county, displayName);
+  const timelineData = await getCcwTimelineForCounty(county);
 
   const hasActiveFilters = Boolean(
     filters.city ||

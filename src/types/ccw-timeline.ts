@@ -8,6 +8,11 @@ export type CcwTimelineSubmission = {
   /** User-visible narrative (dates, milestones). */
   body: string;
   submittedAt: string;
+  /**
+   * Server-computed days from application to permit pickup.
+   * Prefer this over parsing dates out of `body` on the client.
+   */
+  durationDays?: number | null;
 };
 
 export type CcwProcessMetrics = {

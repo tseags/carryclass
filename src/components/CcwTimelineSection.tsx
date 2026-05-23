@@ -96,7 +96,10 @@ function TimelineReportsList({
     <ul>
       {submissions.map((s) => {
         const syntheticFallback = Math.max(14, Math.round(fallbackDays * 0.78));
-        const days = inferSubmissionDays(s.body, syntheticFallback);
+        const days =
+          typeof s.durationDays === "number" && s.durationDays > 0
+            ? s.durationDays
+            : inferSubmissionDays(s.body, syntheticFallback);
         return (
           <li key={s.id} className={rowClass}>
             {variant === "inline" ? null : (
@@ -172,12 +175,15 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   const [submissionsExpanded, setSubmissionsExpanded] = useState(false);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formDisplayName, setFormDisplayName] = useState("");
   const [formProcess, setFormProcess] = useState<CcwTimelineProcess>(defaultProcess);
   const [formDateStarted, setFormDateStarted] = useState("");
   const [formDateFinished, setFormDateFinished] = useState("");
   const [formTotalCost, setFormTotalCost] = useState("");
   const [formBody, setFormBody] = useState("");
+  const [formWebsite, setFormWebsite] = useState("");
   const [portalReady, setPortalReady] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -187,14 +193,18 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
     setFormDateStarted("");
     setFormDateFinished("");
     setFormTotalCost("");
+    setFormWebsite("");
     setFormProcess(selected);
     setSubmitSuccess(false);
+    setSubmitError(null);
+    setSubmitting(false);
     setSubmitModalOpen(true);
   }, [selected]);
 
   const closeSubmitModal = useCallback(() => {
     setSubmitModalOpen(false);
     setSubmitSuccess(false);
+    setSubmitError(null);
   }, []);
 
   useEffect(() => {
@@ -247,10 +257,49 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
   const submissionsPanelId = "ccw-timeline-submissions-panel";
   const submitModalTitleId = "ccw-timeline-submit-modal-title";
 
-  const handleSubmitTimeline = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmitTimeline = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formBody.trim()) return;
-    setSubmitSuccess(true);
+    if (submitting) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch("/api/ccw-timeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countySlug,
+          process: formProcess,
+          displayName: formDisplayName.trim() || undefined,
+          body: formBody.trim(),
+          dateStarted: formDateStarted || undefined,
+          dateFinished: formDateFinished || undefined,
+          totalCost: formTotalCost.trim() || undefined,
+          website: formWebsite,
+        }),
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | { ok: true; message?: string }
+        | { ok: false; error?: { message?: string } }
+        | null;
+
+      if (!res.ok || !json || !json.ok) {
+        const message =
+          (json && "error" in json && json.error?.message) ||
+          "We couldn't submit your timeline. Please try again.";
+        setSubmitError(message);
+        return;
+      }
+
+      setSubmitSuccess(true);
+    } catch {
+      setSubmitError("Network error - please try again in a moment.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -475,8 +524,8 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 {submitSuccess ? (
                   <div className="space-y-4">
                     <p className="text-sm leading-relaxed text-zinc-700">
-                      Thanks - we received your timeline. Our team will review it soon. (Saving to
-                      the live feed is not wired up yet.)
+                      Thanks - we received your timeline. Our team will review it shortly and post
+                      it to the public feed once approved.
                     </p>
                     <button
                       type="button"
@@ -489,6 +538,27 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                 ) : (
                   <form className="space-y-4" onSubmit={handleSubmitTimeline}>
                     <input name="county" type="hidden" value={countySlug} readOnly />
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        left: "-10000px",
+                        width: 1,
+                        height: 1,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <label htmlFor="ccw-timeline-website">Website</label>
+                      <input
+                        id="ccw-timeline-website"
+                        name="website"
+                        type="text"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={formWebsite}
+                        onChange={(e) => setFormWebsite(e.target.value)}
+                      />
+                    </div>
                     <div>
                       <label
                         htmlFor="ccw-timeline-display-name"
@@ -608,14 +678,27 @@ export function CcwTimelineSection({ data }: CcwTimelineSectionProps) {
                       By submitting, you confirm this reflects your experience. This is not legal
                       advice.
                     </p>
+                    {submitError ? (
+                      <p
+                        role="alert"
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                      >
+                        {submitError}
+                      </p>
+                    ) : null}
                     <div className="flex flex-wrap gap-3 pt-1">
-                      <button type="submit" className="btn-primary bg-secondary-2 small w-button">
-                        Send timeline
+                      <button
+                        type="submit"
+                        className="btn-primary bg-secondary-2 small w-button"
+                        disabled={submitting}
+                      >
+                        {submitting ? "Sending..." : "Send timeline"}
                       </button>
                       <button
                         type="button"
                         className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
                         onClick={closeSubmitModal}
+                        disabled={submitting}
                       >
                         Cancel
                       </button>

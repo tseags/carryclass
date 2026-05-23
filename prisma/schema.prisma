@@ -112,6 +112,52 @@ enum BookingStatus {
   REFUNDED
 }
 
+enum CcwTimelineProcess {
+  INITIAL
+  RENEWAL
+  MODIFICATION
+}
+
+enum CcwTimelineStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CcwTimelineSource {
+  DOCX_IMPORT
+  USER_FORM
+  MANUAL
+}
+
+/// Self-reported CCW application timelines (initial / renewal / modification).
+/// Mirrors VendorReview moderation pattern: rows are PENDING until approved.
+model CcwTimelineSubmission {
+  id              String              @id @default(cuid())
+  countySlug      String              // canonical slug, e.g. "los-angeles"
+  process         CcwTimelineProcess
+  status          CcwTimelineStatus   @default(PENDING)
+  displayName     String              @default("Anonymous")
+  body            String
+  dateStarted     DateTime?
+  dateFinished    DateTime?
+  /// Required for any APPROVED row used in metrics. Computed server-side.
+  durationDays    Int?
+  totalCostCents  Int?
+  sourceType      CcwTimelineSource   @default(USER_FORM)
+  /// Stable identifier for re-import dedup (e.g. hash of original docx segment).
+  sourceRef       String?             @unique
+  rawText         String?
+  parseConfidence Float?
+  parseWarnings   String[]
+  submittedAt     DateTime            @default(now())
+  reviewedAt      DateTime?
+
+  @@index([countySlug])
+  @@index([countySlug, process, status])
+  @@index([status, submittedAt])
+}
+
 model Booking {
   id        String @id @default(cuid())
   vendorId  String
