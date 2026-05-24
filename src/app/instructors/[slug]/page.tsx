@@ -42,6 +42,13 @@ type AvailableCourse = {
   price: string;
 };
 
+function getCountyPillClassName(name: string) {
+  const len = name.length;
+  if (len <= 6) return "px-2.5 py-1 text-[12px] sm:text-[13px]";
+  if (len <= 12) return "px-3 py-1.5 text-[13px] sm:text-[14px]";
+  return "px-3.5 py-2 text-[12px] sm:text-[13px] leading-snug";
+}
+
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -348,20 +355,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <h3 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[40px]">Counties Served</h3>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {vendor.countiesServed.map((county) => (
-                        <span
-                          key={county}
-                          className="inline-flex rounded-full border border-[#2f2e2b] bg-[#2f2e2b] px-3 py-1.5 text-[15px] font-medium leading-none text-[#d6d3c8]"
-                        >
-                          {getCountyDisplayName(county)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 </section>
               )}
 
@@ -494,6 +487,27 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       )}
                     </div>
                   </section>
+
+                  {vendor.countiesServed.length > 0 && (
+                    <section className="rounded-2xl border border-[#ebe9e2] bg-white p-6 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:p-7">
+                      <h3 className="text-[38px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[42px]">
+                        Counties Served
+                      </h3>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {vendor.countiesServed.map((county) => {
+                          const countyName = getCountyDisplayName(county);
+                          return (
+                            <span
+                              key={county}
+                              className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full border border-[#2f2e2b] bg-[#2f2e2b] text-center font-medium text-white ${getCountyPillClassName(countyName)}`}
+                            >
+                              {countyName}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
 
                 </div>
               </div>
