@@ -60,8 +60,8 @@ export default async function HomePage() {
               </div>
               <div className="inner-container _414px _100-tablet">
                 <p className="mg-bottom-24px">
-                  Browse approved CCW instructors across California. Compare class options, prices,
-                  reviews, and availability — all in one place, no account required.
+                  Browse sheriff-approved concealed carry instructors across California. Compare
+                  CCW class options, prices, reviews, and availability — all in one place.
                 </p>
               </div>
               <HeroSearchBar />
