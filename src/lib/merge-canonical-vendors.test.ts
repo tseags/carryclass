@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Vendor } from "@/types";
+import { VENDOR_MERGE_OVERRIDES } from "@/data/vendor-merge-overrides";
 import {
   formatCountyContactLabel,
   getRowGroupKey,
@@ -270,6 +271,88 @@ describe("mergeCanonicalVendors", () => {
     const b = mergeCanonicalVendors(rows.slice().reverse());
     expect(a[0].id).toBe(b[0].id);
     expect(a[0].slug).toBe(b[0].slug);
+  });
+
+  it("force-merges Safe Insight across safeinsight.net and myshopify with pinned pricing", () => {
+    const counties = [
+      "el-dorado",
+      "lassen",
+      "los-angeles",
+      "orange",
+      "tuolumne",
+      "ventura",
+    ] as const;
+    const rows = [
+      makeRow({
+        id: "d0720a54-1e01-4870-bea3-40760bd0958f",
+        name: "Safe Insight",
+        county: "el-dorado",
+        website: "https://safeinsight.myshopify.com/collections/non-resident-ccw",
+        priceInitial: 399,
+        priceRenewal: 299,
+        updatedAt: "2026-04-13T04:37:12Z",
+      }),
+      makeRow({
+        id: "721f9ccf-ce7f-4cdf-b572-1e93684d74fb",
+        name: "Safe Insight",
+        county: "lassen",
+        website: "https://www.safeinsight.net",
+        phone: "877-217-7233",
+        priceInitial: 99,
+        priceRenewal: 300,
+      }),
+      makeRow({
+        id: "861dc127-b1f1-4543-98ae-0bb736e51f45",
+        name: "Safe Insight",
+        county: "los-angeles",
+        website: "https://www.safeinsight.net",
+        phone: "877-217-7233",
+        city: "Artesia",
+      }),
+      makeRow({
+        id: "2a484a48-f701-43e4-be08-6bd899928cfb",
+        name: "Safe Insight, LLC",
+        county: "orange",
+        website: "https://www.safeinsight.net",
+        phone: "877-217-7233",
+        city: "Cypress",
+        priceInitial: 99,
+        priceRenewal: 300,
+        updatedAt: "2026-04-13T20:06:39Z",
+      }),
+      makeRow({
+        id: "b0155c8f-efef-4dbb-84b3-9ff58a21c979",
+        name: "Safe Insight",
+        county: "tuolumne",
+        website: "https://safeinsight.net/california-ccw",
+        phone: "877-217-7233",
+      }),
+      makeRow({
+        id: "3386d4d3-5a7f-4154-8d5a-9cfd4fb25437",
+        name: "Safe Insight",
+        county: "ventura",
+        website: "https://www.safeinsight.net",
+        phone: "877-217-7233",
+        priceInitial: 99,
+        priceRenewal: 300,
+      }),
+    ];
+
+    const withoutOverride = mergeCanonicalVendors(rows);
+    expect(withoutOverride.length).toBeGreaterThan(1);
+
+    const merged = mergeCanonicalVendors(rows, { overrides: VENDOR_MERGE_OVERRIDES });
+    expect(merged).toHaveLength(1);
+    const v = merged[0];
+    expect(v.countiesServed.sort()).toEqual([...counties].sort());
+    expect(v.priceInitial).toBe(399);
+    expect(v.priceRenewal).toBe(299);
+    expect(v.website).toBe("https://www.safeinsight.net");
+    expect(v.countyContacts?.length).toBeGreaterThan(0);
+    expect(v.countyContacts?.[0].phone).toBe("877-217-7233");
+    expect(v.countyContacts?.[0].counties).toEqual(
+      expect.arrayContaining(["los-angeles", "orange"])
+    );
   });
 
   it("forceSeparate keeps a row standalone even when keys collide", () => {

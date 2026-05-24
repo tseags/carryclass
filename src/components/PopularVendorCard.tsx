@@ -47,6 +47,7 @@ export function PopularVendorCard({
 }: PopularVendorCardProps) {
   const cardDescription =
     vendor.listingCardText?.trim() || LISTING_CARD_FALLBACK;
+  const servesMultipleCounties = vendor.countiesServed.length > 1;
 
   return (
     <div className="relative">
@@ -78,18 +79,26 @@ export function PopularVendorCard({
         ) : null}
 
         <div className="popular-vendors-redesign__location-row">
-          <img
-            src="/images/location-icon-color-neutral-400-directory-webflow-ecommerce-template.svg"
-            loading="lazy"
-            width={14}
-            height={14}
-            alt=""
-          />
-          <span>
-            {vendor.city?.trim()
-              ? `${vendor.city.trim()}, ${servedCounty} County`
-              : `${servedCounty} County`}
-          </span>
+          {servesMultipleCounties ? (
+            <span className="popular-vendors-redesign__multi-county-tag">
+              Serves multiple counties
+            </span>
+          ) : (
+            <>
+              <img
+                src="/images/location-icon-color-neutral-400-directory-webflow-ecommerce-template.svg"
+                loading="lazy"
+                width={14}
+                height={14}
+                alt=""
+              />
+              <span>
+                {vendor.city?.trim()
+                  ? `${vendor.city.trim()}, ${servedCounty} County`
+                  : `${servedCounty} County`}
+              </span>
+            </>
+          )}
         </div>
 
         <p className="popular-vendors-redesign__description">{cardDescription}</p>

@@ -872,6 +872,16 @@ img.county-hero-image-fill {
   font-size: 13px;
   line-height: 1.45;
 }
+.popular-vendors-redesign__multi-county-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
 .popular-vendors-redesign__description {
   margin: 0 0 16px;
   color: #4b5563;

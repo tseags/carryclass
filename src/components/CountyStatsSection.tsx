@@ -40,10 +40,10 @@ export function CountyStatsSection({
       aria-labelledby="county-stats-heading"
     >
       <div className="mx-auto max-w-6xl overflow-visible px-4 sm:px-6">
-        <header className="mb-6 w-full overflow-x-auto text-center sm:mb-8">
+        <header className="mb-6 w-full text-center sm:mb-8">
           <h2
             id="county-stats-heading"
-            className="county-stats-section-heading inline-block min-w-min text-[#1f1f1e] whitespace-normal sm:whitespace-nowrap"
+            className="county-stats-section-heading text-[#1f1f1e]"
           >
             {sectionTitle}
           </h2>
@@ -59,7 +59,7 @@ export function CountyStatsSection({
                   {card.eyebrow}
                 </p>
                 <div className="flex min-h-0 flex-1 flex-col justify-center">
-                  <p className="text-5xl font-semibold leading-none tabular-nums text-zinc-900 sm:text-6xl">
+                  <p className="cursor-default text-5xl font-semibold leading-none tabular-nums text-zinc-900 transition-colors duration-200 hover:text-[#c86442] sm:text-6xl">
                     {card.value}
                   </p>
                 </div>

@@ -2,9 +2,9 @@ import Link from "next/link";
 
 type FooterLink = { label: string; href: string };
 
-const DIRECTORY_LINKS: FooterLink[] = [
-  { label: "Find classes", href: "/instructors" },
-  { label: "Browse counties", href: "/ca" },
+const BROWSE_LINKS: FooterLink[] = [
+  { label: "CCW Classes", href: "/instructors" },
+  { label: "Counties", href: "/ca" },
 ];
 
 const STUDENT_LINKS: FooterLink[] = [
@@ -56,13 +56,14 @@ export function Footer() {
               <span className="text-[#d56f49]">Class</span>
             </Link>
             <p className="site-footer__tagline mt-10 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
-              California&apos;s most complete directory of sheriff-approved CCW
-              training classes and instructors.
+              Browse sheriff-approved concealed carry instructors across
+              California. Compare CCW class options, prices, reviews, and
+              availability — all in one place.
             </p>
           </div>
 
           <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-2">
-            <FooterColumn title="Directory" links={DIRECTORY_LINKS} />
+            <FooterColumn title="Browse" links={BROWSE_LINKS} />
             <FooterColumn title="For students" links={STUDENT_LINKS} />
           </div>
         </div>

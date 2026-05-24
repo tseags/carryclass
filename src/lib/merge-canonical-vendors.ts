@@ -27,6 +27,11 @@ export interface VendorMergeOverrides {
     label?: string;
     /** Row ids (Vendor.id values prior to merge) to lock together. */
     rowIds: string[];
+    /** Override canonical pricing when winner scoring picks the wrong row. */
+    priceInitial?: number;
+    priceRenewal?: number;
+    /** Override canonical website (e.g. main brand URL vs regional storefront). */
+    website?: string;
   }>;
   /** Pin these row ids to standalone groups (never merge them with anything else). */
   forceSeparate?: string[];
@@ -286,18 +291,51 @@ function canonicalId(groupKey: string): string {
   return `ccvd-${shortHash(`canonical:${groupKey}`)}`;
 }
 
-function mergeGroup(groupKey: string, group: Vendor[]): Vendor {
+type ForceMergeConfig = NonNullable<VendorMergeOverrides["forceMerge"]>[number];
+
+function findForceMergeForGroup(
+  group: Vendor[],
+  overrides: VendorMergeOverrides
+): ForceMergeConfig | undefined {
+  return overrides.forceMerge?.find((config) =>
+    group.some((v) => config.rowIds.includes(v.id))
+  );
+}
+
+function applyForceMergeFieldOverrides(
+  vendor: Vendor,
+  forceConfig: ForceMergeConfig | undefined
+): Vendor {
+  if (!forceConfig) return vendor;
+  return {
+    ...vendor,
+    ...(forceConfig.priceInitial != null ? { priceInitial: forceConfig.priceInitial } : {}),
+    ...(forceConfig.priceRenewal != null ? { priceRenewal: forceConfig.priceRenewal } : {}),
+    ...(trimOrEmpty(forceConfig.website) ? { website: trimOrEmpty(forceConfig.website) } : {}),
+  };
+}
+
+function mergeGroup(
+  groupKey: string,
+  group: Vendor[],
+  overrides: VendorMergeOverrides = {}
+): Vendor {
+  const forceConfig = findForceMergeForGroup(group, overrides);
+
   if (group.length === 1) {
     const only = group[0];
     const contacts = buildCountyContacts(group);
     const countiesServed = unionCountiesServed(group);
-    return {
-      ...only,
-      id: canonicalId(groupKey),
-      slug: canonicalSlug(only.name, groupKey),
-      countiesServed: countiesServed.length > 0 ? countiesServed : only.countiesServed,
-      countyContacts: contacts.length > 0 ? contacts : undefined,
-    };
+    return applyForceMergeFieldOverrides(
+      {
+        ...only,
+        id: canonicalId(groupKey),
+        slug: canonicalSlug(only.name, groupKey),
+        countiesServed: countiesServed.length > 0 ? countiesServed : only.countiesServed,
+        countyContacts: contacts.length > 0 ? contacts : undefined,
+      },
+      forceConfig
+    );
   }
 
   const winner = pickWinner(group);
@@ -313,22 +351,25 @@ function mergeGroup(groupKey: string, group: Vendor[]): Vendor {
     winner.stripeConnectAccountId ??
     group.find((v) => trimOrEmpty(v.stripeConnectAccountId))?.stripeConnectAccountId;
 
-  return {
-    ...winner,
-    id: canonicalId(groupKey),
-    slug: canonicalSlug(winner.name, groupKey),
-    countiesServed: countiesServed.length > 0 ? countiesServed : winner.countiesServed,
-    classTypes: classTypes.length > 0
-      ? (classTypes as Vendor["classTypes"])
-      : winner.classTypes,
-    formats: formats.length > 0
-      ? (formats as Vendor["formats"])
-      : winner.formats,
-    featured,
-    acceptsBookings,
-    stripeConnectAccountId,
-    countyContacts: contacts.length > 0 ? contacts : undefined,
-  };
+  return applyForceMergeFieldOverrides(
+    {
+      ...winner,
+      id: canonicalId(groupKey),
+      slug: canonicalSlug(winner.name, groupKey),
+      countiesServed: countiesServed.length > 0 ? countiesServed : winner.countiesServed,
+      classTypes: classTypes.length > 0
+        ? (classTypes as Vendor["classTypes"])
+        : winner.classTypes,
+      formats: formats.length > 0
+        ? (formats as Vendor["formats"])
+        : winner.formats,
+      featured,
+      acceptsBookings,
+      stripeConnectAccountId,
+      countyContacts: contacts.length > 0 ? contacts : undefined,
+    },
+    forceConfig
+  );
 }
 
 /**
@@ -361,7 +402,7 @@ export function mergeCanonicalVendors(
 
   const merged: Vendor[] = [];
   for (const [key, group] of groups.entries()) {
-    merged.push(mergeGroup(key, group));
+    merged.push(mergeGroup(key, group, overrides));
   }
 
   merged.sort((a, b) => a.name.localeCompare(b.name));
