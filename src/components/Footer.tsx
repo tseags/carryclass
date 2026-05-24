@@ -3,14 +3,14 @@ import Link from "next/link";
 type FooterLink = { label: string; href: string };
 
 const DIRECTORY_LINKS: FooterLink[] = [
-  { label: "Find courses", href: "/vendors" },
+  { label: "Find classes", href: "/instructors" },
   { label: "Browse counties", href: "/ca" },
 ];
 
 const STUDENT_LINKS: FooterLink[] = [
-  { label: "Initial courses", href: "/vendors?classType=initial" },
-  { label: "Renewal courses", href: "/vendors?classType=renewal" },
-  { label: "Virtual options", href: "/vendors?format=online" },
+  { label: "Initial classes", href: "/instructors?classType=initial" },
+  { label: "Renewal classes", href: "/instructors?classType=renewal" },
+  { label: "Virtual options", href: "/instructors?format=online" },
 ];
 
 function FooterColumn({
@@ -57,7 +57,7 @@ export function Footer() {
             </Link>
             <p className="site-footer__tagline mt-10 max-w-[260px] text-sm leading-[1.7] text-[#b0aea5]">
               California&apos;s most complete directory of sheriff-approved CCW
-              training courses and instructors.
+              training classes and instructors.
             </p>
           </div>
 

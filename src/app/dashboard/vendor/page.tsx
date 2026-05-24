@@ -36,7 +36,7 @@ export default async function VendorDashboardPage() {
                 Claimed listings
               </h2>
               <p className="mt-2 text-sm text-zinc-600">
-                Listing management will live here. For now, reach out if you need your course details updated.
+                Listing management will live here. For now, reach out if you need your class details updated.
               </p>
             </section>
             <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">

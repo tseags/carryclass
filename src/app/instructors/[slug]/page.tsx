@@ -118,7 +118,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     if (card.key === "initial") {
       return {
         key: card.key,
-        title: "16-Hour Initial CCW Course",
+        title: "16-Hour Initial CCW Class",
         subtitle: "For first-time CCW applicants. Covers safety, laws, handling, and live-fire qualification.",
         price: card.value,
       };
@@ -126,7 +126,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     if (card.key === "renewal") {
       return {
         key: card.key,
-        title: "8-Hour Renewal CCW Course",
+        title: "8-Hour Renewal CCW Class",
         subtitle: "For existing permit holders. State-required refresher with live-fire qualification.",
         price: card.value,
       };
@@ -141,12 +141,12 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     }
     return {
       key: card.key,
-      title: "CCW Course",
+      title: "CCW Class",
       subtitle: card.description,
       price: card.value,
     };
   });
-  const tabHref = (tab: VendorTab) => `/vendors/${vendor.slug}?tab=${tab}`;
+  const tabHref = (tab: VendorTab) => `/instructors/${vendor.slug}?tab=${tab}`;
   const aboutIntro = vendor.description
     ? vendor.description
     : `${vendor.name} provides CCW instruction in ${vendor.city}, ${getCountyDisplayName(vendor.county)} County.`;
@@ -183,8 +183,8 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
               Home
             </Link>
             <span className="mx-2 vendor-profile-hero-breadcrumb-separator !text-[#c96442]">/</span>
-            <Link href="/vendors" className="vendor-profile-hero-breadcrumb-link !text-[#c96442] hover:!text-[#d97757] focus-visible:!text-[#d97757]">
-              Vendors
+            <Link href="/instructors" className="vendor-profile-hero-breadcrumb-link !text-[#c96442] hover:!text-[#d97757] focus-visible:!text-[#d97757]">
+              Instructors
             </Link>
             <span className="mx-2 vendor-profile-hero-breadcrumb-separator !text-[#c96442]">/</span>
             <span className="vendor-profile-hero-breadcrumb-current !font-bold !text-[#c96442]">{vendor.name}</span>
@@ -218,7 +218,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
               </p>
               {vendor.acceptsBookings ? (
                 <div className="mt-6 flex items-center gap-3">
-                  <Link href={`/vendors/${vendor.slug}/book`} className={heroButtonClassName}>
+                  <Link href={`/instructors/${vendor.slug}/book`} className={heroButtonClassName}>
                     Book Now
                   </Link>
                   <SaveHeartButton
@@ -274,7 +274,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
           <div
             className="mx-auto flex max-w-6xl flex-wrap items-end gap-1 px-4 sm:px-6"
             role="tablist"
-            aria-label="Vendor detail sections"
+            aria-label="Instructor detail sections"
           >
             {TAB_CONFIG.map((tab) => {
               const active = selectedTab === tab.id;
@@ -320,13 +320,13 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     </p>
                     {showAboutSupportCopy && (
                       <p className="mt-4 max-w-4xl text-[16px] leading-[1.7] text-[#4f4e4a] sm:text-[17px]">
-                        All courses meet California DOJ and local sheriff requirements. Students receive a certificate of completion and range qualification results on the day of training.
+                        All classes meet California DOJ and local sheriff requirements. Students receive a certificate of completion and range qualification results on the day of training.
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <h3 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[40px]">Available Courses &amp; Prices</h3>
+                    <h3 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[40px]">Available Classes &amp; Prices</h3>
                     <div className="mt-5 space-y-3">
                       {availableCourses.map((course) => (
                         <article
@@ -504,16 +504,16 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
         {otherVendors.length > 0 ? (
           <section
             className="section home-page popular popular-vendors-redesign relative left-1/2 -translate-x-1/2 w-screen"
-            aria-label="More CCW Courses"
+            aria-label="More CCW Classes"
           >
             <div className="container-default w-container">
               <div className="popular-vendors-redesign__header">
                 <div>
-                  <h2 className="mg-bottom-0">More CCW Courses</h2>
+                  <h2 className="mg-bottom-0">More CCW Classes</h2>
                 </div>
                 <div className="popular-vendors-redesign__header-btn">
-                  <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
-                    View All Vendors
+                  <Link href="/instructors" className="btn-secondary w-button popular-vendors-redesign__view-all">
+                    View All Instructors
                   </Link>
                 </div>
               </div>

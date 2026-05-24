@@ -16,7 +16,7 @@ function pageUrl(searchParamsString: string, page: number): string {
   if (page <= 1) p.delete("page");
   else p.set("page", String(page));
   const q = p.toString();
-  return q ? `/vendors?${q}` : "/vendors";
+  return q ? `/instructors?${q}` : "/instructors";
 }
 
 export function VendorsPagination({
@@ -27,7 +27,7 @@ export function VendorsPagination({
 }: VendorsPaginationProps) {
   if (totalPages <= 1) {
     return (
-      <div className="vendors-pagination" role="navigation" aria-label="Vendor list">
+      <div className="vendors-pagination" role="navigation" aria-label="Instructor list">
         <span className="vendors-pagination-count">
           Showing {totalCount} instructor{totalCount !== 1 ? "s" : ""}
         </span>
@@ -39,7 +39,7 @@ export function VendorsPagination({
   const to = Math.min(currentPage * PER_PAGE, totalCount);
 
   return (
-    <div className="vendors-pagination" role="navigation" aria-label="Vendor list pagination">
+    <div className="vendors-pagination" role="navigation" aria-label="Instructor list pagination">
       <span className="vendors-pagination-count">
         Showing {from}–{to} of {totalCount}
       </span>

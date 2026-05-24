@@ -8,9 +8,9 @@ import { CALIFORNIA_COUNTIES } from "@/data/counties";
 import { getVendorCountsByCounty } from "@/lib/vendors-db";
 
 export const metadata = {
-  title: "Find California CCW Training by County | CCW Courses CA",
+  title: "California CCW Classes by County | CCW Classes CA",
   description:
-    "Browse California counties with listed CCW instructors and firearm training vendors. View sheriff-approved providers and renewal course details.",
+    "Browse California counties with listed CCW instructors. Find sheriff-approved providers and renewal class details near you.",
 };
 
 export default async function CaliforniaPage({
@@ -73,11 +73,11 @@ export default async function CaliforniaPage({
             </h1>
             <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
               <span className="vendors-hero-description-line">
-                Browse California counties that currently have listed CCW instructors and training vendors near you.
+                Browse California counties that currently have listed CCW instructors near you.
               </span>
               <br aria-hidden="true" />
               <span className="vendors-hero-description-line">
-                Each county below links to its sheriff-approved vendor list and renewal information.
+                Each county below links to its sheriff-approved instructor list and renewal information.
               </span>
             </p>
           </div>
@@ -107,14 +107,14 @@ export default async function CaliforniaPage({
                   <select name="sort" defaultValue={sort}>
                     <option value="name">Name: A to Z</option>
                     <option value="name-desc">Name: Z to A</option>
-                    <option value="count-high">Most courses</option>
-                    <option value="count-low">Fewest courses</option>
-                  </select>
-                </label>
-                <button type="submit" className="btn-primary w-button vendors-filters-submit">
-                  Apply filters
-                </button>
-              </form>
+                  <option value="count-high">Most classes</option>
+                  <option value="count-low">Fewest classes</option>
+                </select>
+              </label>
+              <button type="submit" className="btn-primary w-button vendors-filters-submit">
+                Apply filters
+              </button>
+            </form>
             </div>
           </aside>
 
@@ -127,8 +127,8 @@ export default async function CaliforniaPage({
                 <select name="sort" defaultValue={sort} className="vendors-sort-select">
                   <option value="name">Name: A to Z</option>
                   <option value="name-desc">Name: Z to A</option>
-                  <option value="count-high">Most courses</option>
-                  <option value="count-low">Fewest courses</option>
+                  <option value="count-high">Most classes</option>
+                  <option value="count-low">Fewest classes</option>
                 </select>
                 <button type="submit" className="vendors-sort-apply">
                   Apply
@@ -183,7 +183,7 @@ export default async function CaliforniaPage({
                 <div>
                   {query && nameFiltered.length > 0 ? (
                     <>
-                      No counties matching &quot;{query}&quot; currently have listed CCW courses.{" "}
+                      No counties matching &quot;{query}&quot; currently have listed CCW classes.{" "}
                       <Link href="/ca" className="font-medium underline">
                         Clear search
                       </Link>
@@ -199,7 +199,7 @@ export default async function CaliforniaPage({
                     </>
                   ) : (
                     <>
-                      There are no counties with listed CCW courses yet.{" "}
+                      There are no counties with listed CCW classes yet.{" "}
                       <Link href="/" className="font-medium underline">
                         Back to home
                       </Link>

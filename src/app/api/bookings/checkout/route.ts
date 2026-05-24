@@ -126,8 +126,8 @@ export async function POST(req: Request) {
         destination: classSession.vendor.stripeConnectAccountId,
       },
     },
-    success_url: `${origin}/vendors/${classSession.vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/vendors/${classSession.vendor.slug}/book`,
+    success_url: `${origin}/instructors/${classSession.vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/instructors/${classSession.vendor.slug}/book`,
     metadata: {
       classSessionId: classSession.id,
       vendorId: classSession.vendorId,

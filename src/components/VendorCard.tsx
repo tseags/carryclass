@@ -59,7 +59,7 @@ export function VendorCard({ vendor, variant = "default" }: VendorCardProps) {
         </div>
       </div>
       <div className="flex-align-left flex-align-stretch-mbp mg-top-auto">
-        <Link href={`/vendors/${vendor.slug}`} className="w-inline-block w-full">
+        <Link href={`/instructors/${vendor.slug}`} className="w-inline-block w-full">
           <div
             className={
               variant === "outline"

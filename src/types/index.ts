@@ -45,7 +45,7 @@ export interface Vendor {
   googleReviewsUrl?: string;
   googlePlaceId?: string;
   featured?: boolean;
-  /** When true, hero shows Book Now and /vendors/[slug]/book is available */
+  /** When true, hero shows Book Now and /instructors/[slug]/book is available */
   acceptsBookings?: boolean;
   /** Stripe Connect account id (acct_...) — required for paid checkout */
   stripeConnectAccountId?: string;

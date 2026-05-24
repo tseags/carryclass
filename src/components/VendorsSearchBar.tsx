@@ -20,7 +20,7 @@ export function VendorsSearchBar({ counties }: VendorsSearchBarProps) {
     else params.delete("search");
     if (county) params.set("county", county);
     else params.delete("county");
-    router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
+    router.push(`/instructors${params.toString() ? `?${params}` : ""}`);
   }
 
   const countyValue = searchParams.get("county") ?? "";
@@ -63,7 +63,7 @@ export function VendorsSearchBar({ counties }: VendorsSearchBarProps) {
               const params = new URLSearchParams(searchParams.toString());
               if (val) params.set("county", val);
               else params.delete("county");
-              router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
+              router.push(`/instructors${params.toString() ? `?${params}` : ""}`);
             }}
           >
             <option value="">County</option>
@@ -85,7 +85,7 @@ export function VendorsSearchBar({ counties }: VendorsSearchBarProps) {
               const params = new URLSearchParams(searchParams.toString());
               if (val) params.set("sort", val);
               else params.delete("sort");
-              router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
+              router.push(`/instructors${params.toString() ? `?${params}` : ""}`);
             }}
           >
             <option value="">Sort</option>

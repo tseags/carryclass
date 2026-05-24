@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: "Privacy Policy for CCW Courses.",
+  description: "Privacy Policy for CarryClass — California's CCW classes directory.",
 };
 
 export default function PrivacyPage() {

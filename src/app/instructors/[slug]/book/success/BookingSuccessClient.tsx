@@ -73,7 +73,7 @@ export function BookingSuccessClient({ slug, sessionId }: Props) {
         <p className="mt-1 text-zinc-700">{data.classTitle ?? "CCW class"} - {when}</p>
       </div>
 
-      <Link href={`/vendors/${slug}`} className="btn-primary bg-secondary-2 small w-button inline-block w-full text-center">
+      <Link href={`/instructors/${slug}`} className="btn-primary bg-secondary-2 small w-button inline-block w-full text-center">
         Back to vendor
       </Link>
     </div>

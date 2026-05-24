@@ -15,7 +15,7 @@ export function HomeNewsletter() {
             Subscribe for CCW updates
           </h2>
           <p className="home-newsletter__copy">
-            New course listings, county updates, and permit info in your inbox.
+            New class listings, county updates, and permit info in your inbox.
             Unsubscribe anytime.
           </p>
           <form

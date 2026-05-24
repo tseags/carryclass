@@ -47,7 +47,7 @@
   color: rgba(203, 213, 225, 0.95) !important;
 }
 
-/* Current page label (e.g. Find CCW Courses on /vendors) — final authority in src/app/globals.css */
+/* Current page label (e.g. Find CCW Courses on /instructors) — final authority in src/app/globals.css */
 .vendors-hero-breadcrumb-row .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
   color: #ffffff !important;
   font-weight: 700 !important;
@@ -132,7 +132,7 @@
   }
 }
 
-/* Search / filter card on hero — /vendors: light card on dark navy (see globals for white shell) */
+/* Search / filter card on hero — /instructors: light card on dark navy (see globals for white shell) */
 .section-3.vendors-hero .filter-bar {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -140,7 +140,7 @@
 
 /* Vendors filter card padding: see vendors-filter-bar-shell in src/app/globals.css (loads after links) */
 
-/* /vendors filter row: drop Webflow 876px cap; search column uses full card width to the left */
+/* /instructors filter row: drop Webflow 876px cap; search column uses full card width to the left */
 .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
   max-width: none !important;
   width: 100% !important;
@@ -398,7 +398,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* /vendors redesign: slim sidebar filters + homepage-identical cards         */
+/* /instructors redesign: slim sidebar filters + homepage-identical cards         */
 /* -------------------------------------------------------------------------- */
 .vendors-results-shell {
   background: #f2efe8;
@@ -430,7 +430,7 @@
   z-index: 5;
 }
 
-/* Keep a guaranteed visual gap below sticky header on /vendors. */
+/* Keep a guaranteed visual gap below sticky header on /instructors. */
 .vendors-results-layout .vendors-filters-sidebar {
   top: calc(var(--header-offset, 0px) + 32px) !important;
 }
@@ -691,7 +691,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* /vendors — List / Map view toggle                                          */
+/* /instructors — List / Map view toggle                                          */
 /* -------------------------------------------------------------------------- */
 .vendors-results-header-controls {
   display: flex;
@@ -1064,7 +1064,7 @@ button.btn-primary {
 }
 
 /* -------------------------------------------------------------------------- */
-/* /vendors hero alignment with footer palette                                */
+/* /instructors hero alignment with footer palette                                */
 /* -------------------------------------------------------------------------- */
 .section-3.vendors-hero {
   background-color: #141413 !important;
@@ -1096,7 +1096,7 @@ button.btn-primary {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Vendor profile hero (/vendors/[slug]) — dark brand treatment               */
+/* Vendor profile hero (/instructors/[slug]) — dark brand treatment               */
 /* -------------------------------------------------------------------------- */
 .vendor-profile-hero {
   background-color: #141413 !important;

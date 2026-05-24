@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Gear | CCW Courses",
+  title: "CCW Gear | CarryClass",
   description:
-    "Find the best holsters, belts, PPE, safes, and more for CCW training and everyday carry.",
+    "Find the best holsters, belts, PPE, safes, and more for your CCW class and everyday carry.",
 };
 
 export default function GearPage() {

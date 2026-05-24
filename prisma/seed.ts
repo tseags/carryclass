@@ -51,7 +51,7 @@ async function main() {
 
   await upsertDemoClassSessions(prisma, demoVendor.id);
   console.log(
-    `Upserted ${DEMO_CLASS_SESSIONS.length} demo ClassSessions for /vendors/${DEMO_BOOKING_VENDOR_SLUG}/book`
+    `Upserted ${DEMO_CLASS_SESSIONS.length} demo ClassSessions for /instructors/${DEMO_BOOKING_VENDOR_SLUG}/book`
   );
   if (!demoVendor.stripeConnectAccountId) {
     console.log(

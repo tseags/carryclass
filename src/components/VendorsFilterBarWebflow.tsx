@@ -10,7 +10,7 @@ function sortHref(searchParams: URLSearchParams, sortValue: string): string {
   const p = new URLSearchParams(searchParams.toString());
   p.set("sort", sortValue);
   const q = p.toString();
-  return q ? `/vendors?${q}` : "/vendors";
+  return q ? `/instructors?${q}` : "/instructors";
 }
 
 function categoryHref(searchParams: URLSearchParams, categoryValue: string): string {
@@ -18,7 +18,7 @@ function categoryHref(searchParams: URLSearchParams, categoryValue: string): str
   if (categoryValue) p.set("category", categoryValue);
   else p.delete("category");
   const q = p.toString();
-  return q ? `/vendors?${q}` : "/vendors";
+  return q ? `/instructors?${q}` : "/instructors";
 }
 
 function SortLink({ searchParams, sortValue, children }: { searchParams: URLSearchParams; sortValue: string; children: React.ReactNode }) {
@@ -103,7 +103,7 @@ function SearchableFilterDropdown({
   listClassName?: string;
   toggleClassName?: string;
   wrapperClassName?: string;
-  /** Sets data-county-open for /vendors county menu stacking CSS (globals.css). */
+  /** Sets data-county-open for /instructors county menu stacking CSS (globals.css). */
   markCountyOpenAttr?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -191,7 +191,7 @@ const CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: "initial", label: "16-Hour Initial" },
   { value: "renewal", label: "8-Hour Renewal" },
   { value: "add-gun", label: "Add a Gun" },
-  { value: "online", label: "Virtual Courses" },
+  { value: "online", label: "Virtual Classes" },
 ];
 
 export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowProps) {
@@ -210,7 +210,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
       if (value) params.set(key, value);
       else params.delete(key);
     }
-    router.push(`/vendors${params.toString() ? `?${params}` : ""}`);
+    router.push(`/instructors${params.toString() ? `?${params}` : ""}`);
   }
 
   const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "Category";
@@ -220,7 +220,7 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
     <div className="card pd-44px---32px filter-bar vendors-filter-bar-shell">
       <div className="grid-3-columns filters-grid vendor-page">
         <form
-          action="/vendors"
+          action="/instructors"
           method="get"
           className="position-relative---z-index-1 mg-bottom-0 mg-bottom-8px-mbp w-form"
           onSubmit={(e) => {
@@ -280,10 +280,10 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
           markCountyOpenAttr
           searchPlaceholder="Type to search"
           options={[
-            { label: "All Counties", href: "/vendors" },
+            { label: "All Counties", href: "/instructors" },
             ...CALIFORNIA_COUNTIES.map((slug) => ({
               label: getCountyDisplayName(slug),
-              href: `/vendors?county=${slug}`,
+              href: `/instructors?county=${slug}`,
             })),
           ]}
         />
@@ -295,10 +295,10 @@ export function VendorsFilterBarWebflow({ allCities }: VendorsFilterBarWebflowPr
           onClose={() => setOpenDropdown(null)}
           searchPlaceholder="Type to search"
           options={[
-            { label: "All Cities", href: county ? `/vendors?county=${county}` : "/vendors" },
+            { label: "All Cities", href: county ? `/instructors?county=${county}` : "/instructors" },
             ...allCities.map((c) => ({
               label: c,
-              href: county ? `/vendors?county=${county}&city=${encodeURIComponent(c)}` : `/vendors?city=${encodeURIComponent(c)}`,
+              href: county ? `/instructors?county=${county}&city=${encodeURIComponent(c)}` : `/instructors?city=${encodeURIComponent(c)}`,
             })),
           ]}
           listClassName={DROPDOWN_LIST_STYLE}

@@ -41,7 +41,7 @@ export function SaveHeartButton({
   }, [initialSaved]);
 
   function getReturnUrl() {
-    if (typeof window === "undefined") return "/vendors";
+    if (typeof window === "undefined") return "/instructors";
     return `${window.location.pathname}${window.location.search}`;
   }
 

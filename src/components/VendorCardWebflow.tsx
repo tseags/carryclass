@@ -21,7 +21,7 @@ export function VendorCardWebflow({ vendor, initialSaved = false }: VendorCardWe
         <SaveHeartButton vendorId={vendor.id} initialSaved={initialSaved} />
       </div>
       <Link
-        href={`/vendors/${vendor.slug}`}
+        href={`/instructors/${vendor.slug}`}
         className="w-inline-block"
         style={{ textDecoration: "none", color: "inherit", height: "100%", display: "block" }}
       >

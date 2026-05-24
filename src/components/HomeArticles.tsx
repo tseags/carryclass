@@ -24,7 +24,7 @@ const ARTICLES: Article[] = [
     category: "Training",
     title: "Initial vs. Renewal CCW Classes: What's the Difference?",
     description:
-      "Understand the 16-hour initial requirement and 8-hour renewal course options across California counties.",
+      "Understand the 16-hour initial requirement and 8-hour renewal class options across California counties.",
     image:
       "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80",
   },

@@ -76,7 +76,7 @@ export function VendorsMap({ pins, hasFilter }: VendorsMapProps) {
                 <br />
                 <span className="text-neutral-600">{pin.label}</span>
                 <br />
-                <Link href={`/vendors/${pin.slug}`} className="vendors-map-popup-link">
+                <Link href={`/instructors/${pin.slug}`} className="vendors-map-popup-link">
                   View details →
                 </Link>
               </div>

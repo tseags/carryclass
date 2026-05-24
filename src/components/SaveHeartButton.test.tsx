@@ -8,7 +8,7 @@ const useUserMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
-  usePathname: () => "/vendors",
+  usePathname: () => "/instructors",
   useSearchParams: () => ({ toString: () => "" }),
 }));
 

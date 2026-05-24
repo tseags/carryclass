@@ -37,9 +37,9 @@ export default async function VendorBookPage({ params }: PageProps) {
         <nav className="mb-6 text-sm text-zinc-500" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-zinc-800">Home</Link>
           <span className="mx-2">/</span>
-          <Link href="/vendors" className="hover:text-zinc-800">Vendors</Link>
+          <Link href="/instructors" className="hover:text-zinc-800">Instructors</Link>
           <span className="mx-2">/</span>
-          <Link href={`/vendors/${slug}`} className="hover:text-zinc-800">{vendor.name}</Link>
+          <Link href={`/instructors/${slug}`} className="hover:text-zinc-800">{vendor.name}</Link>
           <span className="mx-2">/</span>
           <span className="font-medium text-zinc-900">Book</span>
         </nav>

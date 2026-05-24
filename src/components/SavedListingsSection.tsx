@@ -34,8 +34,8 @@ export function SavedListingsSection({
       {items.length === 0 ? (
         <p className="mt-2 text-sm text-zinc-600">
           You haven&apos;t saved any listings yet.{" "}
-          <Link href="/vendors" className="font-medium text-[var(--navy)] underline-offset-2 hover:underline">
-            Browse vendors
+          <Link href="/instructors" className="font-medium text-[var(--navy)] underline-offset-2 hover:underline">
+            Browse instructors
           </Link>
           .
         </p>
@@ -48,7 +48,7 @@ export function SavedListingsSection({
                 className="flex items-start justify-between gap-4 rounded-xl border border-zinc-200 px-4 py-3"
               >
                 <div>
-                  <Link href={`/vendors/${item.vendor.slug}`} className="text-sm font-semibold text-zinc-900 hover:underline">
+                  <Link href={`/instructors/${item.vendor.slug}`} className="text-sm font-semibold text-zinc-900 hover:underline">
                     {item.vendor.name}
                   </Link>
                   <p className="mt-1 text-xs text-zinc-600">

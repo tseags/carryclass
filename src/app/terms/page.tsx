@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 
 export const metadata = {
   title: "Terms of Service",
-  description: "Terms of Service for CCW Courses.",
+  description: "Terms of Service for CarryClass — California's CCW classes directory.",
 };
 
 export default function TermsPage() {
@@ -17,7 +17,7 @@ export default function TermsPage() {
         <section className="mt-8 space-y-3 text-zinc-700">
           <h2 className="text-xl font-semibold text-zinc-900">Use of Site</h2>
           <p>
-            CCW Courses provides an informational directory of California CCW
+            CarryClass provides an informational directory of California CCW
             training providers. By using this site, you agree to use it lawfully and
             responsibly.
           </p>
@@ -50,7 +50,7 @@ export default function TermsPage() {
             Limitation of Liability
           </h2>
           <p>
-            To the maximum extent allowed by law, CCW Courses is not liable for any
+            To the maximum extent allowed by law, CarryClass is not liable for any
             indirect, incidental, special, consequential, or punitive damages, or for
             losses arising from your use of the site or reliance on directory
             listings.

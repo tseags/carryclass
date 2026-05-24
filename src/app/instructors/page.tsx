@@ -19,7 +19,7 @@ const CATEGORY_FILTER_OPTIONS: { value: "" | CourseCategory; label: string }[] =
   { value: "initial", label: "16-Hour Initial" },
   { value: "renewal", label: "8-Hour Renewal" },
   { value: "add-gun", label: "Add a Gun" },
-  { value: "online", label: "Virtual Courses" },
+  { value: "online", label: "Virtual Classes" },
 ];
 
 interface PageProps {
@@ -29,9 +29,9 @@ interface PageProps {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Find California CCW Instructors & Approved Training Vendors",
+  title: "CCW Classes Near Me | California CCW Instructors",
   description:
-    "Browse all sheriff-approved CCW instructors in California. Filter by county, class type, pricing, availability, or in-person/virtual options.",
+    "Browse all sheriff-approved CCW instructors in California. Filter by county, class type, price, or format to find CCW classes near you.",
 };
 
 export default async function VendorsPage({ searchParams }: PageProps) {
@@ -101,7 +101,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     if (sort) params.set("sort", sort);
     params.set("view", nextView);
     const qs = params.toString();
-    return qs ? `/vendors?${qs}` : "/vendors";
+    return qs ? `/instructors?${qs}` : "/instructors";
   };
 
   return (
@@ -115,14 +115,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                 <Link href="/" className="hover:underline">Home</Link>
                 <span className="mx-2" aria-hidden="true">/</span>
                 <span className="vendors-hero-breadcrumb-current" aria-current="page">
-                  Find CCW Courses
+                  Find CCW Classes
                 </span>
               </nav>
             </div>
             <h1 className="mg-bottom-12px vendors-hero-title">
               <span className="vendors-hero-title-line">Find California CCW Instructors</span>
-              <br aria-hidden="true" />
-              <span className="vendors-hero-title-line">&amp; Approved Training Vendors</span>
             </h1>
             <p className="paragraph-5 vendors-hero-description vendors-hero-description--two-lines">
               <span className="vendors-hero-description-line">
@@ -133,15 +131,15 @@ export default async function VendorsPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <section className="vendors-results-shell" aria-label="Vendor list and filters">
+      <section className="vendors-results-shell" aria-label="Instructor list and filters">
         <div className="vendors-results-layout">
           <aside className="vendors-filters-sidebar">
             <div className="vendors-filters-card">
               <div className="vendors-filters-head">
                 <h2>Filters</h2>
-                <Link href="/vendors">Clear all</Link>
+                <Link href="/instructors">Clear all</Link>
               </div>
-              <form action="/vendors" method="get" className="vendors-filters-form">
+              <form action="/instructors" method="get" className="vendors-filters-form">
                 <label className="vendors-filter-group">
                   <span>Search</span>
                   <input
@@ -173,7 +171,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                 </div>
 
                 <label className="vendors-filter-group">
-                  <span>Course type</span>
+                  <span>Class type</span>
                   <select name="classType" defaultValue={filters.classType ?? ""}>
                     <option value="">All types</option>
                     <option value="initial">16-hr initial</option>
@@ -271,7 +269,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   </Link>
                 </div>
 
-                <form action="/vendors" method="get" className="vendors-sort-group">
+                <form action="/instructors" method="get" className="vendors-sort-group">
                   {filters.search && <input type="hidden" name="search" value={filters.search} />}
                   {filters.county && <input type="hidden" name="county" value={filters.county} />}
                   {filters.city && <input type="hidden" name="city" value={filters.city} />}
@@ -334,12 +332,12 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                 )}
               </>
             ) : (
-              <div className="vendors-results-map" aria-label="Vendor map">
+              <div className="vendors-results-map" aria-label="Instructor map">
                 {vendors.length > 0 ? (
                   <VendorsMapDynamic pins={mapPins} hasFilter={hasFilter} />
                 ) : (
                   <div className="vendors-map-empty" role="status">
-                    <strong>No matching vendors to map</strong>
+                    <strong>No matching instructors to map</strong>
                     <p>Try clearing filters or switching back to list view.</p>
                     <Link href={buildViewHref("list")} className="vendors-map-empty__link">
                       Back to list

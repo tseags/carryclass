@@ -40,8 +40,8 @@ export async function generateMetadata({ params }: PageProps) {
   if (!isValidCountySlug(county)) return {};
   const displayName = getCountyDisplayName(county);
   return {
-    title: `CCW Training in ${displayName} County, CA`,
-    description: `Find CCW training classes and instructors in ${displayName} County, California. Compare prices, schedules, and formats.`,
+    title: `${displayName} County CCW Classes | Sheriff-Approved Instructors`,
+    description: `Find sheriff-approved CCW classes in ${displayName} County, CA. Compare pricing, schedules, and formats for initial and renewal training.`,
   };
 }
 
@@ -146,7 +146,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
           </nav>
           <div className="county-hero-row">
             <div className="county-hero-content">
-              <h1 className="county-h1">{displayName} County CCW Training</h1>
+              <h1 className="county-h1">{displayName} County CCW Classes</h1>
               <p className="county-sub-heading">
                 Find <strong>sheriff-approved CCW instructors</strong> and{" "}
                 <strong>approved concealed carry training classes</strong> in {displayName} County. All
@@ -261,7 +261,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                 </button>
               </form>
               <p className="vendors-filter-all-ca-link">
-                <Link href={`/vendors?county=${county}`} className="font-medium underline">
+                <Link href={`/instructors?county=${county}`} className="font-medium underline">
                   Search all of California
                 </Link>
               </p>
@@ -389,12 +389,12 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                 </div>
               )
             ) : (
-              <div className="vendors-results-map" aria-label="Vendor map">
+              <div className="vendors-results-map" aria-label="Instructor map">
                 {vendors.length > 0 ? (
                   <VendorsMapDynamic pins={mapPins} hasFilter={hasActiveFilters} />
                 ) : (
                   <div className="vendors-map-empty" role="status">
-                    <strong>No matching vendors to map</strong>
+                    <strong>No matching instructors to map</strong>
                     <p>Try clearing filters or switching back to list view.</p>
                     <Link href={buildViewHref("list")} className="vendors-map-empty__link">
                       Back to list

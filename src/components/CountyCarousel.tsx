@@ -21,7 +21,7 @@ export function CountyCarousel({ vendorCounts = {} }: CountyCarouselProps) {
     <section className="py-12">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold text-zinc-900">
-          View CCW Courses by County
+          Find CCW Classes by County
         </h2>
         <Link
           href="/ca"

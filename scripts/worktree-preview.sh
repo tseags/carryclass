@@ -55,7 +55,7 @@ case "${1:-}" in
     done
     echo ""
     echo "Compare in browser after:  ./scripts/worktree-preview.sh dev <n>"
-    echo "Then open:  http://localhost:3001/vendors  http://localhost:3001/ca  http://localhost:3001/"
+    echo "Then open:  http://localhost:3001/instructors  http://localhost:3001/ca  http://localhost:3001/"
     ;;
   finder)
     n="${2:-}"
@@ -96,7 +96,7 @@ case "${1:-}" in
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Worktree #$n → $target"
     echo "Dev URL:  http://localhost:${port}"
-    echo "Pages to compare:  /  /vendors  /ca  /gear"
+    echo "Pages to compare:  /  /instructors  /ca  /gear"
     echo "Stop any other server on port ${port} first (Ctrl+C)."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     cd "$target"

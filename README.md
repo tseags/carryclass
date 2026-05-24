@@ -4,10 +4,10 @@ A directory and marketplace for CCW (Concealed Carry Weapon) training and relate
 
 ## Features
 
-- **Location-first navigation**: Browse by State → County → Vendors
-- **SEO-friendly structure**: Static county pages, dynamic vendor profiles, sitemap
+- **Location-first navigation**: Browse by State → County → Instructors
+- **SEO-friendly structure**: Static county pages, dynamic instructor profiles, sitemap
 - **Filtering**: County, city, class type (initial/renewal), format (in-person/online/hybrid), price
-- **Vendor profiles**: Rich detail pages with CTAs
+- **Instructor profiles**: Rich detail pages with CTAs
 - **Mobile-friendly**: Responsive, utility-first UI
 
 ## Tech Stack
@@ -45,7 +45,7 @@ End-to-end booking uses **Stripe Checkout** with **Stripe Connect** (destination
    - `NEXT_PUBLIC_APP_URL` — e.g. `http://localhost:3000` (used for Checkout success/cancel URLs)
 
 2. **Demo vendor**
-   - After seed, **`/vendors/demo-ccw-booking/book`** lists **five** sandbox class times (mix of initial and renewal; demo vendor is clearly labeled in name/description).
+   - After seed, **`/instructors/demo-ccw-booking/book`** lists **five** sandbox class times (mix of initial and renewal; demo instructor is clearly labeled in name/description).
    - Optional: `DEMO_VENDOR_STRIPE_CONNECT_ACCOUNT_ID` — set to a **test** Connect account id (`acct_...`) from the [Stripe Dashboard](https://dashboard.stripe.com/test/connect/accounts/overview), then run `npm run db:seed` again so the demo vendor row gets `stripeConnectAccountId`. Without it, sessions still appear but Checkout returns 503 until the id is set (in env + re-seed, or directly in the DB).
 
 3. **Webhooks (local)**
@@ -89,8 +89,8 @@ Vendor profile pages can show Google Business reviews in the `Reviews` tab.
 src/
 ├── app/                    # Next.js App Router
 │   ├── ca/                 # California state + county pages
-│   │   └── [county]/       # County vendor listings
-│   ├── vendors/            # All vendors + profile pages
+│   │   └── [county]/       # County instructor listings
+│   ├── instructors/        # All instructors + profile pages
 │   │   └── [slug]/
 │   ├── sitemap.ts
 │   └── robots.ts

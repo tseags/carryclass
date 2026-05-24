@@ -38,7 +38,7 @@ export default async function StudentDashboardPage({
               Welcome back, {firstName}
             </h1>
             <p className="mt-2 text-sm text-zinc-600">
-              Save and compare CCW courses, keep track of renewals, and follow instructors you like.
+              Save and compare CCW classes, keep track of renewals, and follow instructors you like.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-2">

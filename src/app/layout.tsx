@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
+import { SITE_URL } from "@/lib/site-url";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "CCW Courses | Find CCW Classes & Instructors",
-    template: "%s | CCW Courses",
+    default: "CarryClass | Find CCW Classes & Instructors Near Me",
+    template: "%s | CarryClass",
   },
   description:
-    "Find CCW (Concealed Carry Weapon) training classes and certified instructors. Browse by county, compare prices, and get your permit.",
+    "Find sheriff-approved CCW classes and certified instructors in California. Browse by county, compare prices, and get your permit.",
 };
 
 export default function RootLayout({

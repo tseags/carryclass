@@ -54,7 +54,7 @@ export function PopularVendorCard({
         <SaveHeartButton vendorId={vendor.id} initialSaved={initialSaved} />
       </div>
       <Link
-        href={`/vendors/${vendor.slug}`}
+        href={`/instructors/${vendor.slug}`}
         className={`popular-vendors-redesign__card${showFeaturedBadge ? " popular-vendors-redesign__card--has-featured-badge" : ""}`}
       >
         {showFeaturedBadge ? (

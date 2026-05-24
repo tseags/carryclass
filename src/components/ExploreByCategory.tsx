@@ -4,25 +4,25 @@ const CATEGORIES = [
   {
     label: "16-Hour Initial",
     description: "Required for first-time CCW applicants",
-    href: "/vendors?category=initial",
+    href: "/instructors?category=initial",
     icon: "target",
   },
   {
     label: "8-Hour Renewal",
     description: "For existing permit holders",
-    href: "/vendors?category=renewal",
+    href: "/instructors?category=renewal",
     icon: "renewal",
   },
   {
     label: "Add a Gun",
     description: "Add a new firearm to your permit",
-    href: "/vendors?category=add-gun",
+    href: "/instructors?category=add-gun",
     icon: "add",
   },
   {
-    label: "Virtual Courses",
+    label: "Virtual Classes",
     description: "Complete your renewal from home",
-    href: "/vendors?category=online",
+    href: "/instructors?category=online",
     icon: "virtual",
   },
 ] as const;

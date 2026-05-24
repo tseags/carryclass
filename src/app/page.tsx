@@ -20,9 +20,9 @@ import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
 import { getCountyStats } from "@/lib/county-stats";
 
 export const metadata = {
-  title: "CCW Training Directory | Find CCW Classes & Instructors Near You",
+  title: "Find CCW Classes Near Me | CarryClass California",
   description:
-    "Find CCW (Concealed Carry Weapon) training classes and certified instructors in California. Browse by county, compare prices, and get your permit.",
+    "Find concealed carry classes near you. Browse sheriff-approved CCW instructors across California, compare prices and reviews, and book your class.",
 };
 
 
@@ -55,7 +55,7 @@ export default async function HomePage() {
             <div>
               <div className="inner-container _408px _100-tablet">
                 <h1 className="mg-bottom-10px">
-                  Find California CCW Training &amp; Renewal Courses
+                  Find CCW Classes Near You in California
                 </h1>
               </div>
               <div className="inner-container _414px _100-tablet">
@@ -71,7 +71,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* View CCW Courses by County - horizontal scroll, 5 visible */}
+      {/* CCW Classes by County - horizontal scroll, 5 visible */}
       <CountyScrollSection />
 
       <ExploreByCategory />
@@ -82,11 +82,11 @@ export default async function HomePage() {
           <div className="popular-vendors-redesign__header">
             <div>
               <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
-              <h2 className="mg-bottom-0">Popular CCW courses</h2>
+              <h2 className="mg-bottom-0">Popular CCW classes</h2>
             </div>
             <div className="popular-vendors-redesign__header-btn">
-              <Link href="/vendors" className="btn-secondary w-button popular-vendors-redesign__view-all">
-                View All Vendors
+              <Link href="/instructors" className="btn-secondary w-button popular-vendors-redesign__view-all">
+                View All Instructors
               </Link>
             </div>
           </div>

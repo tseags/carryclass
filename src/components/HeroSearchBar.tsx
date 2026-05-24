@@ -103,12 +103,12 @@ export function HeroSearchBar() {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
-      router.push("/vendors");
+      router.push("/instructors");
       return;
     }
 
     const params = inferSearchParams(trimmedQuery);
-    router.push(`/vendors?${params.toString()}`);
+    router.push(`/instructors?${params.toString()}`);
   }
 
   return (

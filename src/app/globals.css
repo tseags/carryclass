@@ -556,7 +556,7 @@ img.county-hero-image-fill {
 }
 
 /*
-  /vendors “Find CCW Courses” hero H1 — also used on /ca counties page (same hero).
+  /instructors “Find CCW Courses” hero H1 — also used on /ca counties page (same hero).
   Placed at end of this file so rules load after Tailwind; linked app-overrides.css alone can lose cascade.
 */
 .section-3.vendors-hero h1.vendors-hero-title {
@@ -591,7 +591,7 @@ img.county-hero-image-fill {
 }
 
 /*
-  Dark hero background (/vendors + /ca) — lives here so it wins over linked app-overrides + Webflow.
+  Dark hero background (/instructors + /ca) — lives here so it wins over linked app-overrides + Webflow.
   Final color is a near-black that matches the footer (#141413); the section-end rules in
   app-overrides.css layer on the small amount of texture noise via ::before + ::after.
 */
@@ -628,7 +628,7 @@ img.county-hero-image-fill {
   z-index: 10050 !important;
 }
 
-/* Webflow sets .dropdown-toggle-2.city-filter { display: none } — show City on /vendors only */
+/* Webflow sets .dropdown-toggle-2.city-filter { display: none } — show City on /instructors only */
 .section-3.vendors-hero .filter-bar .city-filter-wrap .dropdown-toggle-2.city-filter.w-dropdown-toggle {
   display: flex !important;
   align-items: center !important;
@@ -703,7 +703,7 @@ img.county-hero-image-fill {
   -webkit-overflow-scrolling: touch;
 }
 
-/* /vendors filter bar — County/City/Sort toggles + dropdown search inputs match "Search by name" .input */
+/* /instructors filter bar — County/City/Sort toggles + dropdown search inputs match "Search by name" .input */
 .section-3.vendors-hero .filter-bar .input {
   border: 1px solid #64748b !important;
   box-shadow: 0 2px 6px 0 var(--general--shadow-01) !important;

@@ -3,9 +3,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
-  title: "Claim Your CCW Listing | CCW Courses",
+  title: "Claim Your CCW Listing | CarryClass",
   description:
-    "Instructors and ranges can claim or request a CCW course listing so students can find them in the directory.",
+    "CCW instructors and ranges can claim or request a listing so students can find their classes in the CarryClass directory.",
 };
 
 export default function ClaimVendorListingPage() {
@@ -21,7 +21,7 @@ export default function ClaimVendorListingPage() {
                   Claim or add your CCW listing
                 </h1>
                 <p className="mg-bottom-20px">
-                  If you teach CCW courses or run a range, you can claim an existing listing or
+                  If you teach CCW classes or run a range, you can claim an existing listing or
                   request a new one. This helps students find accurate information about your
                   training.
                 </p>
@@ -30,7 +30,7 @@ export default function ClaimVendorListingPage() {
                     href="/sign-up?intent=vendor"
                     className="btn-primary button-row w-button"
                   >
-                    Sign up as a vendor
+                    Sign up as an instructor
                   </Link>
                   <Link
                     href="/sign-in?intent=vendor"
@@ -41,7 +41,7 @@ export default function ClaimVendorListingPage() {
                 </div>
                 <p className="paragraph-small color-neutral-600 mg-top-16px">
                   We&apos;ll add more self-service listing tools over time. For now, claiming your
-                  listing ensures we can match your account to the right vendor record.
+                  listing ensures we can match your account to the right instructor listing.
                 </p>
               </div>
             </div>

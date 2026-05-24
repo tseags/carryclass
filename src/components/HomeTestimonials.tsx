@@ -30,7 +30,7 @@ export function HomeTestimonials() {
       <div className="container-default w-container">
         <div className="home-testimonials__header">
           <h2 id="home-testimonials-heading" className="home-testimonials__heading">
-            How was your experience finding a CCW course?
+            How was your experience finding a CCW class?
           </h2>
         </div>
         {successMessage ? (

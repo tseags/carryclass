@@ -3,8 +3,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
-  title: "About | CCW Courses",
-  description: "Learn about CCW Courses — your directory for CCW training in California.",
+  title: "About CarryClass | California CCW Classes Directory",
+  description:
+    "CarryClass is California's most complete directory of sheriff-approved CCW classes and instructors. Browse by county and find training near you.",
 };
 
 export default function AboutPage() {
@@ -12,11 +13,11 @@ export default function AboutPage() {
     <div className="min-h-screen bg-white">
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <h1 className="text-3xl font-bold text-zinc-900">About</h1>
+        <h1 className="text-3xl font-bold text-zinc-900">About CarryClass</h1>
         <p className="mt-4 text-zinc-600">
-          CCW Courses helps you find approved CCW training and renewal courses
-          across California. Browse by county, compare instructors, and get your
-          permit.
+          CarryClass helps you find sheriff-approved CCW classes and renewal
+          training across California. Browse by county, compare instructors, and
+          get your permit.
         </p>
         <Link
           href="/"

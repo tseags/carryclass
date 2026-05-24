@@ -230,7 +230,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
           <span className="font-semibold">{vendorName}</span> directly.
         </p>
         <Link
-          href={`/vendors/${vendorSlug}`}
+          href={`/instructors/${vendorSlug}`}
           className="mt-6 inline-block text-sm font-semibold text-[var(--navy)] underline-offset-2 hover:underline"
         >
           ← Back to profile
