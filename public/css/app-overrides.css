@@ -1,6 +1,27 @@
 /* Loaded last from layout.tsx — wins over Webflow ccw-directory.webflow.css */
 
 /* -------------------------------------------------------------------------- */
+/* Webflow grid fix — `.grid-2-columns.title-and-btn-grid.mg-bottom-24px`     */
+/* ships with `grid-template-columns: 578px auto` from the export. That       */
+/* hardcoded 578px column overflows on phones (CountyScrollSection header),   */
+/* widens the document, and forces the fixed header + by-the-numbers section  */
+/* to scale past 375px. Webflow's own mobile rule only matches the plain      */
+/* `.title-and-btn-grid` (no `.mg-bottom-24px`) so we have to override the    */
+/* more-specific compound selector here.                                      */
+/* -------------------------------------------------------------------------- */
+.grid-2-columns.title-and-btn-grid.mg-bottom-24px {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 767px) {
+  .grid-2-columns.title-and-btn-grid,
+  .grid-2-columns.title-and-btn-grid.mg-bottom-24px {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Dark blue textured hero — background + noise: src/app/globals.css        */
 /* -------------------------------------------------------------------------- */
 
@@ -996,6 +1017,17 @@
   padding-left: 0;
   transform: none !important;
   transition: none !important;
+}
+
+/* Hamburger menu — guarantee a 44×44 tap target on mobile. Webflow ships the
+   bars at width:26px (mobile) inside a button with no explicit min-size, so
+   the hit area is only ~26×42. Reserve the recommended 44×44 box without
+   moving the visible bars (Webflow positions them via static margin-top). */
+.header-wrapper .hamburger-menu-wrapper.w-nav-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 9px;
+  box-sizing: border-box;
 }
 
 /* Primary CTA unification: near-black button with white label */

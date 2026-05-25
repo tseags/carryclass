@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   },
   description:
     "Find sheriff-approved CCW classes and certified instructors in California. Browse by county, compare prices, and get your permit.",
+};
+
+// Explicit viewport declaration so mobile Safari uses the device width
+// (Next.js injects a sensible default, but we set it here for forward-compat
+// and to keep `maximumScale` configurable in one place).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -196,8 +196,8 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
             <span className="mx-2 vendor-profile-hero-breadcrumb-separator !text-[#c96442]">/</span>
             <span className="vendor-profile-hero-breadcrumb-current !font-bold !text-[#c96442]">{vendor.name}</span>
           </nav>
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-10 lg:items-stretch">
-            <div className="flex flex-col justify-center">
+          <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 lg:items-stretch">
+            <div className="flex min-w-0 flex-col justify-center">
               <h1 className="text-2xl font-bold !text-[#f8fafc] sm:text-3xl">
                 <span className="!text-[#f8fafc]">{vendor.name}</span>
               </h1>
@@ -260,7 +260,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
             </div>
             <div
               data-hero-image-wrapper
-              className="relative w-full overflow-hidden rounded-xl border border-zinc-300 bg-zinc-200 shadow-sm h-[260px] sm:h-[320px] lg:h-full lg:min-h-[320px]"
+              className="relative w-full min-w-0 overflow-hidden rounded-xl border border-zinc-300 bg-zinc-200 shadow-sm h-[220px] sm:h-[320px] lg:h-full lg:min-h-[320px]"
               style={{ display: "block" }}
               aria-label={`Map: ${vendor.name} location`}
             >
@@ -309,9 +309,9 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
         <section className="relative left-1/2 -translate-x-1/2 w-screen bg-[#efeee8] py-7 sm:py-8">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-3">
               {/* Main content - 2 cols */}
-              <div className="lg:col-span-2">
+              <div className="min-w-0 lg:col-span-2">
 
               {selectedTab === "about" && (
                 <section
@@ -321,7 +321,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   className="space-y-9 bg-[#efeee8] px-5 pb-6 pt-7 sm:px-8 sm:pt-8"
                 >
                   <div>
-                    <h2 className="text-[50px] font-semibold leading-[1.08] tracking-[-0.02em] text-[#1f1f1d] sm:text-[56px]">About</h2>
+                    <h2 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.02em] text-[#1f1f1d] sm:text-[44px] lg:text-[56px]">About</h2>
                     <p className="mt-3 max-w-4xl text-[16px] leading-[1.7] text-[#4f4e4a] sm:text-[17px]">
                       {aboutIntro}
                     </p>
@@ -333,22 +333,25 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   </div>
 
                   <div>
-                    <h3 className="text-[36px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[40px]">Available Classes &amp; Prices</h3>
+                    <h3 className="text-[22px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[40px]">Available Classes &amp; Prices</h3>
                     <div className="mt-5 space-y-3">
                       {availableCourses.map((course) => (
                         <article
                           key={course.key}
-                          className="group flex cursor-pointer items-center justify-between gap-4 rounded-[14px] border border-[#ebe9e2] bg-white px-4 py-2.5 shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:px-5 sm:py-3"
+                          className="group flex cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-4 py-3 shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:gap-4 sm:px-5 sm:py-3"
                         >
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h4 className="text-[15px] font-semibold leading-[1.25] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[16px]">
                               {course.title}
                             </h4>
-                            <p className="mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] leading-[1.35] text-[#77766f] sm:text-[13px]">
+                            {/* On phones the subtitle wraps to ≤2 lines so the
+                                full sentence is readable; from `sm:` it stays
+                                on a single ellipsised line for the desktop look. */}
+                            <p className="mt-0.5 text-[12px] leading-[1.35] text-[#77766f] line-clamp-2 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[13px]">
                               {course.subtitle}
                             </p>
                           </div>
-                          <p className="shrink-0 text-[24px] font-semibold leading-none tracking-[-0.02em] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[26px]">
+                          <p className="shrink-0 text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[26px]">
                             {course.price}
                           </p>
                         </article>
@@ -382,7 +385,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   className="space-y-6 bg-[#efeee8] px-5 pb-6 pt-7 text-left sm:px-8 sm:pt-8"
                 >
                   <div>
-                    <h2 className="text-[50px] font-semibold leading-[1.08] tracking-[-0.02em] text-[#1f1f1d] sm:text-[56px]">What to bring to class</h2>
+                    <h2 className="text-[28px] font-semibold leading-[1.08] tracking-[-0.02em] text-[#1f1f1d] sm:text-[44px] lg:text-[56px]">What to bring to class</h2>
                     <p className="mt-3 max-w-4xl text-[16px] leading-[1.7] text-[#4f4e4a] sm:text-[17px]">
                       All students must arrive with the following gear. Rental equipment may be available, contact the instructor in advance.
                     </p>
@@ -408,10 +411,10 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
               </div>
 
               {/* Sidebar - Instructor info */}
-              <div className="lg:col-span-1">
+              <div className="min-w-0 lg:col-span-1">
                 <div className="space-y-4 vendor-profile-contact-card-sticky md:sticky md:top-[calc(var(--header-offset)+1rem)]">
                   <section className="rounded-2xl border border-[#ebe9e2] bg-white p-6 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:p-7">
-                    <h3 className="text-[38px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[42px]">Contact</h3>
+                    <h3 className="text-[22px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[42px]">Contact</h3>
                     <div className="mt-5 space-y-4">
                       {contactBlocks.map((block, idx) => {
                         const label = formatCountyContactLabel(block.counties);
@@ -490,7 +493,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
                   {vendor.countiesServed.length > 0 && (
                     <section className="rounded-2xl border border-[#ebe9e2] bg-white p-6 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:p-7">
-                      <h3 className="text-[38px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[42px]">
+                      <h3 className="text-[22px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[42px]">
                         Counties Served
                       </h3>
                       <div className="mt-4 flex flex-wrap gap-2">

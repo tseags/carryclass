@@ -1061,6 +1061,7 @@ img.county-hero-image-fill {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   position: relative;
+  min-width: 0;
 }
 .by-the-numbers__stat {
   background: #f2efe8;
@@ -1073,6 +1074,13 @@ img.county-hero-image-fill {
   opacity: 0;
   transform: translateY(24px);
   will-change: transform, opacity;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .by-the-numbers__stat {
+    padding: 18px 18px;
+  }
 }
 .by-the-numbers__stats.is-visible .by-the-numbers__stat {
   animation: byTheNumbersStatIn 0.5s ease-out forwards;
@@ -1100,6 +1108,15 @@ img.county-hero-image-fill {
   font-size: 14px;
   line-height: 1.4;
   white-space: nowrap;
+}
+
+/* Allow long labels (e.g. "Sheriff-approved instructors") to wrap on phones —
+   otherwise nowrap labels force min-content sizing on the parent grid cell
+   and the whole stats row overflows the viewport. */
+@media (max-width: 480px) {
+  .by-the-numbers__stat-label {
+    white-space: normal;
+  }
 }
 
 @keyframes byTheNumbersStatIn {
@@ -1131,11 +1148,11 @@ img.county-hero-image-fill {
     padding: 64px 0;
   }
   .by-the-numbers__inner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 48px;
   }
   .by-the-numbers__stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
