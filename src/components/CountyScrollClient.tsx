@@ -33,17 +33,16 @@ export function CountyScrollClient({ tiles }: Props) {
             </Link>
           </div>
         </div>
-        <div className="county-scroll-wrapper" style={{ position: "relative" }}>
+        <div className="county-scroll-wrapper">
           <button
             type="button"
             onClick={() => scroll("left")}
-            className="county-scroll-arrow btn-circle-secondary slider-arrow---bottom-64px-left--16px"
-            style={{ position: "absolute", left: "-24px", top: "50%", transform: "translateY(-50%)", zIndex: 2 }}
+            className="county-scroll-arrow county-scroll-arrow-left btn-circle-secondary"
             aria-label="Scroll left"
           >
             <div className="line-rounded-icon">‹</div>
           </button>
-          <div ref={scrollRef} className="county-cards-scroll">
+          <div ref={scrollRef} className="county-cards-scroll" aria-label="Counties carousel">
             {tiles.map(({ slug, displayName, url: imageUrl }) => (
               <Link
                 key={slug}
@@ -81,8 +80,7 @@ export function CountyScrollClient({ tiles }: Props) {
           <button
             type="button"
             onClick={() => scroll("right")}
-            className="county-scroll-arrow btn-circle-primary slider-arrow---bottom-64px---right--16px"
-            style={{ position: "absolute", right: "-24px", top: "50%", transform: "translateY(-50%)", zIndex: 2 }}
+            className="county-scroll-arrow county-scroll-arrow-right btn-circle-secondary"
             aria-label="Scroll right"
           >
             <div className="line-rounded-icon">›</div>

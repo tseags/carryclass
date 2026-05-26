@@ -306,7 +306,29 @@ img.county-hero-image-fill {
 }
 /* Room for hover lift so section overflow doesn’t clip rounded corners */
 .county-scroll-wrapper {
+  position: relative;
   padding-top: 12px;
+}
+
+.county-scroll-wrapper .county-scroll-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.county-scroll-wrapper .county-scroll-arrow-left {
+  left: -24px;
+}
+
+.county-scroll-wrapper .county-scroll-arrow-right {
+  right: -24px;
+}
+
+@media (max-width: 767px) {
+  .county-scroll-wrapper .county-scroll-arrow {
+    display: none;
+  }
 }
 
 /* County section arrows: same style for both — white + black arrow default, dark + white arrow on hover */
@@ -328,7 +350,15 @@ img.county-hero-image-fill {
   .county-card { flex: 0 0 calc((100% - 20px) / 2); min-width: calc((100% - 20px) / 2); }
 }
 @media (max-width: 576px) {
-  .county-card { flex: 0 0 100%; min-width: 100%; }
+  .county-cards-scroll {
+    padding-right: 24px;
+    scroll-padding-right: 24px;
+  }
+
+  .county-card {
+    flex: 0 0 calc(100% - 24px);
+    min-width: calc(100% - 24px);
+  }
 }
 
 /* Explore by category — vertical cards (zip / design reference) */
