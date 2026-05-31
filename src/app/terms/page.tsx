@@ -1,10 +1,12 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "Terms of Service",
   description: "Terms of Service for CarryClass — California's CCW classes directory.",
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

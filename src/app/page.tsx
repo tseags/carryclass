@@ -14,16 +14,17 @@ import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { getCountyDisplayName } from "@/data/counties";
 import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
-import { SupabaseDebugProbe } from "@/components/SupabaseDebugProbe";
 import { HeroSearchBar } from "@/components/HeroSearchBar";
+import { pageMetadata } from "@/lib/seo";
 import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
 import { getCountyStats } from "@/lib/county-stats";
 
-export const metadata = {
-  title: "Find CCW Classes Near Me | CarryClass California",
+export const metadata = pageMetadata({
+  title: "Find CCW Classes Near Me",
   description:
     "Find concealed carry classes near you. Browse sheriff-approved CCW instructors across California, compare prices and reviews, and book your class.",
-};
+  path: "/",
+});
 
 
 export default async function HomePage() {
@@ -46,7 +47,6 @@ export default async function HomePage() {
 
   return (
     <>
-      <SupabaseDebugProbe />
       <Header />
       {/* Hero - section-2 */}
       <div className="section-2">

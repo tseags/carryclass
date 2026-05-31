@@ -29,20 +29,31 @@ import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
 import { geocodeWithNominatim } from "@/lib/nominatim-geocode";
 import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
+import type { Metadata } from "next";
+import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
+import { countyBreadcrumbJsonLd } from "@/lib/json-ld";
+import { JsonLd } from "@/components/JsonLd";
 
 interface PageProps {
   params: Promise<{ county: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { county } = await params;
   if (!isValidCountySlug(county)) return {};
+  const resolved = await searchParams;
   const displayName = getCountyDisplayName(county);
-  return {
-    title: `${displayName} County CCW Classes | Sheriff-Approved Instructors`,
-    description: `Find sheriff-approved CCW classes in ${displayName} County, CA. Compare pricing, schedules, and formats for initial and renewal training.`,
-  };
+  const path = `/ca/${county}`;
+  const title = `${displayName} County CCW Classes`;
+  const description = `Find sheriff-approved CCW classes in ${displayName} County, CA. Compare pricing, schedules, and formats for initial and renewal training.`;
+
+  return pageMetadata({
+    title,
+    description,
+    path,
+    canonical: canonicalForFilteredListing(path, resolved),
+  });
 }
 
 export async function generateStaticParams() {
@@ -130,6 +141,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
   return (
     <>
+      <JsonLd data={countyBreadcrumbJsonLd(county, displayName)} />
       <Header />
       <div className="top-section county-page">
         <div className="container-default w-container">
@@ -166,7 +178,7 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   targetId="ccw-timeline"
                   className="btn-secondary small w-button county-hero-timeline-btn"
                 >
-                  {hasTimelineData ? "Current Wait Times" : "Submit Wait Times"}
+                  {hasTimelineData ? "View CCW Timelines" : "Submit Wait Times"}
                 </SmoothScrollTo>
               </div>
             </div>

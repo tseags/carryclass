@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { NOINDEX_ROBOTS, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "CCW FAQs | California CCW Requirements & Renewal",
+export const metadata = pageMetadata({
+  title: "CCW FAQs",
   description:
     "Answers to common questions about how to get a CCW in California, CCW requirements, renewal training, and finding approved classes near you.",
-};
+  path: "/faqs",
+  robots: NOINDEX_ROBOTS,
+});
 
 export default function FAQsPage() {
   return (

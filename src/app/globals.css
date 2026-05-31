@@ -23,7 +23,7 @@ html {
   scroll-margin-top: var(--header-offset);
 }
 
-/* Hero “Current Wait Times” → #ccw-timeline; extra room above section title below nav */
+/* Hero “View CCW Timelines” → #ccw-timeline; extra room above section title below nav */
 #ccw-timeline {
   scroll-margin-top: calc(var(--header-offset) + 1.5rem);
 }

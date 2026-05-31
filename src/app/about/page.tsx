@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "About CarryClass | California CCW Classes Directory",
+export const metadata = pageMetadata({
+  title: "About CarryClass",
   description:
     "CarryClass is California's most complete directory of sheriff-approved CCW classes and instructors. Browse by county and find training near you.",
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

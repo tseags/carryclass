@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { NOINDEX_ROBOTS, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Blog | CarryClass – CCW Class Tips & California Guides",
+export const metadata = pageMetadata({
+  title: "Blog",
   description: "CCW class guides, California permit tips, and training articles from CarryClass.",
-};
+  path: "/blog",
+  robots: NOINDEX_ROBOTS,
+});
 
 export default function BlogPage() {
   return (

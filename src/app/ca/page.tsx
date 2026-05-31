@@ -6,12 +6,26 @@ import { getCountyDisplayName } from "@/data/counties";
 import { getCountyImageUrl } from "@/data/county-images";
 import { CALIFORNIA_COUNTIES } from "@/data/counties";
 import { getVendorCountsByCounty } from "@/lib/vendors-db";
+import type { Metadata } from "next";
+import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "California CCW Classes by County | CCW Classes CA",
-  description:
-    "Browse California counties with listed CCW instructors. Find sheriff-approved providers and renewal class details near you.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; sort?: string }>;
+}): Promise<Metadata> {
+  const resolved = await searchParams;
+  const title = "California CCW Classes by County";
+  const description =
+    "Browse California counties with listed CCW instructors. Find sheriff-approved providers and renewal class details near you.";
+
+  return pageMetadata({
+    title,
+    description,
+    path: "/ca",
+    canonical: canonicalForFilteredListing("/ca", resolved),
+  });
+}
 
 export default async function CaliforniaPage({
   searchParams,

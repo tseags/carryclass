@@ -69,7 +69,7 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col items-start justify-between gap-3 border-t border-[#30302e] pt-6 text-[13px] text-[#87867f] sm:flex-row sm:flex-wrap sm:items-center">
-          <p>&copy; 2026 CCW Directory. All rights reserved.</p>
+          <p>&copy; 2026 CarryClass. All rights reserved.</p>
           <nav className="flex items-center gap-6">
             <Link href="/privacy" className="site-footer__link">
               Privacy

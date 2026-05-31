@@ -13,6 +13,8 @@ import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import type { CourseCategory } from "@/types";
+import type { Metadata } from "next";
+import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
 
 const CATEGORY_FILTER_OPTIONS: { value: "" | CourseCategory; label: string }[] = [
   { value: "", label: "All categories" },
@@ -28,11 +30,19 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "CCW Classes Near Me | California CCW Instructors",
-  description:
-    "Browse all sheriff-approved CCW instructors in California. Filter by county, class type, price, or format to find CCW classes near you.",
-};
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const resolved = await searchParams;
+  const title = "CCW Classes Near Me";
+  const description =
+    "Browse all sheriff-approved CCW instructors in California. Filter by county, class type, price, or format to find CCW classes near you.";
+
+  return pageMetadata({
+    title,
+    description,
+    path: "/instructors",
+    canonical: canonicalForFilteredListing("/instructors", resolved),
+  });
+}
 
 export default async function VendorsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;

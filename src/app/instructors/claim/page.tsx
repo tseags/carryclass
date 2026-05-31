@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Claim Your CCW Listing | CarryClass",
+export const metadata = pageMetadata({
+  title: "Claim Your CCW Listing",
   description:
     "CCW instructors and ranges can claim or request a listing so students can find their classes in the CarryClass directory.",
-};
+  path: "/instructors/claim",
+});
 
 export default function ClaimVendorListingPage() {
   return (

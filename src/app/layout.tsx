@@ -2,16 +2,46 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
+import { JsonLd } from "@/components/JsonLd";
+import { organizationJsonLd } from "@/lib/json-ld";
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SITE_DESCRIPTION,
+  buildOpenGraph,
+  buildTwitter,
+} from "@/lib/seo";
 import { SITE_URL } from "@/lib/site-url";
+
+const defaultTitle = "CarryClass | Find CCW Classes & Instructors Near Me";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "CarryClass | Find CCW Classes & Instructors Near Me",
+    default: defaultTitle,
     template: "%s | CarryClass",
   },
-  description:
-    "Find sheriff-approved CCW classes and certified instructors in California. Browse by county, compare prices, and get your permit.",
+  description: DEFAULT_SITE_DESCRIPTION,
+  icons: {
+    icon: [{ url: "/images/favicon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    ...buildOpenGraph({
+      title: defaultTitle,
+      description: DEFAULT_SITE_DESCRIPTION,
+    }),
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: "CarryClass — California CCW classes directory",
+      },
+    ],
+  },
+  twitter: buildTwitter({
+    title: defaultTitle,
+    description: DEFAULT_SITE_DESCRIPTION,
+  }),
 };
 
 // Explicit viewport declaration so mobile Safari uses the device width
@@ -48,6 +78,7 @@ export default function RootLayout({
           <link href="/css/app-overrides.css" rel="stylesheet" />
         </head>
         <body className="min-h-screen antialiased">
+          <JsonLd data={organizationJsonLd()} />
           <ToastProvider>
             <div className="page-wrapper">{children}</div>
           </ToastProvider>

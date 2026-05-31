@@ -16,6 +16,10 @@ import {
 import { SaveHeartButton } from "@/components/SaveHeartButton";
 import { getCountyDisplayName } from "@/data/counties";
 import type { VendorCountyContact } from "@/types";
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
+import { vendorLocalBusinessJsonLd } from "@/lib/json-ld";
+import { JsonLd } from "@/components/JsonLd";
 
 const WHAT_TO_BRING_ITEMS = [
   "Firearm (must be on your permit application)",
@@ -54,14 +58,22 @@ interface PageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const vendor = await getVendorBySlug(slug);
   if (!vendor) return {};
-  return {
-    title: `${vendor.name} | CCW Training`,
-    description: vendor.description ?? `${vendor.name} - CCW training in ${vendor.city}, ${getCountyDisplayName(vendor.county)} County.`,
-  };
+  const countyName = getCountyDisplayName(vendor.county);
+  const title = vendor.name;
+  const description =
+    vendor.description ??
+    `${vendor.name} offers sheriff-approved CCW classes in ${vendor.city}, ${countyName} County, California. Compare pricing, schedules, and class formats.`;
+
+  return pageMetadata({
+    title,
+    description,
+    path: `/instructors/${slug}`,
+    imageUrl: vendor.imageUrl ?? null,
+  });
 }
 
 export default async function VendorProfilePage({ params, searchParams }: PageProps) {
@@ -181,6 +193,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
   return (
     <div className="min-h-screen bg-white">
+      <JsonLd data={vendorLocalBusinessJsonLd(vendor)} />
       <Header />
       {/* Hero: full-width grey bar from below header; breadcrumb + content inside */}
       <section className="vendor-profile-hero relative left-1/2 -translate-x-1/2 w-screen pb-8 sm:pb-10 !bg-[#141413]">
