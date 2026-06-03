@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_SITE_DESCRIPTION,
   icons: {
-    icon: [{ url: "/images/favicon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/images/favicon.png", type: "image/png", sizes: "32x32" }],
+    apple: [{ url: "/images/apple-touch-icon.png", sizes: "180x180" }],
   },
   openGraph: {
     ...buildOpenGraph({

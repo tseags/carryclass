@@ -108,7 +108,6 @@
   display: inline-block;
   width: 100%;
   text-align: center;
-  white-space: nowrap !important;
   vertical-align: top;
 }
 .section-3.vendors-hero .vendors-hero-title br {
@@ -118,10 +117,30 @@
   margin-top: 0.15em;
 }
 
-/* Very narrow: allow wrap so text isn’t clipped */
-@media screen and (max-width: 379px) {
+/* Desktop: one phrase per line (paired with explicit <br /> on /ca) */
+@media screen and (min-width: 768px) {
+  .section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+    white-space: nowrap !important;
+  }
+}
+
+/* Mobile: horizontal inset + allow H1 to wrap (container-2 has no side padding in Webflow) */
+@media screen and (max-width: 767px) {
+  .section-3.vendors-hero .container-2 {
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+
+  .section-3.vendors-hero .vendors-hero-content {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
     white-space: normal !important;
+    overflow-wrap: break-word;
   }
 }
 

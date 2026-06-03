@@ -48,14 +48,16 @@ export default async function HomePage() {
   return (
     <>
       <Header />
+      <main className="home-page-sections">
       {/* Hero - section-2 */}
       <div className="section-2">
         <div className="container-default home w-container">
           <div className="top-section-card home">
             <div>
               <div className="inner-container _408px _100-tablet">
-                <h1 className="mg-bottom-10px">
-                  Find CCW Classes Near You in California
+                <h1 className="mg-bottom-10px home-hero-title">
+                  <span className="home-hero-title__lead">Find CCW</span> Classes Near You in
+                  California
                 </h1>
               </div>
               <div className="inner-container _414px _100-tablet">
@@ -82,7 +84,10 @@ export default async function HomePage() {
           <div className="popular-vendors-redesign__header">
             <div>
               <div className="popular-vendors-redesign__eyebrow">Featured instructors</div>
-              <h2 className="mg-bottom-0">Popular CCW classes</h2>
+              <h2 className="mg-bottom-0">
+                <span className="popular-vendors-redesign__heading-phrase">Popular CCW</span>{" "}
+                classes
+              </h2>
             </div>
             <div className="popular-vendors-redesign__header-btn">
               <Link href="/instructors" className="btn-secondary w-button popular-vendors-redesign__view-all">
@@ -157,6 +162,8 @@ export default async function HomePage() {
       {SHOW_GEAR_SECTIONS ? <GearCtaSection /> : null}
 
       {SHOW_SUBSCRIBE_SECTIONS ? <HomeNewsletter /> : null}
+
+      </main>
 
       <Footer />
     </>

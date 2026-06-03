@@ -598,13 +598,11 @@ img.county-hero-image-fill {
 
 @media screen and (max-width: 767px) {
   .section-3.vendors-hero h1.vendors-hero-title {
-    font-size: 38px !important;
+    font-size: clamp(1.625rem, 7.5vw, 2.375rem) !important;
   }
-}
 
-@media screen and (max-width: 479px) {
-  .section-3.vendors-hero h1.vendors-hero-title {
-    font-size: 32px !important;
+  .section-3.vendors-hero .vendors-hero-breadcrumb-row--above-title {
+    margin-bottom: 1.5rem !important;
   }
 }
 
@@ -1665,5 +1663,162 @@ img.county-hero-image-fill {
     grid-template-columns: 1fr;
     gap: 16px;
     max-width: 560px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Homepage — center section headings, subcopy, and buttons on mobile only    */
+/* -------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  /* Hero */
+  .home-page-sections .section-2 .top-section-card.home > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .home-page-sections .section-2 .top-section-card.home .inner-container._100-tablet,
+  .home-page-sections .section-2 .top-section-card.home h1,
+  .home-page-sections .section-2 .top-section-card.home p {
+    text-align: center;
+  }
+
+  .home-page-sections .section-2 .top-section-card.home .hero-search {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .home-page-sections .section-2 .top-section-card.home .home-hero-title__lead {
+    display: block;
+    white-space: nowrap;
+  }
+
+  /* County carousel header */
+  .home-page-sections .section.home-page .grid-2-columns.title-and-btn-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .home-page-sections .section.home-page .grid-2-columns.title-and-btn-grid h2 {
+    text-align: center;
+  }
+
+  .home-page-sections .section.home-page .grid-2-columns.title-and-btn-grid > div {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Explore by category */
+  .home-page-sections .explore-by-category-heading {
+    text-align: center !important;
+  }
+
+  /* Popular vendors */
+  .home-page-sections .popular-vendors-redesign__header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .home-page-sections .popular-vendors-redesign__header > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .home-page-sections .popular-vendors-redesign__eyebrow,
+  .home-page-sections .popular-vendors-redesign__header h2 {
+    text-align: center;
+  }
+
+  .home-page-sections .popular-vendors-redesign__header-btn {
+    display: flex;
+    justify-content: center;
+    align-self: center;
+    padding-bottom: 20px;
+  }
+
+  .home-page-sections .popular-vendors-redesign__heading-phrase {
+    white-space: nowrap;
+  }
+
+  /* By the numbers */
+  .home-page-sections .by-the-numbers__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .home-page-sections .by-the-numbers__eyebrow,
+  .home-page-sections .by-the-numbers__heading,
+  .home-page-sections .by-the-numbers__body {
+    text-align: center;
+  }
+
+  .home-page-sections .by-the-numbers__body {
+    max-width: none;
+  }
+
+  .home-page-sections .by-the-numbers__bullets {
+    align-items: center;
+  }
+
+  .home-page-sections .by-the-numbers__bullets li {
+    justify-content: center;
+  }
+
+  /* Testimonials */
+  .home-page-sections .home-testimonials__header,
+  .home-page-sections .home-testimonials__heading {
+    text-align: center;
+  }
+
+  .home-page-sections .home-testimonials__cta-row {
+    justify-content: center;
+  }
+
+  /* Gear CTA */
+  .home-page-sections .gear-cta-section__row {
+    align-items: center;
+  }
+
+  .home-page-sections .gear-cta-section__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: none;
+    width: 100%;
+    text-align: center;
+  }
+
+  .home-page-sections .gear-cta-section__copy h2,
+  .home-page-sections .gear-cta-section__copy p {
+    text-align: center;
+    max-width: none;
+  }
+
+  /* Newsletter (already centered; reinforce on small screens) */
+  .home-page-sections .home-newsletter__inner {
+    text-align: center;
+  }
+
+  .home-page-sections .home-newsletter__eyebrow,
+  .home-page-sections .home-newsletter__heading,
+  .home-page-sections .home-newsletter__copy {
+    text-align: center;
+  }
+
+  .home-page-sections .home-newsletter__form {
+    margin-left: auto;
+    margin-right: auto;
   }
 }
