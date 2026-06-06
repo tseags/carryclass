@@ -8,7 +8,9 @@ import { serializeJsonLd } from "@/lib/json-ld";
 
 describe("seo helpers", () => {
   it("builds absolute URLs from paths", () => {
-    expect(absoluteUrl("/instructors")).toBe("https://getcarryclass.com/instructors");
+    expect(absoluteUrl("/instructors")).toBe(
+      "https://www.getcarryclass.com/instructors"
+    );
   });
 
   it("detects active search params", () => {

@@ -3,6 +3,9 @@ import { CALIFORNIA_COUNTIES } from "@/data/counties";
 import { SITE_URL } from "@/lib/site-url";
 import { getAllVendors } from "@/lib/vendors-db";
 
+/** Regenerate daily so new instructor profiles appear without a full redeploy. */
+export const revalidate = 86400;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = SITE_URL;
 
@@ -32,8 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
-  } catch {
-    // DB may be unavailable during build (e.g. TLS/cert issues); include static + county pages only
+  } catch (error) {
+    console.error("[sitemap] vendor fetch failed; serving static + county pages only", error);
   }
 
   return [...staticPages, ...countyPages, ...vendorPages];
