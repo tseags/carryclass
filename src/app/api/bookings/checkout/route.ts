@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
-import { PLATFORM_SERVICE_FEE_CENTS } from "@/lib/booking-constants";
+import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
 
 export const runtime = "nodejs";
 
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
   }
 
   const classAmountCents = classSession.priceCents;
-  const serviceFeeCents = PLATFORM_SERVICE_FEE_CENTS;
+  const serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
 
   const origin =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
           currency: "usd",
           product_data: {
             name: "CCW Directory booking service fee",
-            description: "Non-refundable service fee",
+            description: "Non-refundable 5% platform service fee",
           },
           unit_amount: serviceFeeCents,
         },

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -37,7 +38,9 @@ export async function POST(req: Request) {
     }
 
     const classAmountCents = parseInt(md.classAmountCents ?? "0", 10);
-    const serviceFeeCents = parseInt(md.serviceFeeCents ?? "700", 10);
+    const serviceFeeCents = md.serviceFeeCents
+      ? parseInt(md.serviceFeeCents, 10)
+      : calculatePlatformServiceFeeCents(classAmountCents);
     const pi = session.payment_intent;
     const paymentIntentId =
       typeof pi === "string" ? pi : pi && "id" in pi ? pi.id : null;

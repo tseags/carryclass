@@ -13,6 +13,12 @@ const STUDENT_LINKS: FooterLink[] = [
   { label: "Virtual options", href: "/instructors?format=online" },
 ];
 
+const INSTRUCTOR_LINKS: FooterLink[] = [
+  { label: "For instructors", href: "/for-instructors" },
+  { label: "Claim your listing", href: "/instructors/claim" },
+  { label: "Sign up", href: "/sign-up?intent=vendor" },
+];
+
 function FooterColumn({
   title,
   links,
@@ -62,9 +68,10 @@ export function Footer() {
             </p>
           </div>
 
-          <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-2">
+          <div className="site-footer__columns grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
             <FooterColumn title="Browse" links={BROWSE_LINKS} />
             <FooterColumn title="For students" links={STUDENT_LINKS} />
+            <FooterColumn title="For instructors" links={INSTRUCTOR_LINKS} />
           </div>
         </div>
 

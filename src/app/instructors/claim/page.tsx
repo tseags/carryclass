@@ -43,7 +43,11 @@ export default function ClaimVendorListingPage() {
                 </div>
                 <p className="paragraph-small color-neutral-600 mg-top-16px">
                   We&apos;ll add more self-service listing tools over time. For now, claiming your
-                  listing ensures we can match your account to the right instructor listing.
+                  listing ensures we can match your account to the right instructor listing.{" "}
+                  <Link href="/for-instructors" className="text-decoration-none">
+                    Learn more about listing on CarryClass
+                  </Link>
+                  .
                 </p>
               </div>
             </div>

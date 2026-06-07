@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { PLATFORM_SERVICE_FEE_CENTS } from "@/lib/booking-constants";
+import {
+  calculatePlatformServiceFeeCents,
+  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
+} from "@/lib/booking-constants";
 
 export type SerializableSession = {
   id: string;
@@ -158,7 +161,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
 
   const selected = sessions.find((s) => s.id === classSessionId);
   const classCents = selected?.priceCents ?? 0;
-  const feeCents = PLATFORM_SERVICE_FEE_CENTS;
+  const feeCents = calculatePlatformServiceFeeCents(classCents);
   const totalCents = classCents + feeCents;
 
   function selectClassType(key: ClassFilterKey) {
@@ -544,7 +547,9 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
               </span>
             </li>
             <li className="flex justify-between gap-4">
-              <span className="text-zinc-600">Booking service fee (non-refundable)</span>
+              <span className="text-zinc-600">
+                Booking service fee ({PLATFORM_SERVICE_FEE_PERCENT_LABEL}, non-refundable)
+              </span>
               <span className="tabular-nums font-medium text-zinc-900">
                 ${(feeCents / 100).toFixed(2)}
               </span>
@@ -555,8 +560,8 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
             </li>
           </ul>
           <p className="mt-4 text-sm italic leading-snug text-zinc-600">
-            Refunds apply to the class portion only; the {feeCents / 100} platform fee is
-            non-refundable per our policy.
+            Refunds apply to the class portion only; the {PLATFORM_SERVICE_FEE_PERCENT_LABEL}{" "}
+            platform service fee is non-refundable per our policy.
           </p>
         </div>
 

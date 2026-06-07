@@ -4,7 +4,11 @@ import {
   ensureDemoBookingData,
 } from "@/lib/demo-booking-seed-shared";
 import { prisma } from "./db";
-import { PLATFORM_SERVICE_FEE_CENTS } from "./booking-constants";
+import {
+  calculatePlatformServiceFeeCents,
+  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
+  PLATFORM_SERVICE_FEE_RATE,
+} from "./booking-constants";
 
 /** Sandbox-only: shift past demo sessions forward so listing query (startsAt > now) finds them again. */
 async function refreshStaleDemoSessionsIfNeeded(
@@ -147,4 +151,8 @@ export async function getUpcomingSessionsForVendorSlug(
   return { vendorId, sessions };
 }
 
-export { PLATFORM_SERVICE_FEE_CENTS };
+export {
+  calculatePlatformServiceFeeCents,
+  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
+  PLATFORM_SERVICE_FEE_RATE,
+};
