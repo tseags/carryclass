@@ -22,8 +22,9 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_SITE_DESCRIPTION,
   icons: {
-    icon: [{ url: "/images/favicon.png", type: "image/png", sizes: "32x32" }],
-    apple: [{ url: "/images/apple-touch-icon.png", sizes: "180x180" }],
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     ...buildOpenGraph({
@@ -72,6 +73,7 @@ export default function RootLayout({
         data-ccw-dev={process.env.NODE_ENV === "development" ? "true" : undefined}
       >
         <head>
+          <link rel="icon" href="/favicon.ico" />
           <link href="/css/normalize.css" rel="stylesheet" />
           <link href="/css/webflow.css" rel="stylesheet" />
           <link href="/css/ccw-directory.webflow.css" rel="stylesheet" />
