@@ -1,0 +1,36 @@
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import { getOrCreateVendorProfile, getClassTypes } from "@/lib/onboarding-db";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
+import { Step3Schedule } from "@/components/onboarding/Step3Schedule";
+
+export default async function Step3Page() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in?intent=vendor");
+
+  const vendor = await getOrCreateVendorProfile(userId);
+  if (vendor.is_published) redirect("/dashboard/vendor");
+
+  const classTypes = await getClassTypes(vendor.id);
+  const googleConnected = Boolean(vendor.google_calendar_id && vendor.google_refresh_token);
+
+  return (
+    <>
+      <OnboardingProgress currentStep={3} completedStep={vendor.onboarding_step} />
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-zinc-900">Set up your class schedule</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Add your recurring or one-off class times directly, or connect your existing calendar to pull in classes you&apos;ve already scheduled — we&apos;ll keep it in sync automatically.
+          </p>
+        </div>
+        <Step3Schedule
+          classTypes={classTypes}
+          googleConnected={googleConnected}
+          icalUrl={vendor.ical_feed_url}
+          calendarType={vendor.calendar_type}
+        />
+      </main>
+    </>
+  );
+}

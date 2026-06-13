@@ -3,15 +3,21 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { isUserRole, STUDENT_ROLE, VENDOR_ROLE } from "@/lib/auth/roles";
 
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
+const isOnboardRoute = createRouteMatcher(["/onboard(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isDashboardRoute(req)) {
+  if (!isDashboardRoute(req) && !isOnboardRoute(req)) {
     return NextResponse.next();
   }
 
   const { userId, redirectToSignIn, sessionClaims } = await auth();
   if (!userId) {
     return redirectToSignIn({ returnBackUrl: req.url });
+  }
+
+  // /onboard routes only require authentication, not a specific role
+  if (isOnboardRoute(req)) {
+    return NextResponse.next();
   }
 
   const role = (sessionClaims?.metadata as { role?: unknown } | undefined)?.role;

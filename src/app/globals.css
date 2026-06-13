@@ -18,6 +18,45 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ── Onboarding / Dashboard shared form input style ── */
+.input-field {
+  display: block;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #e4e4e7;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #18181b;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  -webkit-appearance: none;
+}
+.input-field::placeholder {
+  color: #a1a1aa;
+}
+.input-field:focus {
+  border-color: #18181b;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.08);
+}
+.input-field:disabled {
+  background: #f4f4f5;
+  cursor: not-allowed;
+}
+
+/* ── Toggle switch: peer-checked sibling styles ── */
+/* Tailwind v4 supports peer variants natively, but these CSS fallbacks
+   ensure the toggle tracks and knobs render correctly regardless of JIT. */
+.peer:checked ~ .peer-checked\:bg-zinc-900 {
+  background-color: #18181b;
+}
+.peer:checked ~ .peer-checked\:translate-x-4 {
+  transform: translateX(1rem);
+}
+.peer:checked ~ .peer-checked\:bg-zinc-900 {
+  background-color: #18181b;
+}
+
 /* County hero “View Vendors” → #county-vendors; offset so content clears sticky header */
 #county-vendors {
   scroll-margin-top: var(--header-offset);

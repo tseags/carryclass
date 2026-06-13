@@ -20,6 +20,6 @@ export default async function VendorOnboardingPage() {
     });
   }
 
-  redirect("/dashboard/vendor");
+  redirect("/onboard");
 }
 
