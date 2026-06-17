@@ -2,11 +2,17 @@ import { createHash } from "node:crypto";
 import { cache } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { Vendor, VendorFilters } from "@/types";
-import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
+import {
+  CALIFORNIA_COUNTIES,
+  COUNTY_DISPLAY_NAMES,
+  type CaliforniaCountySlug,
+} from "@/data/counties";
+import { parseCountySlugFromCarryClassVendorSlug } from "@/lib/carryclass-vendor-slug";
 import { filterVendors } from "@/lib/filter-vendors";
 import { applyListingSort } from "@/lib/vendor-listing-sort";
 import { mergeCanonicalVendors } from "@/lib/merge-canonical-vendors";
 import { VENDOR_MERGE_OVERRIDES } from "@/data/vendor-merge-overrides";
+import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
 import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
 
@@ -681,6 +687,95 @@ async function fetchRawVendorRows(): Promise<Record<string, unknown>[]> {
   return rows;
 }
 
+function countyDbMatchValues(countySlug: string): string[] {
+  const slug = countySlug.toLowerCase().trim();
+  if (!slug) return [];
+
+  const display = COUNTY_DISPLAY_NAMES[slug as CaliforniaCountySlug];
+  const values = new Set<string>([slug, slug.replace(/-/g, " ")]);
+  if (display) {
+    values.add(display);
+    values.add(`${display} County`);
+  }
+  return [...values];
+}
+
+async function fetchRawVendorRowsForCounty(countySlug: string): Promise<Record<string, unknown>[]> {
+  const matchValues = countyDbMatchValues(countySlug);
+  if (!matchValues.length) return [];
+
+  if (shouldFetchVendorsViaDatabase()) {
+    const table = vendorDbTable();
+    const conditions = matchValues
+      .map((_, i) => `LOWER(TRIM(county)) = LOWER(TRIM($${i + 1}))`)
+      .join(" OR ");
+    try {
+      const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+        `SELECT * FROM public."${table.replace(/"/g, "")}" WHERE (${conditions}) LIMIT 3000`,
+        ...matchValues
+      );
+      return rows;
+    } catch (e) {
+      console.error("[vendors-db] fetchRawVendorRowsForCounty failed", { countySlug, e });
+      return [];
+    }
+  }
+
+  const table = vendorTable();
+  logSupabaseSelectStart("fetchRawVendorRowsForCounty", table, { countySlug, matchValues });
+  const { data, error, count } = await sb()
+    .from(table)
+    .select("*", { count: "exact" })
+    .in("county", matchValues)
+    .limit(3000);
+
+  logSupabaseSelectResult("fetchRawVendorRowsForCounty", { data: data ?? [], error, count });
+
+  if (error) {
+    console.error("[vendors-db] fetchRawVendorRowsForCounty", { countySlug, ...error });
+    if (databaseProjectRef()) {
+      return fetchRawVendorRowsForCountyViaDatabase(countySlug, matchValues);
+    }
+    return [];
+  }
+
+  return (data ?? []) as Record<string, unknown>[];
+}
+
+async function fetchRawVendorRowsForCountyViaDatabase(
+  countySlug: string,
+  matchValues: string[]
+): Promise<Record<string, unknown>[]> {
+  const table = vendorDbTable();
+  const conditions = matchValues
+    .map((_, i) => `LOWER(TRIM(county)) = LOWER(TRIM($${i + 1}))`)
+    .join(" OR ");
+  try {
+    return await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+      `SELECT * FROM public."${table.replace(/"/g, "")}" WHERE (${conditions}) LIMIT 3000`,
+      ...matchValues
+    );
+  } catch (e) {
+    console.error("[vendors-db] fetchRawVendorRowsForCountyViaDatabase failed", { countySlug, e });
+    return [];
+  }
+}
+
+function filterVendorsForCountySlug(vendors: Vendor[], countySlug: string): Vendor[] {
+  const slug = countySlug.toLowerCase();
+  return vendors.filter(
+    (v) => v.countiesServed.some((c) => c.toLowerCase() === slug) || v.county.toLowerCase() === slug
+  );
+}
+
+/** County-scoped CarryClass fetch — avoids loading the full vendor table per page. */
+const getCarryClassVendorsForCountyCached = cache(async (countySlug: string): Promise<Vendor[]> => {
+  const rows = await fetchRawVendorRowsForCounty(countySlug.toLowerCase());
+  const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
+  const merged = mergeCanonicalVendors(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
+  return filterVendorsForCountySlug(merged, countySlug);
+});
+
 /** One bulk fetch per request for CarryClass-shaped tables (no native slug / mixed columns). */
 const getCarryClassVendorsCached = cache(async (): Promise<Vendor[]> => {
   const rows = await fetchRawVendorRows();
@@ -880,6 +975,22 @@ export async function getCitiesForCountyFilter(countySlug?: string): Promise<str
   return [...new Set(cities)].sort((a, b) => a.localeCompare(b));
 }
 
+export async function getRelatedVendorsForProfile(
+  origin: Vendor,
+  limit = 3
+): Promise<Vendor[]> {
+  const countySlug = (origin.county || origin.countiesServed[0] || "").toLowerCase();
+  if (!countySlug) return [];
+
+  if (isCarryClassVendorShape()) {
+    const vendors = await getCarryClassVendorsForCountyCached(countySlug);
+    return getRelatedVendorsForVendorProfile(origin, vendors, limit);
+  }
+
+  const countyVendors = await getVendorsByCounty(countySlug);
+  return getRelatedVendorsForVendorProfile(origin, countyVendors, limit);
+}
+
 export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
@@ -887,12 +998,30 @@ export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
   }
 
   if (isCarryClassVendorShape()) {
-    logSupabaseSelectStart("getVendorBySlug (CarryClass — scan cached vendors)", vendorTable(), {
+    const countyFromSlug = parseCountySlugFromCarryClassVendorSlug(slug);
+    if (countyFromSlug) {
+      logSupabaseSelectStart("getVendorBySlug (CarryClass — county scope)", vendorTable(), {
+        slug,
+        countyFromSlug,
+      });
+      const countyVendors = await getCarryClassVendorsForCountyCached(countyFromSlug);
+      const countyHit = countyVendors.find((v) => v.slug === slug) ?? null;
+      if (countyHit) {
+        console.log("📦 getVendorBySlug CarryClass (county):", {
+          county: countyFromSlug,
+          pool: countyVendors.length,
+          hit: true,
+        });
+        return countyHit;
+      }
+    }
+
+    logSupabaseSelectStart("getVendorBySlug (CarryClass — full scan fallback)", vendorTable(), {
       slug,
     });
     const vendors = await getCarryClassVendorsCached();
     const hit = vendors.find((v) => v.slug === slug) ?? null;
-    console.log("📦 getVendorBySlug CarryClass:", { pool: vendors.length, hit: Boolean(hit) });
+    console.log("📦 getVendorBySlug CarryClass (fallback):", { pool: vendors.length, hit: Boolean(hit) });
     return hit;
   }
 
@@ -1002,16 +1131,11 @@ export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> 
   }
 
   if (isCarryClassVendorShape()) {
-    logSupabaseSelectStart("getVendorsByCounty (CarryClass — cache)", vendorTable(), { countySlug });
-    const vendors = await getCarryClassVendorsCached();
-    const list = sortByName(
-      vendors.filter(
-        (v) =>
-          v.countiesServed.some((c) => c.toLowerCase() === slug) || v.county.toLowerCase() === slug
-      )
-    );
+    logSupabaseSelectStart("getVendorsByCounty (CarryClass — county scope)", vendorTable(), {
+      countySlug,
+    });
+    const list = sortByName(await getCarryClassVendorsForCountyCached(slug));
     console.log("📦 getVendorsByCounty CarryClass:", {
-      pool: vendors.length,
       matched: list.length,
       countySlug,
     });

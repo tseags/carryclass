@@ -5,8 +5,7 @@ import { Footer } from "@/components/Footer";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
-import { getVendorBySlug, getAllVendors } from "@/lib/vendors-db";
-import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
+import { getVendorBySlug, getRelatedVendorsForProfile } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import {
@@ -20,6 +19,9 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { vendorLocalBusinessJsonLd } from "@/lib/json-ld";
 import { JsonLd } from "@/components/JsonLd";
+
+/** Cache public profiles for 24h — crawlers and repeat visitors avoid repeated full DB reads. */
+export const revalidate = 86400;
 
 const WHAT_TO_BRING_ITEMS = [
   "Firearm (must be on your permit application)",
@@ -90,8 +92,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     notFound();
   }
 
-  const allVendors = await getAllVendors();
-  const otherVendors = getRelatedVendorsForVendorProfile(vendor, allVendors, 3);
+  const otherVendors = await getRelatedVendorsForProfile(vendor, 3);
   const otherVendorListingReviews = await getApprovedReviewStatsByVendorIds(
     otherVendors.map((v) => v.id)
   );

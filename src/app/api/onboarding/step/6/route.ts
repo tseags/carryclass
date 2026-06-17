@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile, updateVendorProfile } from "@/lib/onboarding-db";
 
@@ -16,6 +17,11 @@ export async function POST(req: NextRequest) {
       is_published: true,
       onboarding_step: 7,
     });
+
+    if (vendor.slug?.trim()) {
+      revalidatePath(`/instructors/${vendor.slug.trim()}`);
+    }
+    revalidatePath("/sitemap.xml");
   }
 
   return NextResponse.json({ ok: true });
