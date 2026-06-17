@@ -3,10 +3,15 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { syncCalendarClasses } from "@/lib/onboarding-db";
 import ICAL from "ical.js";
 import { Resend } from "resend";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getResend(): Resend {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not set");
+  }
+  return new Resend(apiKey);
+}
 
 interface CalendarEvent {
   external_event_id: string;
@@ -206,7 +211,7 @@ async function handleCancelledClasses(vendor: VendorRow) {
       try {
         // Issue full Stripe refund
         if (booking.stripePaymentIntentId) {
-          await stripe.refunds.create({
+          await getStripe().refunds.create({
             payment_intent: booking.stripePaymentIntentId,
           });
         }
@@ -215,7 +220,7 @@ async function handleCancelledClasses(vendor: VendorRow) {
         const rebookingLink = `${baseUrl}/instructors/${vendor.id}`;
 
         // Email student
-        await resend.emails.send({
+        await getResend().emails.send({
           from: "bookings@getcarryclass.com",
           to: booking.studentEmail,
           subject: `Your class has been cancelled — rebook with ${vendor.name ?? "your instructor"}`,
@@ -232,7 +237,7 @@ async function handleCancelledClasses(vendor: VendorRow) {
 
         // Email instructor
         if (vendor.email) {
-          await resend.emails.send({
+          await getResend().emails.send({
             from: "bookings@getcarryclass.com",
             to: vendor.email,
             subject: "CarryClass automatically cancelled and refunded a booking",

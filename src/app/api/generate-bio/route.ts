@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getAnthropicClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not set");
+  }
+  return new Anthropic({ apiKey });
+}
 
 const SYSTEM_PROMPT = `You are assisting a California CCW firearms instructor writing their public-facing 
 description on CarryClass, a booking marketplace. Tone: professional, approachable, 
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
     userMessage = parts.join("\n") || "Write a generic professional CCW instructor bio.";
   }
 
-  const message = await client.messages.create({
+  const message = await getAnthropicClient().messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 400,
     system: SYSTEM_PROMPT,

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import Stripe from "stripe";
 import { getVendorProfile, updateVendorProfile } from "@/lib/onboarding-db";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { getStripe } from "@/lib/stripe";
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
@@ -28,7 +26,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/onboard/step/5?error=invalid_state`);
   }
 
-  const response = await stripe.oauth.token({
+  const response = await getStripe().oauth.token({
     grant_type: "authorization_code",
     code,
   });
