@@ -9,9 +9,12 @@ export async function POST(req: NextRequest) {
   const vendor = await getVendorProfile(userId);
   if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
 
-  // Stripe account is set by the OAuth callback — just advance the step
-  const { skipped } = await req.json();
-  void skipped;
+  if (!vendor.stripe_account_id) {
+    return NextResponse.json(
+      { error: "Stripe must be connected before continuing" },
+      { status: 400 }
+    );
+  }
 
   await advanceOnboardingStep(vendor.id, 6);
 

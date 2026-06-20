@@ -18,6 +18,8 @@ interface FetchedEvent {
   include: boolean;
 }
 
+type Recurrence = "one-time" | "weekly" | "biweekly" | "monthly";
+
 interface ManualSlot {
   id: string;
   date: string;
@@ -26,6 +28,77 @@ interface ManualSlot {
   classType: string;
   maxStudents: string;
   price: string;
+  recurrence: Recurrence;
+  endDate: string;
+}
+
+const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
+  { value: "one-time", label: "One-time" },
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Every 2 weeks" },
+  { value: "monthly", label: "Monthly" },
+];
+
+const WEEKDAY_RRULE = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+/** Build an iCal RRULE string from a recurrence choice + start date. */
+function buildRecurrenceRule(
+  recurrence: Recurrence,
+  startDate: string,
+  endDate: string
+): string | null {
+  if (recurrence === "one-time" || !startDate) return null;
+  const start = new Date(`${startDate}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const parts: string[] = [];
+  if (recurrence === "weekly") {
+    parts.push("FREQ=WEEKLY", `BYDAY=${WEEKDAY_RRULE[start.getDay()]}`);
+  } else if (recurrence === "biweekly") {
+    parts.push("FREQ=WEEKLY", "INTERVAL=2", `BYDAY=${WEEKDAY_RRULE[start.getDay()]}`);
+  } else if (recurrence === "monthly") {
+    parts.push("FREQ=MONTHLY", `BYMONTHDAY=${start.getDate()}`);
+  }
+  if (endDate) {
+    const end = new Date(`${endDate}T23:59:59`);
+    if (!Number.isNaN(end.getTime())) {
+      parts.push(
+        `UNTIL=${end.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`
+      );
+    }
+  }
+  return parts.join(";");
+}
+
+/** Human-readable summary like "Every Monday at 9:00 AM". */
+function describeRecurrence(slot: ManualSlot): string {
+  const time = slot.startTime
+    ? new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "";
+  const start = slot.date ? new Date(`${slot.date}T00:00:00`) : null;
+  const weekday = start ? WEEKDAY_NAMES[start.getDay()] : "";
+  switch (slot.recurrence) {
+    case "weekly":
+      return `Every ${weekday}${time ? ` at ${time}` : ""}`;
+    case "biweekly":
+      return `Every other ${weekday}${time ? ` at ${time}` : ""}`;
+    case "monthly":
+      return `Monthly on day ${start ? start.getDate() : ""}${time ? ` at ${time}` : ""}`;
+    default:
+      return `${slot.date}${time ? ` at ${time}` : ""}`;
+  }
 }
 
 interface Props {
@@ -65,6 +138,8 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
     classType: classTypes[0]?.class_type ?? "initial",
     maxStudents: "",
     price: classTypes[0] ? String(classTypes[0].price) : "",
+    recurrence: "one-time",
+    endDate: "",
   });
 
   const activeClassTypes = classTypes.filter((ct) => ct.is_active);
@@ -145,7 +220,7 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
       return;
     }
     setManualSlots((prev) => [...prev, { ...newSlot, id: Date.now().toString() }]);
-    setNewSlot((s) => ({ ...s, date: "", startTime: "" }));
+    setNewSlot((s) => ({ ...s, date: "", startTime: "", endDate: "" }));
     setShowAddSlot(false);
     setError("");
   }
@@ -174,6 +249,11 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
         classesToSave = manualSlots.map((slot) => {
           const startDt = new Date(`${slot.date}T${slot.startTime}`);
           const endDt = new Date(startDt.getTime() + slot.duration * 60000);
+          const recurrenceRule = buildRecurrenceRule(
+            slot.recurrence,
+            slot.date,
+            slot.endDate
+          );
           return {
             class_type: slot.classType,
             title: CLASS_TYPE_LABELS[slot.classType] ?? slot.classType,
@@ -181,6 +261,8 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
             end_time: endDt.toISOString(),
             max_students: slot.maxStudents ? parseInt(slot.maxStudents) : null,
             price: slot.price ? parseFloat(slot.price) : null,
+            is_recurring: slot.recurrence !== "one-time",
+            recurrence_rule: recurrenceRule,
           };
         });
       } else {
@@ -322,7 +404,7 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
               type="button"
               onClick={fetchIcalEvents}
               disabled={fetchingEvents || !icalFeedUrl.trim()}
-              className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+              className="btn-primary small w-button whitespace-nowrap disabled:opacity-50"
             >
               {fetchingEvents ? "Fetching..." : "Fetch events"}
             </button>
@@ -361,11 +443,18 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
                   className="flex items-center justify-between py-2 border-b border-zinc-100 last:border-0"
                 >
                   <div>
-                    <p className="text-sm font-medium text-zinc-800">
-                      {CLASS_TYPE_LABELS[slot.classType] ?? slot.classType}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-zinc-800">
+                        {CLASS_TYPE_LABELS[slot.classType] ?? slot.classType}
+                      </p>
+                      {slot.recurrence !== "one-time" && (
+                        <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
+                          Recurring
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-zinc-500">
-                      {slot.date} at {slot.startTime} · {slot.duration} min
+                      {describeRecurrence(slot)} · {slot.duration} min
                       {slot.maxStudents ? ` · Max ${slot.maxStudents} students` : ""}
                       {slot.price ? ` · $${slot.price}` : ""}
                     </p>
@@ -385,9 +474,32 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
           {showAddSlot ? (
             <div className="space-y-3 border border-zinc-100 rounded-lg p-4 bg-zinc-50">
               <h3 className="text-sm font-medium text-zinc-700">Add a class slot</h3>
+              <div>
+                <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
+                <select
+                  value={newSlot.recurrence}
+                  onChange={(e) =>
+                    setNewSlot((s) => ({ ...s, recurrence: e.target.value as Recurrence }))
+                  }
+                  className="input-field w-full"
+                >
+                  {RECURRENCE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {newSlot.recurrence !== "one-time" && newSlot.date && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {describeRecurrence({ ...newSlot, id: "preview" })}
+                  </p>
+                )}
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Date</label>
+                  <label className="block text-xs text-zinc-600 mb-1">
+                    {newSlot.recurrence === "one-time" ? "Date" : "Start date"}
+                  </label>
                   <input
                     type="date"
                     value={newSlot.date}
@@ -396,6 +508,21 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
                     className="input-field w-full"
                   />
                 </div>
+                {newSlot.recurrence !== "one-time" && (
+                  <div>
+                    <label className="block text-xs text-zinc-600 mb-1">
+                      End date{" "}
+                      <span className="text-zinc-400">(optional — leave blank for ongoing)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={newSlot.endDate}
+                      min={newSlot.date || new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setNewSlot((s) => ({ ...s, endDate: e.target.value }))}
+                      className="input-field w-full"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs text-zinc-600 mb-1">Start time</label>
                   <input
@@ -464,18 +591,18 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={addManualSlot}
-                  className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
+                  className="btn-primary small w-button"
                 >
                   Add slot
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddSlot(false)}
-                  className="px-4 py-2 border border-zinc-200 text-zinc-600 rounded-lg text-sm hover:bg-zinc-50 transition-colors"
+                  className="btn-secondary small w-button"
                 >
                   Cancel
                 </button>
@@ -485,12 +612,9 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
             <button
               type="button"
               onClick={() => setShowAddSlot(true)}
-              className="inline-flex items-center gap-2 text-sm text-zinc-600 border border-zinc-200 rounded-lg px-4 py-2 hover:bg-zinc-50 transition-colors"
+              className="btn-secondary small w-button"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add class slot
+              + Add class slot
             </button>
           )}
 
@@ -508,22 +632,22 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
         </p>
       )}
 
-      <div className="flex justify-between pt-2">
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => router.push("/onboard/step/2")}
-          className="text-sm text-zinc-500 hover:text-zinc-700 px-4 py-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="btn-secondary w-button"
         >
-          ← Back
+          Back
         </button>
         <button
           type="button"
           onClick={handleSubmit}
           disabled={saving || !option}
-          className="inline-flex items-center gap-2 bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-zinc-700 disabled:opacity-60 transition-colors"
+          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
           {saving && <Spinner />}
-          Save &amp; Continue →
+          {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
     </div>

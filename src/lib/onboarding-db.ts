@@ -104,6 +104,135 @@ export async function getOrCreateVendorProfile(
   return created as VendorProfile;
 }
 
+/** Shape of the public enriched directory listing we merge from. */
+interface EnrichedListing {
+  vendor_name: string | null;
+  email: string | null;
+  phone: string | null;
+  website_url: string | null;
+  address: string | null;
+  city: string | null;
+  county: string | null;
+  vendor_description: string | null;
+  price_16hr_full: string | null;
+  price_8hr_renewal: string | null;
+  price_add_a_gun: string | null;
+  logo_path: string | null;
+  instructor_image_paths: string | null;
+  training_image_paths: string | null;
+}
+
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+/** Parse a free-form price string ("$150", "150.00", "150/class") into a number. */
+function parsePrice(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const match = String(raw).replace(/,/g, "").match(/\d+(\.\d+)?/);
+  if (!match) return null;
+  const n = Number(match[0]);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Treat a value as an already-usable image if it is an absolute http(s) URL. */
+function absoluteUrls(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return String(raw)
+    .split(/[\n,|]/)
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
+}
+
+/**
+ * Look up canonical/enriched directory data for a freshly-created onboarding
+ * vendor and merge it into empty profile fields. Never overwrites values the
+ * user has already entered. Matches by email first, then by normalized name.
+ *
+ * Returns the (possibly updated) vendor plus a flag indicating whether any
+ * fields were pre-filled, so the UI can surface a subtle hint.
+ */
+export async function prefillVendorFromEnriched(
+  vendor: VendorProfile
+): Promise<{ vendor: VendorProfile; prefilled: boolean }> {
+  // Only attempt while the profile is still largely empty (first visit to step 1).
+  const looksEmpty =
+    !vendor.bio && !vendor.phone && !vendor.website && !vendor.address;
+  if (!looksEmpty) return { vendor, prefilled: false };
+
+  const db = supabaseAdmin();
+  let listing: EnrichedListing | null = null;
+
+  const columns =
+    "vendor_name, email, phone, website_url, address, city, county, vendor_description, price_16hr_full, price_8hr_renewal, price_add_a_gun, logo_path, instructor_image_paths, training_image_paths";
+
+  // 1) Match by email (most reliable signal a row belongs to this account).
+  if (vendor.email) {
+    const { data } = await db
+      .from("enriched_vendor_county_listings")
+      .select(columns)
+      .ilike("email", vendor.email)
+      .limit(1)
+      .maybeSingle();
+    listing = (data as EnrichedListing | null) ?? null;
+  }
+
+  // 2) Fall back to a normalized business-name match.
+  if (!listing && vendor.canonical_name) {
+    const { data } = await db
+      .from("enriched_vendor_county_listings")
+      .select(columns)
+      .eq("normalized_vendor_name", normalizeName(vendor.canonical_name))
+      .limit(1)
+      .maybeSingle();
+    listing = (data as EnrichedListing | null) ?? null;
+  }
+
+  if (!listing) return { vendor, prefilled: false };
+
+  // Build a patch that only fills fields the user has not set yet.
+  const patch: Partial<VendorProfile> = {};
+  if (!vendor.bio && listing.vendor_description) patch.bio = listing.vendor_description;
+  if (!vendor.email && listing.email) patch.email = listing.email;
+  if (!vendor.phone && listing.phone) patch.phone = listing.phone;
+  if (!vendor.website && listing.website_url) patch.website = listing.website_url;
+  if (!vendor.address && listing.address) patch.address = listing.address;
+  if (!vendor.county && listing.county) patch.county = listing.county;
+
+  if (!vendor.photo_url) {
+    const logo = absoluteUrls(listing.logo_path)[0];
+    if (logo) patch.photo_url = logo;
+  }
+  if (!vendor.gallery_urls || vendor.gallery_urls.length === 0) {
+    const gallery = [
+      ...absoluteUrls(listing.instructor_image_paths),
+      ...absoluteUrls(listing.training_image_paths),
+    ].slice(0, 5);
+    if (gallery.length) patch.gallery_urls = gallery;
+  }
+
+  // Seed class-type pricing defaults if the vendor has none yet.
+  const existingTypes = await getClassTypes(vendor.id);
+  if (existingTypes.length === 0) {
+    const seeds: Array<{ class_type: string; price: number; is_active: boolean }> = [];
+    const initial = parsePrice(listing.price_16hr_full);
+    const renewal = parsePrice(listing.price_8hr_renewal);
+    const addGun = parsePrice(listing.price_add_a_gun);
+    if (initial) seeds.push({ class_type: "initial", price: initial, is_active: false });
+    if (renewal) seeds.push({ class_type: "renewal", price: renewal, is_active: false });
+    if (addGun) seeds.push({ class_type: "add_a_gun", price: addGun, is_active: false });
+    if (seeds.length) await upsertClassTypes(vendor.id, seeds);
+  }
+
+  const prefilled = Object.keys(patch).length > 0;
+  if (prefilled) {
+    await updateVendorProfile(vendor.id, patch);
+    return { vendor: { ...vendor, ...patch }, prefilled: true };
+  }
+
+  return { vendor, prefilled: false };
+}
+
 /** Fetch the vendor profile for a Clerk user. Returns null if not found. */
 export async function getVendorProfile(
   clerkUserId: string

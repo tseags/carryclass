@@ -1,5 +1,21 @@
 /* Loaded last from layout.tsx — wins over Webflow ccw-directory.webflow.css */
 
+/* Onboarding step titles — Webflow sets h1 to 48px globally */
+h1.onboard-step-title {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-size: 18px !important;
+  line-height: 1.375 !important;
+  font-weight: 700 !important;
+  color: #141413 !important;
+}
+
+/* Publish CTA — subtler hover than default btn-primary scale(1.06) */
+button.onboard-publish-btn.btn-primary:hover:not(:disabled),
+button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Webflow grid fix — `.grid-2-columns.title-and-btn-grid.mg-bottom-24px`     */
 /* ships with `grid-template-columns: 578px auto` from the export. That       */

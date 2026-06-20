@@ -21,21 +21,23 @@ export default async function Step6Page() {
   ]);
 
   return (
-    <>
-      <OnboardingProgress currentStep={6} completedStep={vendor.onboarding_step} />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-zinc-900">Review &amp; go live</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Everything look good? Hit &ldquo;Publish&rdquo; to make your listing live on CarryClass.
-          </p>
+    <div className="container-default w-container">
+      <div className="mx-auto max-w-3xl">
+        <OnboardingProgress currentStep={6} completedStep={vendor.onboarding_step} />
+        <div className="rounded-2xl border border-neutral-300/70 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6">
+            <h1 className="onboard-step-title">Review &amp; go live</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Everything look good? Hit &ldquo;Publish&rdquo; to make your listing live on CarryClass.
+            </p>
+          </div>
+          <Step6Review
+            vendor={vendor}
+            classTypes={classTypes}
+            calendarClasses={calendarClasses}
+          />
         </div>
-        <Step6Review
-          vendor={vendor}
-          classTypes={classTypes}
-          calendarClasses={calendarClasses}
-        />
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

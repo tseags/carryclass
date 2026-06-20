@@ -117,8 +117,8 @@ export function Step2ClassTypes({ existingTypes }: Props) {
               }`}
             >
               <label className="flex items-start gap-4 p-4 cursor-pointer">
-                {/* Toggle switch */}
-                <div className="relative mt-0.5">
+                {/* Toggle switch (state-driven so styling never depends on JIT peer) */}
+                <span className="relative mt-0.5 inline-block shrink-0">
                   <input
                     type="checkbox"
                     checked={state.enabled}
@@ -128,11 +128,19 @@ export function Step2ClassTypes({ existingTypes }: Props) {
                         [ct.key]: { ...prev[ct.key], enabled: e.target.checked },
                       }))
                     }
-                    className="sr-only peer"
+                    className="sr-only"
                   />
-                  <div className="w-10 h-6 bg-zinc-200 rounded-full peer peer-checked:bg-zinc-900 transition-colors" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
-                </div>
+                  <span
+                    className={`block h-6 w-10 rounded-full transition-colors ${
+                      state.enabled ? "bg-[#141413]" : "bg-zinc-300"
+                    }`}
+                  />
+                  <span
+                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      state.enabled ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </span>
                 <div className="flex-1">
                   <p className="font-medium text-zinc-800">{ct.label}</p>
                   <p className="text-sm text-zinc-500 mt-0.5">{ct.description}</p>
@@ -144,8 +152,10 @@ export function Step2ClassTypes({ existingTypes }: Props) {
                   <label className="block text-sm font-medium text-zinc-700 mb-1.5">
                     Price per student ($)
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">$</span>
+                  <div className="relative w-40">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
+                      $
+                    </span>
                     <input
                       type="number"
                       min="1"
@@ -159,7 +169,8 @@ export function Step2ClassTypes({ existingTypes }: Props) {
                       }
                       placeholder="0.00"
                       required
-                      className="input-field pl-7 w-40"
+                      className="input-field w-full"
+                      style={{ paddingLeft: "1.75rem" }}
                     />
                   </div>
                 </div>
@@ -175,21 +186,21 @@ export function Step2ClassTypes({ existingTypes }: Props) {
         </p>
       )}
 
-      <div className="flex justify-between pt-2">
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => router.push("/onboard/step/1")}
-          className="text-sm text-zinc-500 hover:text-zinc-700 px-4 py-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="btn-secondary w-button"
         >
-          ← Back
+          Back
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-zinc-700 disabled:opacity-60 transition-colors"
+          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
           {saving && <Spinner />}
-          Save &amp; Continue →
+          {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
     </form>

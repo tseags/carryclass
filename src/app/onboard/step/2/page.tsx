@@ -14,19 +14,21 @@ export default async function Step2Page() {
   const classTypes = await getClassTypes(vendor.id);
 
   return (
-    <>
-      <OnboardingProgress currentStep={2} completedStep={vendor.onboarding_step} />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-zinc-900">
-            What types of CCW classes do you offer?
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Select the class types you teach and set your per-student price.
-          </p>
+    <div className="container-default w-container">
+      <div className="mx-auto max-w-3xl">
+        <OnboardingProgress currentStep={2} completedStep={vendor.onboarding_step} />
+        <div className="rounded-2xl border border-neutral-300/70 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6">
+            <h1 className="onboard-step-title">
+              What types of CCW classes do you offer?
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Select the class types you teach and set your per-student price.
+            </p>
+          </div>
+          <Step2ClassTypes existingTypes={classTypes} />
         </div>
-        <Step2ClassTypes existingTypes={classTypes} />
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

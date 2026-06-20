@@ -185,21 +185,10 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
           type="button"
           onClick={handlePublish}
           disabled={publishing}
-          className="w-full inline-flex items-center justify-center gap-2 bg-zinc-900 text-white px-6 py-4 rounded-xl font-semibold text-base hover:bg-zinc-700 disabled:opacity-60 transition-colors"
+          className="btn-primary width-100 w-button onboard-publish-btn inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
-          {publishing ? (
-            <>
-              <Spinner />
-              Publishing…
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-              </svg>
-              Publish My Listing
-            </>
-          )}
+          {publishing && <Spinner />}
+          {publishing ? "Publishing…" : "Publish My Listing"}
         </button>
         <p className="text-xs text-center text-zinc-400 mt-3">
           Your listing will be visible to students on CarryClass after publishing.
@@ -210,9 +199,9 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
         <button
           type="button"
           onClick={() => router.push("/onboard/step/5")}
-          className="text-sm text-zinc-500 hover:text-zinc-700 px-4 py-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="btn-secondary w-button"
         >
-          ← Back
+          Back
         </button>
       </div>
     </div>

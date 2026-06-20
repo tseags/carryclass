@@ -15,22 +15,24 @@ export default async function Step3Page() {
   const googleConnected = Boolean(vendor.google_calendar_id && vendor.google_refresh_token);
 
   return (
-    <>
-      <OnboardingProgress currentStep={3} completedStep={vendor.onboarding_step} />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-zinc-900">Set up your class schedule</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Add your recurring or one-off class times directly, or connect your existing calendar to pull in classes you&apos;ve already scheduled — we&apos;ll keep it in sync automatically.
-          </p>
+    <div className="container-default w-container">
+      <div className="mx-auto max-w-3xl">
+        <OnboardingProgress currentStep={3} completedStep={vendor.onboarding_step} />
+        <div className="rounded-2xl border border-neutral-300/70 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6">
+            <h1 className="onboard-step-title">Set up your class schedule</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Add your recurring or one-off class times directly, or connect your existing calendar to pull in classes you&apos;ve already scheduled — we&apos;ll keep it in sync automatically.
+            </p>
+          </div>
+          <Step3Schedule
+            classTypes={classTypes}
+            googleConnected={googleConnected}
+            icalUrl={vendor.ical_feed_url}
+            calendarType={vendor.calendar_type}
+          />
         </div>
-        <Step3Schedule
-          classTypes={classTypes}
-          googleConnected={googleConnected}
-          icalUrl={vendor.ical_feed_url}
-          calendarType={vendor.calendar_type}
-        />
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

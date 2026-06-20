@@ -15,9 +15,10 @@ const BADGE_OPTIONS = [
 
 interface Props {
   vendor: VendorProfile;
+  prefilled?: boolean;
 }
 
-export function Step1Profile({ vendor }: Props) {
+export function Step1Profile({ vendor, prefilled }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [bioLoading, setBioLoading] = useState<"polish" | "scratch" | null>(null);
@@ -168,6 +169,17 @@ export function Step1Profile({ vendor }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {prefilled && (
+        <div className="flex items-start gap-2 rounded-lg border border-[#c96442]/30 bg-[#c96442]/10 px-4 py-3">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#c96442]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-[#141413]">
+            We found existing info for your listing — review and update as needed.
+          </p>
+        </div>
+      )}
+
       {/* Basic info */}
       <section>
         <h2 className="text-base font-semibold text-zinc-800 mb-4">
@@ -286,20 +298,17 @@ export function Step1Profile({ vendor }: Props) {
         <h2 className="text-base font-semibold text-zinc-800 mb-3">
           Certifications &amp; specializations
         </h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-3">
           {BADGE_OPTIONS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => toggleBadge(tag)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                form.badgeTags.includes(tag)
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
-              }`}
-            >
-              {tag}
-            </button>
+            <label key={tag} className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={form.badgeTags.includes(tag)}
+                onChange={() => toggleBadge(tag)}
+                className="h-4 w-4 shrink-0 rounded border-zinc-300 text-[#141413] focus:ring-[#141413]"
+              />
+              <span className="text-sm text-zinc-700">{tag}</span>
+            </label>
           ))}
         </div>
       </section>
@@ -308,10 +317,13 @@ export function Step1Profile({ vendor }: Props) {
       <section>
         <div className="flex items-center gap-2 mb-1">
           <h2 className="text-base font-semibold text-zinc-800">Photos</h2>
-          <span className="text-xs text-zinc-400 font-normal bg-zinc-100 px-2 py-0.5 rounded-full">
-            Optional — you can add photos anytime from your dashboard
+          <span className="rounded-full border border-[#c96442]/40 bg-[#c96442]/10 px-2 py-0.5 text-xs font-semibold text-[#c96442]">
+            Optional
           </span>
         </div>
+        <p className="mb-3 text-sm text-zinc-500">
+          You can add or change photos anytime from your dashboard.
+        </p>
 
         {/* Profile photo */}
         <div className="mb-4">
@@ -427,15 +439,10 @@ export function Step1Profile({ vendor }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-zinc-700 disabled:opacity-60 transition-colors"
+          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
           {saving && <Spinner white />}
-          Save &amp; Continue
-          {!saving && (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          )}
+          {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
     </form>

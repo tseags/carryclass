@@ -180,21 +180,21 @@ export function Step4Cancellation({ vendor }: Props) {
         </p>
       )}
 
-      <div className="flex justify-between pt-2">
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => router.push("/onboard/step/3")}
-          className="text-sm text-zinc-500 hover:text-zinc-700 px-4 py-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          className="btn-secondary w-button"
         >
-          ← Back
+          Back
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-zinc-700 disabled:opacity-60 transition-colors"
+          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
           {saving && <Spinner />}
-          Save &amp; Continue →
+          {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
     </form>
