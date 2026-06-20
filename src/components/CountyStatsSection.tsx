@@ -49,13 +49,13 @@ export function CountyStatsSection({
           </h2>
         </header>
 
-        <ul className="mx-auto flex w-full max-w-5xl flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-5">
+        <ul className="county-stats-cards mx-auto flex w-full max-w-5xl flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:items-stretch sm:justify-center sm:gap-5">
           {cards.map((card) => (
-            <li key={card.key} className="relative flex w-full justify-center sm:w-auto sm:shrink-0">
+            <li key={card.key} className="relative flex w-full max-w-full justify-center sm:w-auto sm:shrink-0">
               <div
-                className="relative z-10 flex h-[8.75rem] w-full flex-col rounded-2xl border border-[#e2ddd1] bg-[#f2efe8] px-4 py-3 text-center sm:h-[10.5rem] sm:w-[15.25rem] sm:px-5 sm:py-4 sm:text-left"
+                className="relative z-10 flex h-[8.75rem] w-full max-w-full flex-col rounded-2xl border border-[#e2ddd1] bg-[#f2efe8] px-4 py-3 text-center sm:h-[10.5rem] sm:w-[15.25rem] sm:max-w-[15.25rem] sm:px-5 sm:py-4 sm:text-left"
               >
-                <p className="whitespace-nowrap text-[clamp(0.625rem,2.8vw,0.875rem)] font-semibold uppercase leading-tight tracking-[0.06em] text-[#c86442] sm:text-base">
+                <p className="county-stats-card-eyebrow whitespace-nowrap text-[0.9375rem] font-semibold uppercase leading-tight tracking-[0.06em] text-[#c86442] sm:text-base">
                   {card.eyebrow}
                 </p>
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center sm:items-start">

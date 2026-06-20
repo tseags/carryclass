@@ -578,6 +578,19 @@ img.county-hero-image-fill {
   overflow: visible;
   background-color: #fefcf9;
 }
+.county-stats-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.county-stats-section li {
+  margin: 0;
+  padding: 0;
+}
+.county-stats-section .county-stats-card-eyebrow {
+  /* Letter-spacing adds trailing space — nudge for optical centering */
+  padding-inline-start: 0.06em;
+}
 .county-stats-section .county-stats-section-heading {
   color: #1f1f1e !important;
   font-weight: 700 !important;
