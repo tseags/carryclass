@@ -10,6 +10,7 @@ import {
   buildOpenGraph,
   buildTwitter,
 } from "@/lib/seo";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { SITE_URL } from "@/lib/site-url";
 
 const defaultTitle = "CarryClass | Find CCW Classes & Instructors Near Me";
@@ -81,6 +82,7 @@ export default function RootLayout({
           <link href="/css/app-overrides.css" rel="stylesheet" />
         </head>
         <body className="min-h-screen antialiased">
+          <GoogleAnalytics />
           <JsonLd data={organizationJsonLd()} />
           <ToastProvider>
             <div className="page-wrapper">{children}</div>

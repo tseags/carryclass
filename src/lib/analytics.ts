@@ -1,5 +1,12 @@
 "use client";
 
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 export function trackEvent(
   name:
     | "saved_listing"
@@ -14,10 +21,11 @@ export function trackEvent(
 
   const eventPayload = { event: name, ...payload };
 
-  const dataLayer = (window as Window & { dataLayer?: unknown[] }).dataLayer;
-  if (Array.isArray(dataLayer)) {
-    dataLayer.push(eventPayload);
+  if (Array.isArray(window.dataLayer)) {
+    window.dataLayer.push(eventPayload);
   }
+
+  window.gtag?.("event", name, payload);
 
   window.dispatchEvent(new CustomEvent("ccw-analytics", { detail: eventPayload }));
 }
