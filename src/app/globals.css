@@ -6,6 +6,16 @@
   --navy: #1c2331;
   /* Space for fixed header / anchor scroll (county pages, in-page links) */
   --header-offset: 120px;
+  /* Actual fixed-header height (no breathing room) — used by app shells
+     like the dashboard that should sit flush against the header. */
+  --header-height: 70px;
+}
+
+/* Header grows on the Webflow tablet/mobile breakpoint (more vertical padding) */
+@media screen and (max-width: 991px) {
+  :root {
+    --header-height: 98px;
+  }
 }
 
 @theme inline {

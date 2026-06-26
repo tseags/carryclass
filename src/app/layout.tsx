@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import clerkConfig from "../../clerk.config";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { JsonLd } from "@/components/JsonLd";
@@ -63,6 +64,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
+      {...clerkConfig}
       appearance={{
         options: {
           unsafe_disableDevelopmentModeWarnings: true,

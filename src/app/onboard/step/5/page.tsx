@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getOrCreateVendorProfile } from "@/lib/onboarding-db";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Step5Stripe } from "@/components/onboarding/Step5Stripe";
+import { getStripeConnectRedirectUri } from "@/lib/stripe-connect-config";
 
 export default async function Step5Page() {
   const { userId } = await auth();
@@ -24,7 +25,12 @@ export default async function Step5Page() {
               Connect your Stripe account to accept payments from students.
             </p>
           </div>
-          <Step5Stripe isConnected={isConnected} stripeAccountId={vendor.stripe_account_id} />
+          <Step5Stripe
+            isConnected={isConnected}
+            stripeAccountId={vendor.stripe_account_id}
+            showDevHints={process.env.NODE_ENV === "development"}
+            redirectUri={getStripeConnectRedirectUri()}
+          />
         </div>
       </div>
     </div>

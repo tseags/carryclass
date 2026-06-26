@@ -355,6 +355,42 @@ export async function insertCalendarClasses(
   if (error) throw new Error(`Failed to insert calendar classes: ${error.message}`);
 }
 
+/** Update a single calendar class (scoped to its owning vendor). */
+export async function updateCalendarClass(
+  classId: string,
+  vendorId: string,
+  fields: {
+    title?: string | null;
+    start_time?: string;
+    end_time?: string;
+    max_students?: number | null;
+    price?: number | null;
+  }
+): Promise<VendorCalendarClass | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("vendor_calendar_classes")
+    .update(fields)
+    .eq("id", classId)
+    .eq("vendor_id", vendorId)
+    .select("*")
+    .single();
+  if (error) throw new Error(`Failed to update calendar class: ${error.message}`);
+  return (data as VendorCalendarClass) ?? null;
+}
+
+/** Cancel (soft-delete) a calendar class by flipping is_active off. */
+export async function cancelCalendarClass(
+  classId: string,
+  vendorId: string
+): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("vendor_calendar_classes")
+    .update({ is_active: false })
+    .eq("id", classId)
+    .eq("vendor_id", vendorId);
+  if (error) throw new Error(`Failed to cancel calendar class: ${error.message}`);
+}
+
 export async function syncCalendarClasses(
   vendorId: string,
   incoming: Array<{

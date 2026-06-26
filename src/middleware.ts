@@ -1,38 +1,40 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { isUserRole, STUDENT_ROLE, VENDOR_ROLE } from "@/lib/auth/roles";
 
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
-const isOnboardRoute = createRouteMatcher(["/onboard(.*)"]);
+/** `/onboard` and subpaths only — must not match `/onboarding` */
+const isOnboardRoute = createRouteMatcher(["/onboard", "/onboard/(.*)"]);
+
+function isVendorOnboardingPath(pathname: string): boolean {
+  return (
+    pathname === "/onboard" ||
+    pathname.startsWith("/onboard/") ||
+    pathname.startsWith("/dashboard/vendor") ||
+    pathname.startsWith("/onboarding/vendor")
+  );
+}
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isDashboardRoute(req) && !isOnboardRoute(req)) {
     return NextResponse.next();
   }
 
-  const { userId, redirectToSignIn, sessionClaims } = await auth();
+  const { userId } = await auth();
   if (!userId) {
-    return redirectToSignIn({ returnBackUrl: req.url });
+    // Keep sign-in on the app origin (embedded /sign-in). redirectToSignIn() sends
+    // users to accounts.getcarryclass.com, which breaks sessions on localhost.
+    const signIn = new URL("/sign-in", req.url);
+    signIn.searchParams.set(
+      "redirect_url",
+      `${req.nextUrl.pathname}${req.nextUrl.search}`
+    );
+    if (isVendorOnboardingPath(req.nextUrl.pathname)) {
+      signIn.searchParams.set("intent", "vendor");
+    }
+    return NextResponse.redirect(signIn);
   }
 
-  // /onboard routes only require authentication, not a specific role
-  if (isOnboardRoute(req)) {
-    return NextResponse.next();
-  }
-
-  const role = (sessionClaims?.metadata as { role?: unknown } | undefined)?.role;
-  if (!isUserRole(role)) {
-    return NextResponse.redirect(new URL("/onboarding", req.url));
-  }
-
-  const pathname = req.nextUrl.pathname;
-  if (pathname.startsWith("/dashboard/student") && role !== STUDENT_ROLE) {
-    return NextResponse.redirect(new URL("/dashboard/vendor", req.url));
-  }
-  if (pathname.startsWith("/dashboard/vendor") && role !== VENDOR_ROLE) {
-    return NextResponse.redirect(new URL("/dashboard/student", req.url));
-  }
-
+  // Auth only — role checks use currentUser() in page components (session JWT can lag metadata updates).
   return NextResponse.next();
 });
 

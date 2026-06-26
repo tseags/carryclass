@@ -6,9 +6,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 interface Props {
   isConnected: boolean;
   stripeAccountId?: string | null;
+  showDevHints?: boolean;
+  redirectUri?: string;
 }
 
-export function Step5Stripe({ isConnected, stripeAccountId }: Props) {
+export function Step5Stripe({
+  isConnected,
+  stripeAccountId,
+  showDevHints = false,
+  redirectUri,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justConnected = searchParams.get("connected") === "1";
@@ -30,6 +37,35 @@ export function Step5Stripe({ isConnected, stripeAccountId }: Props) {
 
   return (
     <div className="space-y-6">
+      {showDevHints && !connected && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Local dev setup</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              In Stripe → Settings → Connect → <strong>Onboarding options → OAuth</strong>, enable{" "}
+              <strong>Standard OAuth</strong> (onboard connected accounts with OAuth).
+            </li>
+            <li>
+              Use Stripe <strong>test mode</strong> keys in <code>.env.development.local</code>{" "}
+              (<code>sk_test_...</code>, <code>ca_...</code> client id).
+            </li>
+            <li>
+              On that OAuth page, add this redirect URI:
+              {redirectUri ? (
+                <>
+                  {" "}
+                  <code className="break-all">{redirectUri}</code>
+                </>
+              ) : null}
+            </li>
+            <li>
+              <code>STRIPE_SECRET_KEY</code> must start with <code>sk_</code> — restricted keys (
+              <code>rk_</code>) will not work.
+            </li>
+          </ul>
+        </div>
+      )}
+
       {/* Connected state */}
       {connected ? (
         <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-6">
@@ -76,8 +112,8 @@ export function Step5Stripe({ isConnected, stripeAccountId }: Props) {
           </a>
 
           {connectionError && (
-            <p className="text-sm text-red-500 mt-3">
-              Something went wrong: {connectionError}. Please try again.
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {connectionError}
             </p>
           )}
         </div>
