@@ -9,7 +9,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   classTypes: VendorClassType[];
-  onSaved: (created: VendorCalendarClass) => void;
+  onSaved: (created: VendorCalendarClass, classTypes: VendorClassType[]) => void;
 }
 
 type Recurrence = "one-time" | "weekly" | "biweekly" | "monthly";
@@ -40,16 +40,6 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add a Gun",
 };
 
-const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
-];
-
-const DEFAULT_STATE = "CA";
-
 type GunKey = "gun2" | "gun3" | "gun4" | "gun5" | "gun6";
 const GUN_FIELDS: { key: GunKey; label: string }[] = [
   { key: "gun2", label: "2nd Gun" },
@@ -79,11 +69,8 @@ const EMPTY_GUN_PRICING: GunPricingForm = {
   sameForAll: true,
 };
 
-const DEFAULT_CLASS_TYPES: VendorClassType[] = [
-  { id: "initial", vendor_id: "", class_type: "initial", price: 0, is_active: true },
-  { id: "renewal", vendor_id: "", class_type: "renewal", price: 0, is_active: true },
-  { id: "add_a_gun", vendor_id: "", class_type: "add_a_gun", price: 0, is_active: true },
-];
+/** Canonical class types — always offered regardless of what the vendor has active. */
+const CANONICAL_CLASS_TYPES = ["initial", "renewal", "add_a_gun"] as const;
 
 /** Build an iCal RRULE string from a recurrence choice + start date. */
 function buildRecurrenceRule(
@@ -170,10 +157,14 @@ const inputClass =
 const labelClass = "mb-1.5 block text-xs font-medium text-gray-600";
 
 export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
-  const activeClassTypes = (() => {
-    const active = classTypes.filter((ct) => ct.is_active);
-    return active.length > 0 ? active : DEFAULT_CLASS_TYPES;
-  })();
+  // Always offer the three canonical types; merge in the vendor's own rows for
+  // price defaults, but never drop a type just because it isn't active yet.
+  const allClassTypes: VendorClassType[] = CANONICAL_CLASS_TYPES.map((key) => {
+    const existing = classTypes.find((ct) => ct.class_type === key);
+    return (
+      existing ?? { id: key, vendor_id: "", class_type: key, price: 0, is_active: true }
+    );
+  });
 
   const [recurrence, setRecurrence] = useState<Recurrence>("one-time");
   const [date, setDate] = useState("");
@@ -181,27 +172,30 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
   const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState(60);
   const [classType, setClassType] = useState("");
+  const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState(DEFAULT_STATE);
+  const [rangeLocation, setRangeLocation] = useState("");
+  const [sameLocation, setSameLocation] = useState(true);
   const [maxStudents, setMaxStudents] = useState("");
   const [price, setPrice] = useState("");
   const [gunPricing, setGunPricing] = useState<GunPricingForm>(EMPTY_GUN_PRICING);
   const [saving, setSaving] = useState(false);
+  const [polishing, setPolishing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    const first = activeClassTypes[0];
+    const first = allClassTypes[0];
     setRecurrence("one-time");
     setDate("");
     setEndDate("");
     setStartTime("");
     setDuration(60);
     setClassType(first?.class_type ?? "initial");
+    setDescription("");
     setLocation("");
-    setCity("");
-    setState(DEFAULT_STATE);
+    setRangeLocation("");
+    setSameLocation(true);
     setMaxStudents("");
     setPrice(first ? String(first.price || "") : "");
     setGunPricing(EMPTY_GUN_PRICING);
@@ -211,6 +205,29 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
 
   function priceForType(typeKey: string): string {
     return String(classTypes.find((ct) => ct.class_type === typeKey)?.price ?? "");
+  }
+
+  async function handlePolish() {
+    if (!description.trim() || polishing) return;
+    setPolishing(true);
+    setError("");
+    try {
+      const res = await fetch("/api/dashboard/classes/polish-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: description }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Unable to polish description.");
+        return;
+      }
+      if (data.description) setDescription(data.description);
+    } catch {
+      setError("Unable to polish description.");
+    } finally {
+      setPolishing(false);
+    }
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -228,9 +245,8 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
       const endDt = new Date(startDt.getTime() + duration * 60000);
       const recurrenceRule = buildRecurrenceRule(recurrence, date, endDate);
       const isAddAGun = classType === "add_a_gun";
-      const fullLocation = [location.trim(), city.trim(), state]
-        .filter(Boolean)
-        .join(", ");
+      const classroom = location.trim();
+      const range = sameLocation ? classroom : rangeLocation.trim();
 
       const res = await fetch("/api/dashboard/classes", {
         method: "POST",
@@ -238,7 +254,9 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         body: JSON.stringify({
           class_type: classType,
           title: CLASS_TYPE_LABELS[classType] ?? classType,
-          location: fullLocation,
+          description: description.trim(),
+          location: classroom,
+          range_location: range,
           start_time: startDt.toISOString(),
           end_time: endDt.toISOString(),
           max_students: maxStudents,
@@ -253,7 +271,10 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         setError(data.error ?? "Unable to add class.");
         return;
       }
-      onSaved(data.class as VendorCalendarClass);
+      onSaved(
+        data.class as VendorCalendarClass,
+        (data.classTypes as VendorClassType[]) ?? []
+      );
       onClose();
     } catch {
       setError("Unable to add class.");
@@ -376,7 +397,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             }}
             className={inputClass}
           >
-            {activeClassTypes.map((ct) => (
+            {allClassTypes.map((ct) => (
               <option key={ct.class_type} value={ct.class_type}>
                 {CLASS_TYPE_LABELS[ct.class_type] ?? ct.class_type}
               </option>
@@ -384,42 +405,68 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
           </select>
         </div>
 
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="block text-xs font-medium text-gray-600">
+              Class description
+            </label>
+            <button
+              type="button"
+              onClick={handlePolish}
+              disabled={!description.trim() || polishing}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+            >
+              {polishing ? (
+                <Spinner />
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              )}
+              Polish
+            </button>
+          </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder="What students will learn, what to bring, prerequisites…"
+            className={`${inputClass} resize-none`}
+          />
+        </div>
+
         <div className="space-y-4">
           <div>
-            <label className={labelClass}>Location</label>
+            <label className={labelClass}>Classroom location</label>
             <LocationInput
               value={location}
               onChange={setLocation}
-              placeholder="Search for an address or range"
+              placeholder="Search for an address"
               className={inputClass}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+            <input
+              type="checkbox"
+              checked={sameLocation}
+              onChange={(e) => setSameLocation(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-[#C1440E] focus:ring-[#C1440E]"
+            />
+            Range location is the same as the classroom
+          </label>
+
+          {!sameLocation && (
             <div>
-              <label className={labelClass}>City</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
+              <label className={labelClass}>Range location (for qualification)</label>
+              <LocationInput
+                value={rangeLocation}
+                onChange={setRangeLocation}
+                placeholder="Search for a range address"
                 className={inputClass}
               />
             </div>
-            <div>
-              <label className={labelClass}>State</label>
-              <select
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                className={inputClass}
-              >
-                {US_STATES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -524,5 +571,14 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         )}
       </div>
     </Drawer>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="h-3.5 w-3.5 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
   );
 }

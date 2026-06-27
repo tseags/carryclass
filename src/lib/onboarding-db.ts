@@ -59,7 +59,9 @@ export interface VendorCalendarClass {
   external_event_id: string | null;
   class_type: string | null;
   title: string | null;
+  description: string | null;
   location: string | null;
+  range_location: string | null;
   start_time: string;
   end_time: string;
   is_recurring: boolean;
@@ -355,6 +357,48 @@ export async function upsertClassTypes(
   }
 }
 
+/**
+ * Ensure a single class type is present and active for a vendor without
+ * clobbering an existing price. Used when an instructor adds a class of a type
+ * they didn't enable during onboarding.
+ *
+ * - No row yet: insert one with is_active=true seeded from `price`.
+ * - Row exists but inactive: flip is_active on, preserving the existing price.
+ * - Row exists and active: no-op.
+ */
+export async function ensureClassTypeActive(
+  vendorId: string,
+  class_type: string,
+  price: number
+): Promise<void> {
+  const db = supabaseAdmin();
+  const { data: existing } = await db
+    .from("vendor_class_types")
+    .select("id, is_active")
+    .eq("vendor_id", vendorId)
+    .eq("class_type", class_type)
+    .maybeSingle();
+
+  if (!existing) {
+    await db.from("vendor_class_types").insert({
+      vendor_id: vendorId,
+      class_type,
+      price,
+      is_active: true,
+    });
+    return;
+  }
+
+  const row = existing as { id: string; is_active: boolean };
+  if (!row.is_active) {
+    // Only flip the flag — never overwrite an existing (possibly non-null) price.
+    await db
+      .from("vendor_class_types")
+      .update({ is_active: true })
+      .eq("id", row.id);
+  }
+}
+
 // ── Calendar classes ──────────────────────────────────────────────────────────
 
 export async function getCalendarClasses(
@@ -399,7 +443,9 @@ export async function createCalendarClass(
   cls: {
     class_type?: string | null;
     title?: string | null;
+    description?: string | null;
     location?: string | null;
+    range_location?: string | null;
     start_time: string;
     end_time: string;
     max_students?: number | null;
@@ -424,7 +470,9 @@ export async function updateCalendarClass(
   vendorId: string,
   fields: {
     title?: string | null;
+    description?: string | null;
     location?: string | null;
+    range_location?: string | null;
     start_time?: string;
     end_time?: string;
     max_students?: number | null;

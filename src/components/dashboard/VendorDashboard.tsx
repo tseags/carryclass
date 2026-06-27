@@ -96,6 +96,7 @@ export function VendorDashboard(props: Props) {
   const [editorType, setEditorType] = useState<EmailTemplateType | null>(null);
   const [templates, setTemplates] = useState(props.templates);
   const [classes, setClasses] = useState(props.classes);
+  const [classTypes, setClassTypes] = useState(props.classTypes);
   const [editingClass, setEditingClass] = useState<VendorCalendarClass | null>(null);
   const [addingClass, setAddingClass] = useState(false);
 
@@ -107,12 +108,13 @@ export function VendorDashboard(props: Props) {
     setClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   }
 
-  function handleClassAdded(created: VendorCalendarClass) {
+  function handleClassAdded(created: VendorCalendarClass, updatedTypes: VendorClassType[]) {
     setClasses((prev) =>
       [...prev, created].sort(
         (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
       )
     );
+    if (updatedTypes.length > 0) setClassTypes(updatedTypes);
   }
 
   async function handleCancelClass(cls: VendorCalendarClass) {
@@ -220,7 +222,7 @@ export function VendorDashboard(props: Props) {
       <AddClassDrawer
         open={addingClass}
         onClose={() => setAddingClass(false)}
-        classTypes={props.classTypes}
+        classTypes={classTypes}
         onSaved={handleClassAdded}
       />
       <EmailEditorDrawer

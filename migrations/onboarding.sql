@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS vendor_calendar_classes (
 -- Classes & Schedule: per-class location + Add-a-Gun pricing
 ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS location text;
 ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS gun_pricing jsonb;
+ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS range_location text;
 
 -- Email templates table
 CREATE TABLE IF NOT EXISTS vendor_email_templates (

@@ -29,7 +29,9 @@ export async function PATCH(
 
   const fields: {
     title?: string | null;
+    description?: string | null;
     location?: string | null;
+    range_location?: string | null;
     start_time?: string;
     end_time?: string;
     max_students?: number | null;
@@ -38,7 +40,9 @@ export async function PATCH(
   } = {};
 
   if ("title" in body) fields.title = body.title || null;
+  if ("description" in body) fields.description = body.description || null;
   if ("location" in body) fields.location = body.location || null;
+  if ("range_location" in body) fields.range_location = body.range_location || null;
   if ("start_time" in body) fields.start_time = body.start_time;
   if ("end_time" in body) fields.end_time = body.end_time;
   if ("max_students" in body) {

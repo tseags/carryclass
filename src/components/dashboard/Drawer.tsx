@@ -40,7 +40,7 @@ export function Drawer({ open, onClose, title, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
+        className={`absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

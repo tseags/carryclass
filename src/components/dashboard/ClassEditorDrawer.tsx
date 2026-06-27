@@ -31,21 +31,34 @@ function toIso(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString();
 }
 
+const inputClass =
+  "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
+const labelClass = "mb-1.5 block text-xs font-medium text-gray-600";
+
 export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [rangeLocation, setRangeLocation] = useState("");
+  const [sameLocation, setSameLocation] = useState(true);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [maxStudents, setMaxStudents] = useState("");
   const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [polishing, setPolishing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open || !cls) return;
     setTitle(cls.title ?? "");
-    setLocation(cls.location ?? "");
+    setDescription(cls.description ?? "");
+    const classroom = cls.location ?? "";
+    const range = cls.range_location ?? "";
+    setLocation(classroom);
+    setRangeLocation(range);
+    setSameLocation(!range || range === classroom);
     setDate(toDateInput(cls.start_time));
     setStartTime(toTimeInput(cls.start_time));
     setEndTime(cls.end_time ? toTimeInput(cls.end_time) : "");
@@ -53,6 +66,29 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
     setPrice(cls.price != null ? String(cls.price) : "");
     setError("");
   }, [open, cls]);
+
+  async function handlePolish() {
+    if (!description.trim() || polishing) return;
+    setPolishing(true);
+    setError("");
+    try {
+      const res = await fetch("/api/dashboard/classes/polish-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: description }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Unable to polish description.");
+        return;
+      }
+      if (data.description) setDescription(data.description);
+    } catch {
+      setError("Unable to polish description.");
+    } finally {
+      setPolishing(false);
+    }
+  }
 
   if (!cls) return null;
 
@@ -67,12 +103,16 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
     try {
       const start_time = toIso(date, startTime);
       const end_time = endTime ? toIso(date, endTime) : cls.end_time;
+      const classroom = location.trim();
+      const range = sameLocation ? classroom : rangeLocation.trim();
       const res = await fetch(`/api/dashboard/classes/${cls.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          location,
+          description: description.trim(),
+          location: classroom,
+          range_location: range,
           start_time,
           end_time,
           max_students: maxStudents,
@@ -123,28 +163,78 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
     >
       <div className="space-y-5 p-5">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">
-            Class name
-          </label>
+          <label className={labelClass}>Class name</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. CCW Initial Training"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">
-            Location
-          </label>
-          <LocationInput
-            value={location}
-            onChange={setLocation}
-            placeholder="Search for an address or range"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="block text-xs font-medium text-gray-600">
+              Class description
+            </label>
+            <button
+              type="button"
+              onClick={handlePolish}
+              disabled={!description.trim() || polishing}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+            >
+              {polishing ? (
+                <Spinner />
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              )}
+              Polish
+            </button>
+          </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder="What students will learn, what to bring, prerequisites…"
+            className={`${inputClass} resize-none`}
           />
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className={labelClass}>Classroom location</label>
+            <LocationInput
+              value={location}
+              onChange={setLocation}
+              placeholder="Search for an address"
+              className={inputClass}
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+            <input
+              type="checkbox"
+              checked={sameLocation}
+              onChange={(e) => setSameLocation(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-[#C1440E] focus:ring-[#C1440E]"
+            />
+            Range location is the same as the classroom
+          </label>
+
+          {!sameLocation && (
+            <div>
+              <label className={labelClass}>Range location (for qualification)</label>
+              <LocationInput
+                value={rangeLocation}
+                onChange={setRangeLocation}
+                placeholder="Search for a range address"
+                className={inputClass}
+              />
+            </div>
+          )}
         </div>
 
         <div>
@@ -211,5 +301,14 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
         </p>
       </div>
     </Drawer>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="h-3.5 w-3.5 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
   );
 }
