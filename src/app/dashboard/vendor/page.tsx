@@ -5,6 +5,7 @@ import { VENDOR_ROLE } from "@/lib/auth/roles";
 import {
   getVendorProfile,
   getCalendarClasses,
+  getClassTypes,
   getEmailTemplates,
   type VendorEmailTemplate,
 } from "@/lib/onboarding-db";
@@ -34,8 +35,9 @@ export default async function VendorDashboardPage() {
 
   const now = new Date();
 
-  const [allClasses, templates, reviews, registrations, stats, payout] = await Promise.all([
+  const [allClasses, classTypes, templates, reviews, registrations, stats, payout] = await Promise.all([
     getCalendarClasses(vendor.id),
+    getClassTypes(vendor.id),
     getEmailTemplates(vendor.id),
     getDashboardReviews(vendor.slug),
     getDashboardRegistrations(vendor.slug),
@@ -59,6 +61,7 @@ export default async function VendorDashboardPage() {
         vendor={vendor}
         firstName={firstName}
         classes={upcomingClasses}
+        classTypes={classTypes}
         registrations={registrations}
         reviews={reviews}
         templates={templateMap}

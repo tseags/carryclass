@@ -4,11 +4,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import type { VendorProfile, VendorCalendarClass, VendorEmailTemplate } from "@/lib/onboarding-db";
+import type { VendorProfile, VendorCalendarClass, VendorClassType, VendorEmailTemplate } from "@/lib/onboarding-db";
 import type { DashboardReview, DashboardRegistration, DashboardStats, DashboardPayout } from "@/lib/dashboard-db";
 import { ReviewsDrawer } from "./ReviewsDrawer";
 import { EmailEditorDrawer, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
+import { AddClassDrawer } from "./AddClassDrawer";
 import {
   formatStudentName,
   formatLongDate,
@@ -59,6 +60,12 @@ const TEMPLATE_META: { type: EmailTemplateType; name: string; defaultTiming: str
   { type: "followup", name: "Post-Class Follow-Up", defaultTiming: "1 day after" },
 ];
 
+const CLASS_TYPE_LABELS: Record<string, string> = {
+  initial: "CCW Initial Training",
+  renewal: "CCW Renewal Training",
+  add_a_gun: "Add a Gun",
+};
+
 const TIMING_LABELS: Record<string, string> = {
   "24h_before": "24 hours before",
   "48h_before": "48 hours before",
@@ -72,6 +79,7 @@ interface Props {
   vendor: VendorProfile;
   firstName: string;
   classes: VendorCalendarClass[];
+  classTypes: VendorClassType[];
   registrations: DashboardRegistration[];
   reviews: DashboardReview[];
   templates: Record<string, Partial<VendorEmailTemplate>>;
@@ -89,6 +97,7 @@ export function VendorDashboard(props: Props) {
   const [templates, setTemplates] = useState(props.templates);
   const [classes, setClasses] = useState(props.classes);
   const [editingClass, setEditingClass] = useState<VendorCalendarClass | null>(null);
+  const [addingClass, setAddingClass] = useState(false);
 
   function handleTemplateSaved(type: EmailTemplateType, fields: Partial<VendorEmailTemplate>) {
     setTemplates((prev) => ({ ...prev, [type]: { ...prev[type], type, ...fields } }));
@@ -96,6 +105,14 @@ export function VendorDashboard(props: Props) {
 
   function handleClassSaved(updated: VendorCalendarClass) {
     setClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  }
+
+  function handleClassAdded(created: VendorCalendarClass) {
+    setClasses((prev) =>
+      [...prev, created].sort(
+        (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      )
+    );
   }
 
   async function handleCancelClass(cls: VendorCalendarClass) {
@@ -171,6 +188,7 @@ export function VendorDashboard(props: Props) {
               onToggleTemplate={toggleTemplate}
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
+              onAddClass={() => setAddingClass(true)}
             />
           )}
           {tab === "listing" && <ListingTab vendor={vendor} publicProfileUrl={publicProfileUrl} />}
@@ -180,6 +198,7 @@ export function VendorDashboard(props: Props) {
               heading
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
+              onAddClass={() => setAddingClass(true)}
             />
           )}
           {tab === "registrations" && <RegistrationsPanel registrations={props.registrations} full />}
@@ -197,6 +216,12 @@ export function VendorDashboard(props: Props) {
         onClose={() => setEditingClass(null)}
         cls={editingClass}
         onSaved={handleClassSaved}
+      />
+      <AddClassDrawer
+        open={addingClass}
+        onClose={() => setAddingClass(false)}
+        classTypes={props.classTypes}
+        onSaved={handleClassAdded}
       />
       <EmailEditorDrawer
         open={editorType !== null}
@@ -226,12 +251,14 @@ function OverviewTab({
   onToggleTemplate,
   onEditClass,
   onCancelClass,
+  onAddClass,
 }: Props & {
   onOpenReviews: () => void;
   onEditTemplate: (t: EmailTemplateType) => void;
   onToggleTemplate: (t: EmailTemplateType, next: boolean) => void;
   onEditClass: (cls: VendorCalendarClass) => void;
   onCancelClass: (cls: VendorCalendarClass) => void;
+  onAddClass: () => void;
 }) {
   return (
     <div className="space-y-8">
@@ -264,7 +291,7 @@ function OverviewTab({
         <ReviewsStatCard count={stats.totalReviews} onClick={onOpenReviews} />
       </div>
 
-      <ClassesPanel classes={classes} onEditClass={onEditClass} onCancelClass={onCancelClass} />
+      <ClassesPanel classes={classes} onEditClass={onEditClass} onCancelClass={onCancelClass} onAddClass={onAddClass} />
       <RecentRegistrationsPanel registrations={registrations} />
       <EmailTemplatesPanel templates={templates} onEdit={onEditTemplate} onToggle={onToggleTemplate} />
       <PaymentsPanel vendor={vendor} payout={payout} />
@@ -320,11 +347,13 @@ function ClassesPanel({
   heading,
   onEditClass,
   onCancelClass,
+  onAddClass,
 }: {
   classes: VendorCalendarClass[];
   heading?: boolean;
   onEditClass: (cls: VendorCalendarClass) => void;
   onCancelClass: (cls: VendorCalendarClass) => void;
+  onAddClass: () => void;
 }) {
   return (
     <section className="rounded-lg border border-gray-200 p-6">
@@ -332,32 +361,37 @@ function ClassesPanel({
         <h2 className={heading ? "text-lg font-semibold text-gray-900" : "text-sm font-semibold text-gray-900"}>
           Classes &amp; Schedule
         </h2>
-        {/* TODO: wire "Add Class" to a class-creation flow (Supabase vendor_calendar_classes). */}
-        <Link
-          href="/onboard/step/3"
-          className="rounded-lg bg-[#C1440E] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#a53a0c] transition-colors"
+        <button
+          type="button"
+          onClick={onAddClass}
+          className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white hover:bg-black transition-colors"
         >
           Add Class
-        </Link>
+        </button>
       </div>
 
       {classes.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-500">
           No upcoming classes.{" "}
-          <Link href="/onboard/step/3" className="font-medium text-[#C1440E] hover:underline">
+          <button
+            type="button"
+            onClick={onAddClass}
+            className="font-medium text-[#C1440E] hover:underline"
+          >
             Add your first →
-          </Link>
+          </button>
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                <th className="py-3 pr-4">Date</th>
-                <th className="py-3 pr-4">Time</th>
-                <th className="py-3 pr-4">Location</th>
+                <th className="py-3 pr-4 whitespace-nowrap">Date</th>
+                <th className="py-3 pr-4 whitespace-nowrap">Time</th>
+                <th className="py-3 pr-4 w-44">Location</th>
+                <th className="py-3 pr-4">Class type</th>
                 <th className="py-3 pr-4">Spots</th>
-                <th className="py-3 pr-4">Type</th>
+                <th className="py-3 pr-4">Schedule</th>
                 <th className="py-3 pr-4">Status</th>
                 <th className="py-3 w-10" aria-label="Actions" />
               </tr>
@@ -365,9 +399,16 @@ function ClassesPanel({
             <tbody>
               {classes.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 last:border-0">
-                  <td className="py-4 pr-4 font-medium text-gray-900">{formatLongDate(c.start_time)}</td>
-                  <td className="py-4 pr-4 text-gray-600">{formatTime(c.start_time)}</td>
-                  <td className="py-4 pr-4 text-gray-600">{c.title ?? "—"}</td>
+                  <td className="py-4 pr-4 font-medium text-gray-900 whitespace-nowrap">{formatLongDate(c.start_time)}</td>
+                  <td className="py-4 pr-4 text-gray-600 whitespace-nowrap">{formatTime(c.start_time)}</td>
+                  <td className="py-4 pr-4 text-gray-600">
+                    <span className="block max-w-44 line-clamp-2" title={c.location || undefined}>
+                      {c.location || "—"}
+                    </span>
+                  </td>
+                  <td className="py-4 pr-4 text-gray-600">
+                    {c.class_type ? CLASS_TYPE_LABELS[c.class_type] ?? c.class_type : "—"}
+                  </td>
                   <td className="py-4 pr-4 text-gray-600">{c.max_students ?? "—"}</td>
                   <td className="py-4 pr-4">
                     <span

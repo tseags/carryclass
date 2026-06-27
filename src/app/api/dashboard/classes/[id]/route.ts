@@ -4,6 +4,8 @@ import {
   getVendorProfile,
   updateCalendarClass,
   cancelCalendarClass,
+  normalizeGunPricing,
+  type GunPricing,
 } from "@/lib/onboarding-db";
 
 export const runtime = "nodejs";
@@ -27,13 +29,16 @@ export async function PATCH(
 
   const fields: {
     title?: string | null;
+    location?: string | null;
     start_time?: string;
     end_time?: string;
     max_students?: number | null;
     price?: number | null;
+    gun_pricing?: GunPricing | null;
   } = {};
 
   if ("title" in body) fields.title = body.title || null;
+  if ("location" in body) fields.location = body.location || null;
   if ("start_time" in body) fields.start_time = body.start_time;
   if ("end_time" in body) fields.end_time = body.end_time;
   if ("max_students" in body) {
@@ -45,6 +50,9 @@ export async function PATCH(
   if ("price" in body) {
     fields.price =
       body.price === "" || body.price == null ? null : Number(body.price);
+  }
+  if ("gun_pricing" in body) {
+    fields.gun_pricing = normalizeGunPricing(body.gun_pricing);
   }
 
   const updated = await updateCalendarClass(id, vendor.id, fields);

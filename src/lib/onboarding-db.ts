@@ -42,18 +42,31 @@ export interface VendorClassType {
   is_active: boolean;
 }
 
+/** Per-gun pricing for "Add a Gun" classes. Stored as jsonb. */
+export interface GunPricing {
+  rangeFee: number | null;
+  gun2: number | null;
+  gun3: number | null;
+  gun4: number | null;
+  gun5: number | null;
+  gun6: number | null;
+  sameForAll: boolean;
+}
+
 export interface VendorCalendarClass {
   id: string;
   vendor_id: string;
   external_event_id: string | null;
   class_type: string | null;
   title: string | null;
+  location: string | null;
   start_time: string;
   end_time: string;
   is_recurring: boolean;
   recurrence_rule: string | null;
   max_students: number | null;
   price: number | null;
+  gun_pricing: GunPricing | null;
   is_active: boolean;
 }
 
@@ -65,6 +78,29 @@ export interface VendorEmailTemplate {
   body: string | null;
   is_active: boolean;
   send_timing: string | null;
+}
+
+/**
+ * Coerce a raw request payload into a normalized GunPricing object (or null).
+ * Empty strings / nullish values become null; numbers are parsed defensively.
+ */
+export function normalizeGunPricing(raw: unknown): GunPricing | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown): number | null => {
+    if (v === "" || v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    rangeFee: num(r.rangeFee),
+    gun2: num(r.gun2),
+    gun3: num(r.gun3),
+    gun4: num(r.gun4),
+    gun5: num(r.gun5),
+    gun6: num(r.gun6),
+    sameForAll: Boolean(r.sameForAll),
+  };
 }
 
 /** Find or create a vendor profile row for the given Clerk user. */
@@ -339,10 +375,12 @@ export async function insertCalendarClasses(
     external_event_id?: string | null;
     class_type?: string | null;
     title?: string | null;
+    location?: string | null;
     start_time: string;
     end_time: string;
     max_students?: number | null;
     price?: number | null;
+    gun_pricing?: GunPricing | null;
     is_recurring?: boolean;
     recurrence_rule?: string | null;
   }>
@@ -355,16 +393,43 @@ export async function insertCalendarClasses(
   if (error) throw new Error(`Failed to insert calendar classes: ${error.message}`);
 }
 
+/** Insert a single calendar class and return the created row. */
+export async function createCalendarClass(
+  vendorId: string,
+  cls: {
+    class_type?: string | null;
+    title?: string | null;
+    location?: string | null;
+    start_time: string;
+    end_time: string;
+    max_students?: number | null;
+    price?: number | null;
+    gun_pricing?: GunPricing | null;
+    is_recurring?: boolean;
+    recurrence_rule?: string | null;
+  }
+): Promise<VendorCalendarClass> {
+  const { data, error } = await supabaseAdmin()
+    .from("vendor_calendar_classes")
+    .insert({ vendor_id: vendorId, is_active: true, ...cls })
+    .select("*")
+    .single();
+  if (error) throw new Error(`Failed to create calendar class: ${error.message}`);
+  return data as VendorCalendarClass;
+}
+
 /** Update a single calendar class (scoped to its owning vendor). */
 export async function updateCalendarClass(
   classId: string,
   vendorId: string,
   fields: {
     title?: string | null;
+    location?: string | null;
     start_time?: string;
     end_time?: string;
     max_students?: number | null;
     price?: number | null;
+    gun_pricing?: GunPricing | null;
   }
 ): Promise<VendorCalendarClass | null> {
   const { data, error } = await supabaseAdmin()

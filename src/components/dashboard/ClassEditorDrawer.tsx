@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { VendorCalendarClass } from "@/lib/onboarding-db";
 import { Drawer } from "./Drawer";
+import { LocationInput } from "./LocationInput";
 
 interface Props {
   open: boolean;
@@ -32,6 +33,7 @@ function toIso(date: string, time: string): string {
 
 export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
   const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -43,6 +45,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
   useEffect(() => {
     if (!open || !cls) return;
     setTitle(cls.title ?? "");
+    setLocation(cls.location ?? "");
     setDate(toDateInput(cls.start_time));
     setStartTime(toTimeInput(cls.start_time));
     setEndTime(cls.end_time ? toTimeInput(cls.end_time) : "");
@@ -69,6 +72,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          location,
           start_time,
           end_time,
           max_students: maxStudents,
@@ -120,13 +124,25 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
       <div className="space-y-5 p-5">
         <div>
           <label className="mb-1.5 block text-xs font-medium text-gray-600">
-            Class name / location
+            Class name
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. CCW Initial License"
+            placeholder="e.g. CCW Initial Training"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-600">
+            Location
+          </label>
+          <LocationInput
+            value={location}
+            onChange={setLocation}
+            placeholder="Search for an address or range"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
           />
         </div>

@@ -48,16 +48,22 @@ CREATE TABLE IF NOT EXISTS vendor_calendar_classes (
   external_event_id text,
   class_type text,
   title text,
+  location text,
   start_time timestamptz NOT NULL,
   end_time timestamptz NOT NULL,
   is_recurring boolean DEFAULT false,
   recurrence_rule text,
   max_students integer,
   price numeric(10,2),
+  gun_pricing jsonb,
   is_active boolean DEFAULT true,
   last_synced_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
 );
+
+-- Classes & Schedule: per-class location + Add-a-Gun pricing
+ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS location text;
+ALTER TABLE vendor_calendar_classes ADD COLUMN IF NOT EXISTS gun_pricing jsonb;
 
 -- Email templates table
 CREATE TABLE IF NOT EXISTS vendor_email_templates (
