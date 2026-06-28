@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { Resend } from "resend";
-import { getVendorProfile } from "@/lib/onboarding-db";
+import { getVendorProfile, recordEmailEvent } from "@/lib/onboarding-db";
+import { resolveFromAddress } from "@/lib/email-from";
 
 export const runtime = "nodejs";
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
   }
 
-  let payload: { subject?: string; body?: string; to?: string };
+  let payload: { subject?: string; body?: string; to?: string; fromEmail?: string; type?: string };
   try {
     payload = await req.json();
   } catch {
@@ -72,20 +73,48 @@ export async function POST(req: NextRequest) {
   const filledSubject = applySampleMergeTags(subject, sample);
   const filledBody = applySampleMergeTags(body, sample);
 
+  // Resolve a deliverable sender: use the chosen/profile address only if it's on
+  // our verified domain, otherwise fall back to the default and set reply-to.
+  const { from, replyTo } = resolveFromAddress(
+    payload.fromEmail ?? null,
+    vendor.email ?? clerkEmail
+  );
+
+  let resendId: string | null = null;
   try {
-    await getResend().emails.send({
-      from: "bookings@getcarryclass.com",
+    const { data } = await getResend().emails.send({
+      from,
       to: recipient,
+      replyTo: replyTo,
       subject: `[Test] ${filledSubject}`,
       text: filledBody,
     });
+    resendId = data?.id ?? null;
   } catch (error) {
     console.error("[api/dashboard/test-email]", error);
+    await recordEmailEvent({
+      vendorId: vendor.id,
+      templateType: payload.type ?? null,
+      recipient,
+      subject: filledSubject,
+      status: "failed",
+      isTest: true,
+    });
     return NextResponse.json(
       { error: "Unable to send the test email right now. Please try again shortly." },
       { status: 502 }
     );
   }
+
+  await recordEmailEvent({
+    vendorId: vendor.id,
+    templateType: payload.type ?? null,
+    recipient,
+    subject: filledSubject,
+    status: "sent",
+    isTest: true,
+    resendId,
+  });
 
   return NextResponse.json({ ok: true, sentTo: recipient });
 }

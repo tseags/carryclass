@@ -9,10 +9,22 @@ export async function POST(req: NextRequest) {
   const vendor = await getVendorProfile(userId);
   if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
 
-  const { type, subject, body, is_active, send_timing } = await req.json();
+  const { type, subject, body, is_active, send_timing, send_mode, scheduled_at, from_email } =
+    await req.json();
   if (!type) return NextResponse.json({ error: "type required" }, { status: 400 });
 
-  await upsertEmailTemplate(vendor.id, type, { subject, body, is_active, send_timing });
+  // Only persist fields that were actually provided so partial updates (e.g. a
+  // toggle-only request) don't clobber existing content.
+  const fields: Record<string, unknown> = {};
+  if (subject !== undefined) fields.subject = subject;
+  if (body !== undefined) fields.body = body;
+  if (is_active !== undefined) fields.is_active = is_active;
+  if (send_timing !== undefined) fields.send_timing = send_timing;
+  if (send_mode !== undefined) fields.send_mode = send_mode;
+  if (scheduled_at !== undefined) fields.scheduled_at = scheduled_at;
+  if (from_email !== undefined) fields.from_email = from_email;
+
+  await upsertEmailTemplate(vendor.id, type, fields);
 
   return NextResponse.json({ ok: true });
 }

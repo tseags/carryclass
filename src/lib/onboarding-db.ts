@@ -80,6 +80,12 @@ export interface VendorEmailTemplate {
   body: string | null;
   is_active: boolean;
   send_timing: string | null;
+  /** 'relative' (offset via send_timing) or 'scheduled' (explicit scheduled_at). */
+  send_mode: string | null;
+  /** Explicit date+time the instructor wants this email sent (ISO string). */
+  scheduled_at: string | null;
+  /** Instructor-chosen "send from" address (falls back to a verified default). */
+  from_email: string | null;
 }
 
 /**
@@ -592,7 +598,12 @@ export async function getEmailTemplates(
 export async function upsertEmailTemplate(
   vendorId: string,
   type: string,
-  fields: Partial<Pick<VendorEmailTemplate, "subject" | "body" | "is_active" | "send_timing">>
+  fields: Partial<
+    Pick<
+      VendorEmailTemplate,
+      "subject" | "body" | "is_active" | "send_timing" | "send_mode" | "scheduled_at" | "from_email"
+    >
+  >
 ): Promise<void> {
   const db = supabaseAdmin();
   const { data: existing } = await db
@@ -613,5 +624,35 @@ export async function upsertEmailTemplate(
       type,
       ...fields,
     });
+  }
+}
+
+// ── Email events / send log ─────────────────────────────────────────────────
+
+/**
+ * Append a row to the email send log. Best-effort: logging must never break the
+ * actual send, so failures are swallowed (and surfaced in server logs only).
+ */
+export async function recordEmailEvent(event: {
+  vendorId: string;
+  templateType?: string | null;
+  recipient?: string | null;
+  subject?: string | null;
+  status?: string;
+  isTest?: boolean;
+  resendId?: string | null;
+}): Promise<void> {
+  try {
+    await supabaseAdmin().from("vendor_email_events").insert({
+      vendor_id: event.vendorId,
+      template_type: event.templateType ?? null,
+      recipient: event.recipient ?? null,
+      subject: event.subject ?? null,
+      status: event.status ?? "sent",
+      is_test: event.isTest ?? false,
+      resend_id: event.resendId ?? null,
+    });
+  } catch (error) {
+    console.error("[onboarding-db] recordEmailEvent", error);
   }
 }

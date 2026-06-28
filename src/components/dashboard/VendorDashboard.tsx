@@ -5,9 +5,15 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import type { VendorProfile, VendorCalendarClass, VendorClassType, VendorEmailTemplate } from "@/lib/onboarding-db";
-import type { DashboardReview, DashboardRegistration, DashboardStats, DashboardPayout } from "@/lib/dashboard-db";
+import type {
+  DashboardReview,
+  DashboardRegistration,
+  DashboardStats,
+  DashboardPayout,
+  DashboardEmailMetrics,
+} from "@/lib/dashboard-db";
 import { ReviewsDrawer } from "./ReviewsDrawer";
-import { EmailEditorDrawer, type EmailTemplateType } from "./EmailEditorDrawer";
+import { EmailEditorPanel, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
 import { AddClassDrawer } from "./AddClassDrawer";
 import {
@@ -85,6 +91,7 @@ interface Props {
   templates: Record<string, Partial<VendorEmailTemplate>>;
   stats: DashboardStats;
   payout: DashboardPayout;
+  emailMetrics: DashboardEmailMetrics;
   publicProfileUrl: string | null;
 }
 
@@ -102,6 +109,11 @@ export function VendorDashboard(props: Props) {
 
   function handleTemplateSaved(type: EmailTemplateType, fields: Partial<VendorEmailTemplate>) {
     setTemplates((prev) => ({ ...prev, [type]: { ...prev[type], type, ...fields } }));
+  }
+
+  function openEmailEditor(type: EmailTemplateType) {
+    setEditorType(type);
+    setTab("emails");
   }
 
   function handleClassSaved(updated: VendorCalendarClass) {
@@ -186,7 +198,7 @@ export function VendorDashboard(props: Props) {
               classes={classes}
               templates={templates}
               onOpenReviews={() => setReviewsOpen(true)}
-              onEditTemplate={setEditorType}
+              onEditTemplate={openEmailEditor}
               onToggleTemplate={toggleTemplate}
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
@@ -204,9 +216,25 @@ export function VendorDashboard(props: Props) {
             />
           )}
           {tab === "registrations" && <RegistrationsPanel registrations={props.registrations} full />}
-          {tab === "emails" && (
-            <EmailTemplatesPanel templates={templates} onEdit={setEditorType} onToggle={toggleTemplate} heading />
-          )}
+          {tab === "emails" &&
+            (editorType ? (
+              <EmailEditorPanel
+                type={editorType}
+                template={templates[editorType]}
+                onClose={() => setEditorType(null)}
+                onSaved={handleTemplateSaved}
+                vendorId={vendor.id}
+                vendorEmail={vendor.email}
+              />
+            ) : (
+              <EmailTemplatesPanel
+                templates={templates}
+                onEdit={openEmailEditor}
+                onToggle={toggleTemplate}
+                heading
+                metrics={props.emailMetrics}
+              />
+            ))}
           {tab === "payments" && <PaymentsPanel vendor={vendor} payout={props.payout} heading />}
           {tab === "settings" && <SettingsTab vendor={vendor} />}
         </div>
@@ -224,14 +252,6 @@ export function VendorDashboard(props: Props) {
         onClose={() => setAddingClass(false)}
         classTypes={classTypes}
         onSaved={handleClassAdded}
-      />
-      <EmailEditorDrawer
-        open={editorType !== null}
-        onClose={() => setEditorType(null)}
-        type={editorType}
-        template={editorType ? templates[editorType] : undefined}
-        onSaved={handleTemplateSaved}
-        vendorId={vendor.id}
       />
     </div>
   );
@@ -625,64 +645,116 @@ function RegistrationsPanel({ registrations, full }: { registrations: DashboardR
 
 // ── Email templates ──────────────────────────────────────────────────────────
 
+/** Human-readable send-timing summary for a template card. */
+function timingSummary(
+  type: EmailTemplateType,
+  t: Partial<VendorEmailTemplate> | undefined,
+  defaultTiming: string
+): string {
+  if (type === "confirmation") return defaultTiming;
+  if (t?.send_mode === "scheduled" && t?.scheduled_at) {
+    const d = new Date(t.scheduled_at);
+    if (!Number.isNaN(d.getTime())) {
+      return `Scheduled ${d.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    }
+  }
+  return TIMING_LABELS[t?.send_timing ?? ""] ?? defaultTiming;
+}
+
+/** A single inline stat for the per-email metric row on a card. */
+function EmailCardStat({ label, value, note }: { label: string; value: number | string; note?: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-sm font-semibold text-gray-900">{value}</span>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</span>
+      {note && <span className="text-[11px] text-gray-400">{note}</span>}
+    </div>
+  );
+}
+
 function EmailTemplatesPanel({
   templates,
   onEdit,
   onToggle,
   heading,
+  metrics,
 }: {
   templates: Record<string, Partial<VendorEmailTemplate>>;
   onEdit: (t: EmailTemplateType) => void;
   onToggle: (t: EmailTemplateType, next: boolean) => void;
   heading?: boolean;
+  metrics?: DashboardEmailMetrics;
 }) {
   return (
     <section>
       <h2 className={heading ? "mb-4 text-2xl font-bold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
-        Email Templates
+        {heading ? "Emails" : "Email Templates"}
       </h2>
-      <div className="grid gap-4 md:grid-cols-3">
+
+      <div className="flex flex-col gap-4">
         {TEMPLATE_META.map(({ type, name, defaultTiming }) => {
           const t = templates[type];
           const isConfirmation = type === "confirmation";
           const active = isConfirmation ? true : t?.is_active ?? true;
-          const timingLabel = isConfirmation
-            ? defaultTiming
-            : TIMING_LABELS[t?.send_timing ?? ""] ?? defaultTiming;
-          const subject = t?.subject?.trim() || "No subject set yet";
-          const body = t?.body?.trim() || "No content yet — click Edit to write this email.";
+          const timingLabel = timingSummary(type, t, defaultTiming);
+          const typeMetrics = metrics?.byType[type];
+          // Scheduled (per type) is derived from the template's send config, matching
+          // the prior aggregate logic — an active template with an explicit date+time.
+          const scheduled =
+            !isConfirmation && t?.send_mode === "scheduled" && t?.scheduled_at && active ? 1 : 0;
           return (
-            <div key={type} className="flex flex-col rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
-                {isConfirmation ? (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">Always on</span>
-                ) : (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={active}
-                    aria-label={`Toggle ${name}`}
-                    onClick={() => onToggle(type, !active)}
-                    className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-                      active ? "bg-[#C1440E]" : "bg-gray-200"
-                    }`}
-                  >
-                    <span
-                      className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                        active ? "translate-x-4" : ""
+            <div
+              key={type}
+              className="flex flex-col gap-4 rounded-lg border border-gray-200 p-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
+                  {isConfirmation ? (
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      Always on
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={active}
+                      aria-label={`Toggle ${name}`}
+                      onClick={() => onToggle(type, !active)}
+                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                        active ? "bg-[#C1440E]" : "bg-gray-200"
                       }`}
+                    >
+                      <span
+                        className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                          active ? "translate-x-4" : ""
+                        }`}
+                      />
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-400">{timingLabel}</p>
+
+                {metrics && (
+                  <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-2">
+                    <EmailCardStat label="Sent" value={typeMetrics?.sent ?? 0} />
+                    <EmailCardStat label="Scheduled" value={scheduled} />
+                    <EmailCardStat
+                      label="Opened"
+                      value={metrics.openTrackingEnabled ? typeMetrics?.opened ?? 0 : "—"}
+                      note={metrics.openTrackingEnabled ? undefined : "Not tracked yet"}
                     />
-                  </button>
+                  </div>
                 )}
               </div>
-              <p className="mt-1 text-xs text-gray-400">{timingLabel}</p>
-              <p className="mt-3 truncate text-sm font-medium text-gray-700">{subject}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-gray-500">{body}</p>
+
               <button
                 type="button"
                 onClick={() => onEdit(type)}
-                className="mt-4 self-start rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="shrink-0 self-start rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors sm:self-center"
               >
                 Edit
               </button>

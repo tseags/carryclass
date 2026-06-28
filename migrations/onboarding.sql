@@ -79,6 +79,35 @@ CREATE TABLE IF NOT EXISTS vendor_email_templates (
   created_at timestamptz DEFAULT now()
 );
 
+-- Scheduling + sender controls for reminder/follow-up emails.
+--   send_mode: 'relative' (offset from class via send_timing) or 'scheduled' (explicit scheduled_at).
+--   scheduled_at: explicit date+time the instructor wants the email to go out (nullable).
+--   from_email: instructor-chosen "send from" address (nullable; falls back to a verified default).
+-- NOTE: scheduling here is persisted INTENT only — there is no worker/cron yet that
+-- queries due templates and sends them. See the Emails tab summary for what is wired.
+ALTER TABLE vendor_email_templates ADD COLUMN IF NOT EXISTS send_mode text DEFAULT 'relative';
+ALTER TABLE vendor_email_templates ADD COLUMN IF NOT EXISTS scheduled_at timestamptz;
+ALTER TABLE vendor_email_templates ADD COLUMN IF NOT EXISTS from_email text;
+
+-- Email events / send log. Powers the Emails-tab metrics summary.
+--   status: 'sent' | 'delivered' | 'opened' | 'failed' | 'scheduled'
+--   opened_at / delivered tracking require Resend webhooks (NOT wired yet).
+CREATE TABLE IF NOT EXISTS vendor_email_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid REFERENCES vendors(id) ON DELETE CASCADE,
+  template_type text,
+  recipient text,
+  subject text,
+  status text NOT NULL DEFAULT 'sent',
+  is_test boolean DEFAULT false,
+  resend_id text,
+  opened_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS vendor_email_events_vendor_idx
+  ON vendor_email_events (vendor_id, status);
+
 -- ============================================================
 -- RLS Policies
 -- ============================================================
@@ -87,6 +116,7 @@ ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_class_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_calendar_classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_email_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendor_email_events ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
@@ -139,6 +169,23 @@ BEGIN
     SELECT 1 FROM pg_policies WHERE tablename = 'vendor_email_templates' AND policyname = 'vendor_email_templates_own'
   ) THEN
     CREATE POLICY vendor_email_templates_own ON vendor_email_templates
+      USING (vendor_id IN (
+        SELECT id FROM vendors
+        WHERE clerk_user_id = current_setting('request.jwt.claims', true)::json->>'sub'
+      ))
+      WITH CHECK (vendor_id IN (
+        SELECT id FROM vendors
+        WHERE clerk_user_id = current_setting('request.jwt.claims', true)::json->>'sub'
+      ));
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'vendor_email_events' AND policyname = 'vendor_email_events_own'
+  ) THEN
+    CREATE POLICY vendor_email_events_own ON vendor_email_events
       USING (vendor_id IN (
         SELECT id FROM vendors
         WHERE clerk_user_id = current_setting('request.jwt.claims', true)::json->>'sub'
