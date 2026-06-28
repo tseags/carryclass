@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile, updateVendorProfile, advanceOnboardingStep } from "@/lib/onboarding-db";
+import { normalizeCountiesServed } from "@/data/counties";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     website: body.website ?? null,
     address: body.address ?? null,
     county: body.county ?? null,
+    counties_served: normalizeCountiesServed(body.countiesServed),
     bio: body.bio ?? null,
     badge_tags: body.badgeTags ?? null,
     photo_url: body.photoUrl ?? null,

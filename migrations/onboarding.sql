@@ -10,6 +10,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS email text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS website text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS address text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS county text;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS counties_served text[] DEFAULT '{}';
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS slug text;
 
 -- Onboarding-specific columns from spec

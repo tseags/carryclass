@@ -15,6 +15,7 @@ export interface VendorProfile {
   website: string | null;
   address: string | null;
   county: string | null;
+  counties_served: string[] | null;
   bio: string | null;
   photo_url: string | null;
   gallery_urls: string[] | null;

@@ -81,3 +81,22 @@ export function getCountyDisplayName(slug: string): string {
 export function isValidCountySlug(slug: string): boolean {
   return CALIFORNIA_COUNTIES.includes(slug as CaliforniaCountySlug);
 }
+
+/**
+ * Coerce an arbitrary request payload into a clean list of valid county slugs:
+ * keeps only known California county slugs, dedupes, and preserves first-seen
+ * order. Non-array / non-string inputs collapse to an empty array.
+ */
+export function normalizeCountiesServed(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of raw) {
+    if (typeof value !== "string") continue;
+    const slug = value.trim().toLowerCase();
+    if (!isValidCountySlug(slug) || seen.has(slug)) continue;
+    seen.add(slug);
+    result.push(slug);
+  }
+  return result;
+}

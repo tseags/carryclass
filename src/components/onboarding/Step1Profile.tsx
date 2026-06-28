@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { VendorProfile } from "@/lib/onboarding-db";
+import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 
 const BADGE_OPTIONS = [
   "NRA Certified",
@@ -16,11 +17,20 @@ const BADGE_OPTIONS = [
 interface Props {
   vendor: VendorProfile;
   prefilled?: boolean;
+  /**
+   * "onboarding" (default) navigates to the next step on save. "dashboard"
+   * stays put, surfaces a saved state, and reports the updated profile via
+   * `onSaved` so the dashboard can refresh its local state in place.
+   */
+  mode?: "onboarding" | "dashboard";
+  onSaved?: (vendor: VendorProfile) => void;
 }
 
-export function Step1Profile({ vendor, prefilled }: Props) {
+export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }: Props) {
   const router = useRouter();
+  const isDashboard = mode === "dashboard";
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [bioLoading, setBioLoading] = useState<"polish" | "scratch" | null>(null);
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -33,14 +43,66 @@ export function Step1Profile({ vendor, prefilled }: Props) {
     website: vendor.website ?? "",
     address: vendor.address ?? "",
     county: vendor.county ?? "",
+    countiesServed: vendor.counties_served ?? ([] as string[]),
     bio: vendor.bio ?? "",
     badgeTags: vendor.badge_tags ?? ([] as string[]),
     photoUrl: vendor.photo_url ?? "",
     galleryUrls: vendor.gallery_urls ?? ([] as string[]),
   });
 
+  const [countyQuery, setCountyQuery] = useState("");
+  const [countyOpen, setCountyOpen] = useState(false);
+  const [countyHighlight, setCountyHighlight] = useState(0);
+
   const profileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const countyMatches = useMemo(() => {
+    const q = countyQuery.trim().toLowerCase();
+    const selected = new Set(form.countiesServed);
+    return CALIFORNIA_COUNTIES.filter(
+      (slug) =>
+        !selected.has(slug) &&
+        (q === "" || COUNTY_DISPLAY_NAMES[slug].toLowerCase().includes(q))
+    ).slice(0, 8);
+  }, [countyQuery, form.countiesServed]);
+
+  function addCounty(slug: string) {
+    setForm((f) =>
+      f.countiesServed.includes(slug)
+        ? f
+        : { ...f, countiesServed: [...f.countiesServed, slug] }
+    );
+    setCountyQuery("");
+    setCountyHighlight(0);
+  }
+
+  function removeCounty(slug: string) {
+    setForm((f) => ({
+      ...f,
+      countiesServed: f.countiesServed.filter((c) => c !== slug),
+    }));
+  }
+
+  function handleCountyKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setCountyOpen(true);
+      setCountyHighlight((i) => Math.min(i + 1, countyMatches.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCountyHighlight((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      if (countyOpen && countyMatches[countyHighlight]) {
+        e.preventDefault();
+        addCounty(countyMatches[countyHighlight]);
+      }
+    } else if (e.key === "Escape") {
+      setCountyOpen(false);
+    } else if (e.key === "Backspace" && countyQuery === "" && form.countiesServed.length > 0) {
+      removeCounty(form.countiesServed[form.countiesServed.length - 1]);
+    }
+  }
 
   function toggleBadge(tag: string) {
     setForm((f) => ({
@@ -140,6 +202,7 @@ export function Step1Profile({ vendor, prefilled }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaved(false);
     setError("");
     try {
       const res = await fetch("/api/onboarding/step/1", {
@@ -152,6 +215,7 @@ export function Step1Profile({ vendor, prefilled }: Props) {
           website: form.website,
           address: form.address,
           county: form.county,
+          countiesServed: form.countiesServed,
           bio: form.bio,
           badgeTags: form.badgeTags,
           photoUrl: form.photoUrl,
@@ -159,7 +223,26 @@ export function Step1Profile({ vendor, prefilled }: Props) {
         }),
       });
       if (!res.ok) throw new Error("Save failed");
-      router.push("/onboard/step/2");
+      if (isDashboard) {
+        onSaved?.({
+          ...vendor,
+          name: form.name || null,
+          canonical_name: form.name || vendor.canonical_name,
+          phone: form.phone || null,
+          email: form.email || null,
+          website: form.website || null,
+          address: form.address || null,
+          county: form.county || null,
+          counties_served: form.countiesServed,
+          bio: form.bio || null,
+          badge_tags: form.badgeTags,
+          photo_url: form.photoUrl || null,
+          gallery_urls: form.galleryUrls,
+        });
+        setSaved(true);
+      } else {
+        router.push("/onboard/step/2");
+      }
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -242,6 +325,87 @@ export function Step1Profile({ vendor, prefilled }: Props) {
             />
           </Field>
         </div>
+      </section>
+
+      {/* Counties served */}
+      <section>
+        <h2 className="text-base font-semibold text-zinc-800 mb-1">
+          Counties you serve
+        </h2>
+        <p className="text-sm text-zinc-500 mb-3">
+          Add every county where you teach so students can find you.
+        </p>
+
+        <Field label="Search counties">
+          <div className="relative">
+            <input
+              type="text"
+              value={countyQuery}
+              onChange={(e) => {
+                setCountyQuery(e.target.value);
+                setCountyOpen(true);
+                setCountyHighlight(0);
+              }}
+              onFocus={() => setCountyOpen(true)}
+              onBlur={() => setCountyOpen(false)}
+              onKeyDown={handleCountyKeyDown}
+              className="input-field"
+              placeholder="Start typing a county name…"
+              role="combobox"
+              aria-expanded={countyOpen}
+              aria-controls="counties-served-listbox"
+              aria-autocomplete="list"
+            />
+            {countyOpen && countyMatches.length > 0 && (
+              <ul
+                id="counties-served-listbox"
+                role="listbox"
+                className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+              >
+                {countyMatches.map((slug, i) => (
+                  <li key={slug} role="option" aria-selected={i === countyHighlight}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        addCounty(slug);
+                      }}
+                      onMouseEnter={() => setCountyHighlight(i)}
+                      className={`flex w-full items-center px-3 py-2 text-left text-sm ${
+                        i === countyHighlight
+                          ? "bg-zinc-100 text-zinc-900"
+                          : "text-zinc-700"
+                      }`}
+                    >
+                      {COUNTY_DISPLAY_NAMES[slug]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Field>
+
+        {form.countiesServed.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {form.countiesServed.map((slug) => (
+              <span
+                key={slug}
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1.5 text-sm text-zinc-700"
+              >
+                {COUNTY_DISPLAY_NAMES[slug] ?? slug}
+                <button
+                  type="button"
+                  onClick={() => removeCounty(slug)}
+                  aria-label={`Remove ${COUNTY_DISPLAY_NAMES[slug] ?? slug}`}
+                  className="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 transition-colors"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Bio */}
@@ -435,14 +599,17 @@ export function Step1Profile({ vendor, prefilled }: Props) {
         </p>
       )}
 
-      <div className="flex justify-end pt-2">
+      <div className="flex items-center justify-end gap-3 pt-2">
+        {isDashboard && saved && !saving && (
+          <span className="text-sm font-medium text-emerald-600">Saved ✓</span>
+        )}
         <button
           type="submit"
           disabled={saving}
           className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
         >
           {saving && <Spinner white />}
-          {saving ? "Saving…" : "Save & Continue"}
+          {saving ? "Saving…" : isDashboard ? "Save changes" : "Save & Continue"}
         </button>
       </div>
     </form>
