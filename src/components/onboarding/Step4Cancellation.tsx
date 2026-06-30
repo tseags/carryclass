@@ -9,13 +9,28 @@ type Policy = "none" | "anytime" | "full_hours_before" | "partial_hours_before";
 const HOUR_OPTIONS = [12, 24, 48, 72];
 const REFUND_OPTIONS = [25, 50, 75];
 
-interface Props {
-  vendor: Pick<VendorProfile, "cancellation_policy" | "cancellation_hours" | "cancellation_refund_percent">;
+interface CancellationFields {
+  cancellation_policy: string;
+  cancellation_hours: number | null;
+  cancellation_refund_percent: number | null;
 }
 
-export function Step4Cancellation({ vendor }: Props) {
+interface Props {
+  vendor: Pick<VendorProfile, "cancellation_policy" | "cancellation_hours" | "cancellation_refund_percent">;
+  /**
+   * "onboarding" (default) navigates to the next step on save. "dashboard"
+   * stays put, surfaces a saved state, and reports the persisted policy via
+   * `onSaved` so the dashboard can refresh its local state in place.
+   */
+  mode?: "onboarding" | "dashboard";
+  onSaved?: (fields: CancellationFields) => void;
+}
+
+export function Step4Cancellation({ vendor, mode = "onboarding", onSaved }: Props) {
   const router = useRouter();
+  const isDashboard = mode === "dashboard";
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   const [policy, setPolicy] = useState<Policy | "">(
@@ -41,19 +56,31 @@ export function Step4Cancellation({ vendor }: Props) {
       return;
     }
     setSaving(true);
+    setSaved(false);
     setError("");
+    const nextHours = ["full_hours_before", "partial_hours_before"].includes(policy) ? hours : null;
+    const nextRefund = policy === "partial_hours_before" ? refundPercent : null;
     try {
       const res = await fetch("/api/onboarding/step/4", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           policy,
-          hours: ["full_hours_before", "partial_hours_before"].includes(policy) ? hours : null,
-          refundPercent: policy === "partial_hours_before" ? refundPercent : null,
+          hours: nextHours,
+          refundPercent: nextRefund,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
-      router.push("/onboard/step/5");
+      if (isDashboard) {
+        onSaved?.({
+          cancellation_policy: policy,
+          cancellation_hours: nextHours,
+          cancellation_refund_percent: nextRefund,
+        });
+        setSaved(true);
+      } else {
+        router.push("/onboard/step/5");
+      }
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -180,22 +207,33 @@ export function Step4Cancellation({ vendor }: Props) {
         </p>
       )}
 
-      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => router.push("/onboard/step/3")}
-          className="btn-secondary w-button"
-        >
-          Back
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          {saving && <Spinner />}
-          {saving ? "Saving…" : "Save & Continue"}
-        </button>
+      <div
+        className={`flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center ${
+          isDashboard ? "sm:justify-end" : "sm:justify-between"
+        }`}
+      >
+        {!isDashboard && (
+          <button
+            type="button"
+            onClick={() => router.push("/onboard/step/3")}
+            className="btn-secondary w-button"
+          >
+            Back
+          </button>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          {isDashboard && saved && !saving && (
+            <span className="text-sm font-medium text-emerald-600">Saved ✓</span>
+          )}
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {saving && <Spinner />}
+            {saving ? "Saving…" : isDashboard ? "Save changes" : "Save & Continue"}
+          </button>
+        </div>
       </div>
     </form>
   );

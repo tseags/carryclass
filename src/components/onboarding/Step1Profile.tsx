@@ -59,22 +59,18 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
 
   const countyMatches = useMemo(() => {
     const q = countyQuery.trim().toLowerCase();
-    const selected = new Set(form.countiesServed);
     return CALIFORNIA_COUNTIES.filter(
-      (slug) =>
-        !selected.has(slug) &&
-        (q === "" || COUNTY_DISPLAY_NAMES[slug].toLowerCase().includes(q))
-    ).slice(0, 8);
-  }, [countyQuery, form.countiesServed]);
-
-  function addCounty(slug: string) {
-    setForm((f) =>
-      f.countiesServed.includes(slug)
-        ? f
-        : { ...f, countiesServed: [...f.countiesServed, slug] }
+      (slug) => q === "" || COUNTY_DISPLAY_NAMES[slug].toLowerCase().includes(q)
     );
-    setCountyQuery("");
-    setCountyHighlight(0);
+  }, [countyQuery]);
+
+  function toggleCounty(slug: string) {
+    setForm((f) => ({
+      ...f,
+      countiesServed: f.countiesServed.includes(slug)
+        ? f.countiesServed.filter((c) => c !== slug)
+        : [...f.countiesServed, slug],
+    }));
   }
 
   function removeCounty(slug: string) {
@@ -95,7 +91,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     } else if (e.key === "Enter") {
       if (countyOpen && countyMatches[countyHighlight]) {
         e.preventDefault();
-        addCounty(countyMatches[countyHighlight]);
+        toggleCounty(countyMatches[countyHighlight]);
       }
     } else if (e.key === "Escape") {
       setCountyOpen(false);
@@ -264,9 +260,9 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       )}
 
       {/* Basic info */}
-      <section>
+      <section id="listing-basic" className="scroll-mt-[calc(var(--header-height)+1rem)]">
         <h2 className="text-base font-semibold text-zinc-800 mb-4">
-          Basic information
+          General Information
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Full name" required>
@@ -328,7 +324,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       </section>
 
       {/* Counties served */}
-      <section>
+      <section id="listing-counties" className="scroll-mt-[calc(var(--header-height)+1rem)]">
         <h2 className="text-base font-semibold text-zinc-800 mb-1">
           Counties you serve
         </h2>
@@ -360,27 +356,36 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
               <ul
                 id="counties-served-listbox"
                 role="listbox"
-                className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+                className="absolute z-10 mt-1 max-h-60 w-full list-none overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+                style={{ margin: 0, paddingLeft: 0, paddingRight: 0 }}
               >
-                {countyMatches.map((slug, i) => (
-                  <li key={slug} role="option" aria-selected={i === countyHighlight}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        addCounty(slug);
-                      }}
-                      onMouseEnter={() => setCountyHighlight(i)}
-                      className={`flex w-full items-center px-3 py-2 text-left text-sm ${
-                        i === countyHighlight
-                          ? "bg-zinc-100 text-zinc-900"
-                          : "text-zinc-700"
-                      }`}
-                    >
-                      {COUNTY_DISPLAY_NAMES[slug]}
-                    </button>
-                  </li>
-                ))}
+                {countyMatches.map((slug, i) => {
+                  const isSelected = form.countiesServed.includes(slug);
+                  return (
+                    <li key={slug} role="option" aria-selected={isSelected} style={{ margin: 0, paddingLeft: 0 }}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          toggleCounty(slug);
+                        }}
+                        onMouseEnter={() => setCountyHighlight(i)}
+                        className={`flex w-full items-center gap-2 py-2 pl-2.5 pr-3 text-left text-sm ${
+                          i === countyHighlight ? "bg-zinc-100" : ""
+                        } ${isSelected ? "font-medium text-[#c96442]" : "text-zinc-700"}`}
+                      >
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                            isSelected ? "border-[#c96442] bg-[#c96442]" : "border-zinc-300"
+                          }`}
+                        >
+                          {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </span>
+                        {COUNTY_DISPLAY_NAMES[slug]}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -391,14 +396,14 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
             {form.countiesServed.map((slug) => (
               <span
                 key={slug}
-                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1.5 text-sm text-zinc-700"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 py-1 pl-3 pr-1.5 text-sm font-medium text-slate-800"
               >
                 {COUNTY_DISPLAY_NAMES[slug] ?? slug}
                 <button
                   type="button"
                   onClick={() => removeCounty(slug)}
                   aria-label={`Remove ${COUNTY_DISPLAY_NAMES[slug] ?? slug}`}
-                  className="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 transition-colors"
+                  className="flex h-4 w-4 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
                 >
                   ×
                 </button>
@@ -409,7 +414,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       </section>
 
       {/* Bio */}
-      <section>
+      <section id="listing-description" className="scroll-mt-[calc(var(--header-height)+1rem)]">
         <h2 className="text-base font-semibold text-zinc-800 mb-1">
           Your public description
         </h2>
@@ -458,7 +463,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       </section>
 
       {/* Badge tags */}
-      <section>
+      <section id="listing-certifications" className="scroll-mt-[calc(var(--header-height)+1rem)]">
         <h2 className="text-base font-semibold text-zinc-800 mb-3">
           Certifications &amp; specializations
         </h2>
@@ -478,7 +483,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       </section>
 
       {/* Photos — optional */}
-      <section>
+      <section id="listing-photos" className="scroll-mt-[calc(var(--header-height)+1rem)]">
         <div className="flex items-center gap-2 mb-1">
           <h2 className="text-base font-semibold text-zinc-800">Photos</h2>
           <span className="rounded-full border border-[#c96442]/40 bg-[#c96442]/10 px-2 py-0.5 text-xs font-semibold text-[#c96442]">

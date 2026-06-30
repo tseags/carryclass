@@ -16,6 +16,9 @@ import { ReviewsDrawer } from "./ReviewsDrawer";
 import { EmailEditorPanel, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
 import { AddClassDrawer } from "./AddClassDrawer";
+import { Step1Profile } from "@/components/onboarding/Step1Profile";
+import { Step2ClassTypes } from "@/components/onboarding/Step2ClassTypes";
+import { Step4Cancellation } from "@/components/onboarding/Step4Cancellation";
 import {
   formatStudentName,
   formatLongDate,
@@ -41,6 +44,16 @@ const NAV_ITEMS: { id: TabId; label: string; icon: (active: boolean) => React.Re
   { id: "emails", label: "Emails", icon: (a) => <NavIcon active={a} path="M3 8l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" /> },
   { id: "payments", label: "Payments", icon: (a) => <NavIcon active={a} path="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" /> },
   { id: "settings", label: "Settings", icon: (a) => <NavIcon active={a} path="M10.32 4.32a2 2 0 013.36 0l.4.65a2 2 0 002.18.9l.74-.18a2 2 0 012.4 2.4l-.18.74a2 2 0 00.9 2.18l.65.4a2 2 0 010 3.36l-.65.4a2 2 0 00-.9 2.18l.18.74a2 2 0 01-2.4 2.4l-.74-.18a2 2 0 00-2.18.9l-.4.65a2 2 0 01-3.36 0l-.4-.65a2 2 0 00-2.18-.9l-.74.18a2 2 0 01-2.4-2.4l.18-.74a2 2 0 00-.9-2.18l-.65-.4a2 2 0 010-3.36l.65-.4a2 2 0 00.9-2.18l-.18-.74a2 2 0 012.4-2.4l.74.18a2 2 0 002.18-.9l.4-.65zM12 15a3 3 0 100-6 3 3 0 000 6z" /> },
+];
+
+const LISTING_SUBSECTIONS: { id: string; label: string }[] = [
+  { id: "listing-basic", label: "General Information" },
+  { id: "listing-counties", label: "Counties you serve" },
+  { id: "listing-description", label: "Public description" },
+  { id: "listing-certifications", label: "Certifications & specializations" },
+  { id: "listing-photos", label: "Photos" },
+  { id: "listing-class-types", label: "Class types & pricing" },
+  { id: "listing-cancellation", label: "Cancellation policy" },
 ];
 
 function NavIcon({ active, path }: { active: boolean; path: string }) {
@@ -96,7 +109,7 @@ interface Props {
 }
 
 export function VendorDashboard(props: Props) {
-  const { vendor, firstName, publicProfileUrl } = props;
+  const { firstName, publicProfileUrl } = props;
   const { user } = useUser();
   const [tab, setTab] = useState<TabId>("overview");
   const [reviewsOpen, setReviewsOpen] = useState(false);
@@ -104,11 +117,54 @@ export function VendorDashboard(props: Props) {
   const [templates, setTemplates] = useState(props.templates);
   const [classes, setClasses] = useState(props.classes);
   const [classTypes, setClassTypes] = useState(props.classTypes);
+  const [vendor, setVendor] = useState(props.vendor);
   const [editingClass, setEditingClass] = useState<VendorCalendarClass | null>(null);
   const [addingClass, setAddingClass] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>(LISTING_SUBSECTIONS[0].id);
+
+  // Scroll-spy: highlight the listing subsection currently in view.
+  useEffect(() => {
+    if (tab !== "listing") return;
+    const els = LISTING_SUBSECTIONS.map((s) => document.getElementById(s.id)).filter(
+      (el): el is HTMLElement => el !== null
+    );
+    if (els.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: "-25% 0px -60% 0px", threshold: 0 }
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [tab]);
+
+  function scrollToSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveSection(id);
+  }
 
   function handleTemplateSaved(type: EmailTemplateType, fields: Partial<VendorEmailTemplate>) {
     setTemplates((prev) => ({ ...prev, [type]: { ...prev[type], type, ...fields } }));
+  }
+
+  function handleProfileSaved(updated: VendorProfile) {
+    setVendor(updated);
+  }
+
+  function handleClassTypesSaved(updated: VendorClassType[]) {
+    setClassTypes(updated);
+  }
+
+  function handleCancellationSaved(fields: {
+    cancellation_policy: string;
+    cancellation_hours: number | null;
+    cancellation_refund_percent: number | null;
+  }) {
+    setVendor((prev) => ({ ...prev, ...fields }));
   }
 
   function openEmailEditor(type: EmailTemplateType) {
@@ -152,24 +208,53 @@ export function VendorDashboard(props: Props) {
   return (
     <div className="flex min-h-screen bg-white pt-[var(--header-height)]">
       {/* Sidebar (desktop) */}
-      <aside className="hidden w-[220px] shrink-0 flex-col border-r border-gray-200 bg-[#F9FAFB] md:flex">
+      <aside className="sticky top-[var(--header-height)] hidden h-[calc(100vh-var(--header-height))] w-[220px] shrink-0 flex-col self-start overflow-y-auto border-r border-gray-200 bg-[#F9FAFB] md:flex">
         <nav className="flex-1 py-4">
           {NAV_ITEMS.map((item) => {
             const active = tab === item.id;
             return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-sm transition-colors ${
-                  active
-                    ? "border-[#C1440E] bg-[#C1440E]/5 font-medium text-[#C1440E]"
-                    : "border-transparent text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {item.icon(active)}
-                {item.label}
-              </button>
+              <div key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setTab(item.id)}
+                  className={`flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-sm transition-colors ${
+                    active
+                      ? "border-[#C1440E] bg-[#C1440E]/5"
+                      : "border-transparent hover:bg-gray-100"
+                  }`}
+                >
+                  {item.icon(active)}
+                  <span className={active ? "font-bold text-[#C1440E]" : "text-gray-600"}>
+                    {item.label}
+                  </span>
+                </button>
+                {item.id === "listing" && active && (
+                  <ul className="border-l-2 border-[#C1440E]/30 py-1">
+                    {LISTING_SUBSECTIONS.map((sub) => {
+                      const subActive = activeSection === sub.id;
+                      return (
+                        <li key={sub.id}>
+                          <button
+                            type="button"
+                            onClick={() => scrollToSection(sub.id)}
+                            className="group flex w-full items-center py-1.5 pl-0.5 pr-1 text-left text-[13px] transition-colors"
+                          >
+                            <span
+                              className={
+                                subActive
+                                  ? "font-bold text-gray-900"
+                                  : "text-gray-400 transition-colors group-hover:text-gray-700"
+                              }
+                            >
+                              {sub.label}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -195,6 +280,7 @@ export function VendorDashboard(props: Props) {
           {tab === "overview" && (
             <OverviewTab
               {...props}
+              vendor={vendor}
               classes={classes}
               templates={templates}
               onOpenReviews={() => setReviewsOpen(true)}
@@ -205,7 +291,16 @@ export function VendorDashboard(props: Props) {
               onAddClass={() => setAddingClass(true)}
             />
           )}
-          {tab === "listing" && <ListingTab vendor={vendor} publicProfileUrl={publicProfileUrl} />}
+          {tab === "listing" && (
+            <ListingTab
+              vendor={vendor}
+              classTypes={classTypes}
+              publicProfileUrl={publicProfileUrl}
+              onProfileSaved={handleProfileSaved}
+              onClassTypesSaved={handleClassTypesSaved}
+              onCancellationSaved={handleCancellationSaved}
+            />
+          )}
           {tab === "classes" && (
             <ClassesPanel
               classes={classes}
@@ -819,29 +914,84 @@ function PaymentsPanel({
 
 // ── My Listing ───────────────────────────────────────────────────────────────
 
-function ListingTab({ vendor, publicProfileUrl }: { vendor: VendorProfile; publicProfileUrl: string | null }) {
+function ListingTab({
+  vendor,
+  classTypes,
+  publicProfileUrl,
+  onProfileSaved,
+  onClassTypesSaved,
+  onCancellationSaved,
+}: {
+  vendor: VendorProfile;
+  classTypes: VendorClassType[];
+  publicProfileUrl: string | null;
+  onProfileSaved: (vendor: VendorProfile) => void;
+  onClassTypesSaved: (classTypes: VendorClassType[]) => void;
+  onCancellationSaved: (fields: {
+    cancellation_policy: string;
+    cancellation_hours: number | null;
+    cancellation_refund_percent: number | null;
+  }) => void;
+}) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">My Listing</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Listing</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Edit everything students see on your public listing.
+          </p>
+        </div>
         {publicProfileUrl && (
           <Link href={publicProfileUrl} target="_blank" className="text-sm font-medium text-[#C1440E] hover:underline">
             Preview my listing →
           </Link>
         )}
       </div>
-      <section className="rounded-lg border border-gray-200 p-5">
-        <p className="text-sm font-medium text-gray-900">{vendor.name ?? "Your listing"}</p>
-        {vendor.county && <p className="mt-1 text-sm text-gray-600">{vendor.county}</p>}
-        {vendor.bio && <p className="mt-3 text-sm leading-relaxed text-gray-600">{vendor.bio}</p>}
-        <Link
-          href="/onboard/step/1"
-          className="mt-4 inline-block rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          Edit profile
-        </Link>
-      </section>
+
+      <ListingSection>
+        <Step1Profile vendor={vendor} mode="dashboard" onSaved={onProfileSaved} />
+      </ListingSection>
+
+      <ListingSection
+        id="listing-class-types"
+        title="Class types & pricing"
+        description="The classes you offer and the per-student price for each."
+      >
+        <Step2ClassTypes existingTypes={classTypes} mode="dashboard" onSaved={onClassTypesSaved} />
+      </ListingSection>
+
+      <ListingSection
+        id="listing-cancellation"
+        title="Cancellation policy"
+        description="What students agree to when they book and need to cancel."
+      >
+        <Step4Cancellation vendor={vendor} mode="dashboard" onSaved={onCancellationSaved} />
+      </ListingSection>
     </div>
+  );
+}
+
+function ListingSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id?: string;
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      className="scroll-mt-[calc(var(--header-height)+1rem)] rounded-lg border border-gray-200 p-6"
+    >
+      {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
+      {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
+      <div className={title || description ? "mt-5" : ""}>{children}</div>
+    </section>
   );
 }
 

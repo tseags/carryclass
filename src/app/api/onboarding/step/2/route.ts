@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getVendorProfile, upsertClassTypes, advanceOnboardingStep } from "@/lib/onboarding-db";
+import { getVendorProfile, upsertClassTypes, advanceOnboardingStep, getClassTypes } from "@/lib/onboarding-db";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -17,5 +17,7 @@ export async function POST(req: NextRequest) {
   await upsertClassTypes(vendor.id, classTypes);
   await advanceOnboardingStep(vendor.id, 3);
 
-  return NextResponse.json({ ok: true });
+  const updated = await getClassTypes(vendor.id);
+
+  return NextResponse.json({ ok: true, classTypes: updated });
 }

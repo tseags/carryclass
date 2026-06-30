@@ -12,6 +12,13 @@ const CLASS_TYPES = [
 
 interface Props {
   existingTypes: VendorClassType[];
+  /**
+   * "onboarding" (default) navigates to the next step on save. "dashboard"
+   * stays put, surfaces a saved state, and reports the persisted class types
+   * via `onSaved` so the dashboard can refresh its local state in place.
+   */
+  mode?: "onboarding" | "dashboard";
+  onSaved?: (classTypes: VendorClassType[]) => void;
 }
 
 interface TypeState {
@@ -19,9 +26,11 @@ interface TypeState {
   price: string;
 }
 
-export function Step2ClassTypes({ existingTypes }: Props) {
+export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }: Props) {
   const router = useRouter();
+  const isDashboard = mode === "dashboard";
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +65,7 @@ export function Step2ClassTypes({ existingTypes }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSaved(false);
 
     const activeTypes = Object.entries(types).filter(([, v]) => v.enabled);
     if (!activeTypes.length) {
@@ -85,7 +95,13 @@ export function Step2ClassTypes({ existingTypes }: Props) {
         body: JSON.stringify({ classTypes }),
       });
       if (!res.ok) throw new Error("Save failed");
-      router.push("/onboard/step/3");
+      if (isDashboard) {
+        const data = await res.json().catch(() => ({}));
+        onSaved?.((data.classTypes as VendorClassType[]) ?? []);
+        setSaved(true);
+      } else {
+        router.push("/onboard/step/3");
+      }
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -186,22 +202,33 @@ export function Step2ClassTypes({ existingTypes }: Props) {
         </p>
       )}
 
-      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => router.push("/onboard/step/1")}
-          className="btn-secondary w-button"
-        >
-          Back
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          {saving && <Spinner />}
-          {saving ? "Saving…" : "Save & Continue"}
-        </button>
+      <div
+        className={`flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center ${
+          isDashboard ? "sm:justify-end" : "sm:justify-between"
+        }`}
+      >
+        {!isDashboard && (
+          <button
+            type="button"
+            onClick={() => router.push("/onboard/step/1")}
+            className="btn-secondary w-button"
+          >
+            Back
+          </button>
+        )}
+        <div className="flex items-center justify-end gap-3">
+          {isDashboard && saved && !saving && (
+            <span className="text-sm font-medium text-emerald-600">Saved ✓</span>
+          )}
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {saving && <Spinner />}
+            {saving ? "Saving…" : isDashboard ? "Save changes" : "Save & Continue"}
+          </button>
+        </div>
       </div>
     </form>
   );
