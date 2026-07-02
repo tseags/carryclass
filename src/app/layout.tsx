@@ -11,6 +11,7 @@ import {
   buildOpenGraph,
   buildTwitter,
 } from "@/lib/seo";
+import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -85,6 +86,7 @@ export default function RootLayout({
         </head>
         <body className="min-h-screen antialiased">
           <GoogleAnalytics />
+          <Analytics />
           <JsonLd data={organizationJsonLd()} />
           <ToastProvider>
             <div className="page-wrapper">{children}</div>
