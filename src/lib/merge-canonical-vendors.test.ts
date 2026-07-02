@@ -202,6 +202,46 @@ describe("mergeCanonicalVendors", () => {
     expect(merged.map((v) => v.name)).toEqual(["Good Vendor"]);
   });
 
+  it("keeps vendor names that start with numbers but are not addresses", () => {
+    const rows = [
+      makeRow({
+        id: "29og",
+        name: "29 Outdoor Gear",
+        county: "solano",
+        website: "https://29outdoorgear.com",
+      }),
+      makeRow({
+        id: "7seas",
+        name: "7 Seas Training",
+        county: "orange",
+        website: "https://7seas.com",
+      }),
+      makeRow({
+        id: "101ds",
+        name: "101 Defensive Solutions",
+        county: "san-diego",
+        website: "https://101defense.com",
+      }),
+    ];
+    const merged = mergeCanonicalVendors(rows);
+    expect(merged.map((v) => v.name).sort()).toEqual([
+      "101 Defensive Solutions",
+      "29 Outdoor Gear",
+      "7 Seas Training",
+    ]);
+  });
+
+  it("filters address-like names with street suffixes", () => {
+    const ok = makeRow({ id: "ok", name: "Good Vendor", county: "orange", website: "https://ok.com" });
+    const addressRows = [
+      makeRow({ id: "a1", name: "123 Main Street", county: "orange", website: "https://bad1.com" }),
+      makeRow({ id: "a2", name: "456 Broadway Ave", county: "orange", website: "https://bad2.com" }),
+      makeRow({ id: "a3", name: "100 Main St", county: "orange", website: "https://bad3.com" }),
+    ];
+    const merged = mergeCanonicalVendors([ok, ...addressRows]);
+    expect(merged.map((v) => v.name)).toEqual(["Good Vendor"]);
+  });
+
   it("groups by name when website/email are missing", () => {
     const a = makeRow({
       id: "a",

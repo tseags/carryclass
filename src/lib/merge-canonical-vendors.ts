@@ -41,7 +41,15 @@ export interface MergeCanonicalVendorsOptions {
   overrides?: VendorMergeOverrides;
 }
 
-const ADDRESS_LIKE_NAME = /^\s*\d{1,6}\s+[A-Za-z][A-Za-z0-9.\- ]*/;
+/** Common street-type tokens; address-as-name junk must include one (or PO Box). */
+const STREET_TYPE_SUFFIX =
+  "st(?:reet)?|ave(?:nue)?|rd|road|blvd|boulevard|dr(?:ive)?|ln|lane|way|ct|court|pl(?:ace)?|cir(?:cle)?|pkwy|parkway|hwy|highway|trl|trail|ter(?:race)?|loop|run|sq(?:uare)?";
+const PO_BOX_PATTERN = /\b(?:p\.?\s*o\.?\s*box|post\s+office\s+box)\b/i;
+/** Leading street number plus a street suffix somewhere on the line (not bare "29 Something"). */
+const ADDRESS_LIKE_NAME = new RegExp(
+  `^\\s*\\d{1,6}\\s+(?=.*\\b(?:${STREET_TYPE_SUFFIX})\\b)[A-Za-z][A-Za-z0-9.\\- ]*`,
+  "i"
+);
 const FAILED_CRAWL_STATUSES = new Set(["failed", "error", "blocked", "timeout"]);
 const SANE_PRICE_MIN = 50;
 const SANE_PRICE_MAX = 2500;
@@ -100,7 +108,7 @@ function slugifyName(name: string): string {
 
 /** Heuristic: address-style names ("123 Main St…") that slipped past the crawl mapper. */
 function nameLooksLikeAddress(name: string): boolean {
-  return ADDRESS_LIKE_NAME.test(name);
+  return PO_BOX_PATTERN.test(name) || ADDRESS_LIKE_NAME.test(name);
 }
 
 function isJunkRow(vendor: Vendor): boolean {
