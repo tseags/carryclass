@@ -19,6 +19,8 @@ import { pageMetadata } from "@/lib/seo";
 import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
 import { getCountyStats } from "@/lib/county-stats";
 
+export const revalidate = 86400;
+
 export const metadata = pageMetadata({
   title: "Find CCW Classes Near Me",
   description:

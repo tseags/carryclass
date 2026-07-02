@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { VENDOR_DATA_CACHE_TAG } from "@/lib/vendors-db";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile, updateVendorProfile } from "@/lib/onboarding-db";
 
@@ -21,7 +22,11 @@ export async function POST(req: NextRequest) {
     if (vendor.slug?.trim()) {
       revalidatePath(`/instructors/${vendor.slug.trim()}`);
     }
+    revalidateTag(VENDOR_DATA_CACHE_TAG, "max");
     revalidatePath("/sitemap.xml");
+    revalidatePath("/");
+    revalidatePath("/instructors");
+    revalidatePath("/ca");
   }
 
   return NextResponse.json({ ok: true });

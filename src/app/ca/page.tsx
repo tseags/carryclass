@@ -9,6 +9,8 @@ import { getVendorCountsByCounty } from "@/lib/vendors-db";
 import type { Metadata } from "next";
 import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
 
+export const revalidate = 86400;
+
 export async function generateMetadata({
   searchParams,
 }: {

@@ -28,7 +28,8 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export const dynamic = "force-dynamic";
+/** Cache listing HTML; vendor rows are also cached in vendors-db (24h). */
+export const revalidate = 86400;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const resolved = await searchParams;

@@ -34,6 +34,8 @@ import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
 import { countyBreadcrumbJsonLd } from "@/lib/json-ld";
 import { JsonLd } from "@/components/JsonLd";
 
+export const revalidate = 86400;
+
 interface PageProps {
   params: Promise<{ county: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

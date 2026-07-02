@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { Vendor, VendorFilters } from "@/types";
@@ -20,6 +21,10 @@ const VENDOR_DB_TABLES = new Set([
   "carry_class_vendor_data",
   "enriched_vendor_county_listings",
 ]);
+
+/** Shared across pages — invalidate via `revalidateTag(VENDOR_DATA_CACHE_TAG)`. */
+export const VENDOR_DATA_CACHE_TAG = "carry-class-vendors";
+const VENDOR_LIST_REVALIDATE_SECONDS = 86_400;
 
 function supabaseProjectRef(): string | null {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -768,38 +773,47 @@ function filterVendorsForCountySlug(vendors: Vendor[], countySlug: string): Vend
   );
 }
 
-/** County-scoped CarryClass fetch — avoids loading the full vendor table per page. */
-const getCarryClassVendorsForCountyCached = cache(async (countySlug: string): Promise<Vendor[]> => {
-  const rows = await fetchRawVendorRowsForCounty(countySlug.toLowerCase());
+function mapAndMergeCarryClassRows(rows: Record<string, unknown>[]): Vendor[] {
   const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
-  const merged = mergeCanonicalVendors(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
-  return filterVendorsForCountySlug(merged, countySlug);
-});
+  return mergeCanonicalVendors(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
+}
 
-/** One bulk fetch per request for CarryClass-shaped tables (no native slug / mixed columns). */
-const getCarryClassVendorsCached = cache(async (): Promise<Vendor[]> => {
-  const rows = await fetchRawVendorRows();
-  const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
-  const merged = mergeCanonicalVendors(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
-  console.log("📋 getCarryClassVendorsCached:", {
-    rawRows: rows.length,
-    mappedVendors: mapped.length,
-    canonicalVendors: merged.length,
-    droppedByMapper: rows.length - mapped.length,
-    collapsedByMerge: mapped.length - merged.length,
-  });
-  if (
-    process.env.NODE_ENV === "development" &&
-    rows.length > 0 &&
-    mapped.length === 0
-  ) {
-    console.warn(
-      "[vendors-db] Every row was dropped by the mapper (missing display name?). First row keys:",
-      Object.keys(rows[0] ?? {})
-    );
+function loadCarryClassVendorsForCounty(countySlug: string): Promise<Vendor[]> {
+  const slug = countySlug.toLowerCase();
+  return unstable_cache(
+    async () => {
+      const rows = await fetchRawVendorRowsForCounty(slug);
+      const merged = mapAndMergeCarryClassRows(rows);
+      return filterVendorsForCountySlug(merged, slug);
+    },
+    ["carry-class-vendors-county", slug],
+    {
+      revalidate: VENDOR_LIST_REVALIDATE_SECONDS,
+      tags: [VENDOR_DATA_CACHE_TAG, `${VENDOR_DATA_CACHE_TAG}:county:${slug}`],
+    }
+  )();
+}
+
+/** County-scoped CarryClass fetch — avoids loading the full vendor table per page. */
+const getCarryClassVendorsForCountyCached = cache(loadCarryClassVendorsForCounty);
+
+const loadAllCarryClassVendors = unstable_cache(
+  async (): Promise<Vendor[]> => {
+    const rows = await fetchRawVendorRows();
+    return mapAndMergeCarryClassRows(rows);
+  },
+  ["carry-class-vendors-all"],
+  {
+    revalidate: VENDOR_LIST_REVALIDATE_SECONDS,
+    tags: [VENDOR_DATA_CACHE_TAG],
   }
-  if (process.env.NODE_ENV === "development" && merged.length > 0) {
-    console.log("[vendors-db] canonical vendor count:", merged.length);
+);
+
+/** One bulk fetch per deploy window for CarryClass-shaped tables (no native slug / mixed columns). */
+const getCarryClassVendorsCached = cache(async (): Promise<Vendor[]> => {
+  const merged = await loadAllCarryClassVendors();
+  if (process.env.NODE_ENV === "development") {
+    console.log("📋 getCarryClassVendorsCached:", { canonicalVendors: merged.length });
   }
   return merged;
 });
@@ -880,12 +894,17 @@ export async function queryVendorsForListing(
   }
 
   if (isCarryClassVendorShape()) {
+    const countySlug = filters.county?.toLowerCase();
     logSupabaseSelectStart(
-      "queryVendorsForListing (CarryClass — in-memory filter after bulk fetch)",
+      countySlug
+        ? "queryVendorsForListing (CarryClass — county-scoped cache)"
+        : "queryVendorsForListing (CarryClass — full cache)",
       vendorTable(),
       filters
     );
-    const mapped = await getCarryClassVendorsCached();
+    const mapped = countySlug
+      ? await getCarryClassVendorsForCountyCached(countySlug)
+      : await getCarryClassVendorsCached();
     const refined = filterVendors(mapped, filters);
     console.log("📦 queryVendorsForListing CarryClass path:", {
       mappedCount: mapped.length,
@@ -927,17 +946,18 @@ export async function getCitiesForCountyFilter(countySlug?: string): Promise<str
   }
 
   if (isCarryClassVendorShape()) {
+    const slug = countySlug?.toLowerCase();
     logSupabaseSelectStart(
-      "getCitiesForCountyFilter (CarryClass — derived from cache)",
+      slug
+        ? "getCitiesForCountyFilter (CarryClass — county-scoped cache)"
+        : "getCitiesForCountyFilter (CarryClass — full cache)",
       vendorTable(),
       { countySlug }
     );
-    const vendors = await getCarryClassVendorsCached();
-    const slug = countySlug?.toLowerCase();
-    const cities = vendors
-      .filter((v) => !slug || v.countiesServed.some((c) => c.toLowerCase() === slug))
-      .map((v) => v.city)
-      .filter(Boolean);
+    const vendors = slug
+      ? await getCarryClassVendorsForCountyCached(slug)
+      : await getCarryClassVendorsCached();
+    const cities = vendors.map((v) => v.city).filter(Boolean);
     console.log("📦 getCitiesForCountyFilter CarryClass:", {
       vendorPool: vendors.length,
       cityCount: [...new Set(cities)].length,
