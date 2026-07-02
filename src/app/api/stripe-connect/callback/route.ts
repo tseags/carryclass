@@ -57,11 +57,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const redirectUri = getStripeConnectRedirectUri();
     const response = await getStripe().oauth.token({
       grant_type: "authorization_code",
       code: code!,
-      redirect_uri: redirectUri,
     });
 
     const stripeAccountId = response.stripe_user_id;
