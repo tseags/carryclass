@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
@@ -12,6 +13,10 @@ import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
 import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
 import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
+import {
+  buildZipCountyListingRedirectPath,
+  getCountySlugForListingZipSearch,
+} from "@/lib/listing-zip-filter";
 import type { CourseCategory } from "@/types";
 import type { Metadata } from "next";
 import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
@@ -53,6 +58,19 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   if (!priceListedOnly && resolved.priceMax) {
     const n = Number(resolved.priceMax);
     priceMax = Number.isFinite(n) ? n : undefined;
+  }
+
+  const zipCounty = getCountySlugForListingZipSearch(resolved);
+  if (zipCounty) {
+    const validCities = resolved.city ? await getCitiesForCountyFilter(zipCounty) : undefined;
+    redirect(
+      buildZipCountyListingRedirectPath({
+        basePath: "/instructors",
+        county: zipCounty,
+        searchParams: resolved,
+        validCities,
+      })
+    );
   }
 
   const filters = {

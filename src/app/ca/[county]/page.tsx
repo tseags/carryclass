@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SmoothScrollTo } from "@/components/SmoothScrollTo";
@@ -29,6 +29,10 @@ import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
 import { geocodeWithNominatim } from "@/lib/nominatim-geocode";
 import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
+import {
+  buildZipCountyListingRedirectPath,
+  getCountySlugForListingZipSearch,
+} from "@/lib/listing-zip-filter";
 import type { Metadata } from "next";
 import { canonicalForFilteredListing, pageMetadata } from "@/lib/seo";
 import { countyBreadcrumbJsonLd } from "@/lib/json-ld";
@@ -71,7 +75,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   }
 
   const displayName = getCountyDisplayName(county);
-  const allVendors = await getVendorsByCounty(county);
 
   const priceListedOnly = resolved.priceListed === "1";
   let priceMax: number | undefined;
@@ -79,6 +82,22 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
     const n = Number(resolved.priceMax);
     priceMax = Number.isFinite(n) ? n : undefined;
   }
+
+  const zipCounty = getCountySlugForListingZipSearch(resolved);
+  if (zipCounty) {
+    const validCities = resolved.city ? await getCitiesForCountyFilter(zipCounty) : undefined;
+    redirect(
+      buildZipCountyListingRedirectPath({
+        basePath: `/ca/${zipCounty}`,
+        county: zipCounty,
+        searchParams: resolved,
+        includeCountyParam: false,
+        validCities,
+      })
+    );
+  }
+
+  const allVendors = await getVendorsByCounty(county);
 
   const filters = {
     county,
