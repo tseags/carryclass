@@ -19,6 +19,8 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { vendorLocalBusinessJsonLd } from "@/lib/json-ld";
 import { JsonLd } from "@/components/JsonLd";
+import { buildVendorWebsiteUrl } from "@/lib/vendor-website-url";
+import { VendorWebsiteLink } from "@/components/VendorWebsiteLink";
 
 /** Cache public profiles for 24h — crawlers and repeat visitors avoid repeated full DB reads. */
 export const revalidate = 86400;
@@ -191,6 +193,12 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
         : [];
   const contactBlocks = sortVendorCountyContacts(contactBlocksRaw);
   const showCountyLabels = contactBlocks.length > 1;
+  const vendorWebsiteHeroUrl = vendor.website
+    ? buildVendorWebsiteUrl(vendor.website, { vendorSlug: vendor.slug, placement: "hero" })
+    : null;
+  const vendorWebsiteContactUrl = vendor.website
+    ? buildVendorWebsiteUrl(vendor.website, { vendorSlug: vendor.slug, placement: "contact" })
+    : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -252,15 +260,15 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                 </div>
               ) : (
                 <div className="mt-6 flex items-center gap-3">
-                  {vendor.website && (
-                    <a
-                      href={vendor.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {vendorWebsiteHeroUrl && (
+                    <VendorWebsiteLink
+                      href={vendorWebsiteHeroUrl}
+                      vendorSlug={vendor.slug}
+                      placement="hero"
                       className={heroButtonClassName}
                     >
                       Visit website
-                    </a>
+                    </VendorWebsiteLink>
                   )}
                   <SaveHeartButton
                     vendorId={vendor.id}
@@ -482,7 +490,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                           </div>
                         );
                       })}
-                      {vendor.website && (
+                      {vendorWebsiteContactUrl && (
                         <p className="flex items-start gap-2.5 text-[15px] leading-[1.45]">
                           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
                             <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -492,14 +500,14 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5c-2.2 2.2-2.2 12.8 0 15" />
                             </svg>
                           </span>
-                          <a
-                            href={vendor.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <VendorWebsiteLink
+                            href={vendorWebsiteContactUrl}
+                            vendorSlug={vendor.slug}
+                            placement="contact"
                             className="font-medium text-[#c96442] hover:underline"
                           >
                             Visit website
-                          </a>
+                          </VendorWebsiteLink>
                         </p>
                       )}
                     </div>

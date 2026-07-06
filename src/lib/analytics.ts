@@ -14,7 +14,8 @@ export function trackEvent(
     | "submit_entry_modal_opened"
     | "submit_entry_success"
     | "submit_review_modal_opened"
-    | "submit_review_success",
+    | "submit_review_success"
+    | "outbound_instructor_website",
   payload: Record<string, unknown>
 ) {
   if (typeof window === "undefined") return;
