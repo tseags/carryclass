@@ -17,7 +17,8 @@
     "db:studio": "prisma studio",
     "import:ccw-timelines": "tsx scripts/import-ccw-timelines.ts",
     "seed:ccw-timelines": "tsx scripts/seed-ccw-timelines.ts",
-    "worktree:audit": "bash scripts/worktree-audit.sh"
+    "worktree:audit": "bash scripts/worktree-audit.sh",
+    "check:vendor-db-env": "tsx scripts/check-vendor-db-env.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

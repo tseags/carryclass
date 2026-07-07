@@ -1,0 +1,40 @@
+---
+description: Vendor listing data must use production Postgres (DATABASE_URL), not Supabase REST, unless project refs match
+alwaysApply: true
+---
+
+# Vendor listing data (carry_class_vendor_data)
+
+Production reads vendors via `DATABASE_URL` when REST and Postgres project refs differ (`shouldFetchVendorsViaDatabase()` in `src/lib/vendors-db.ts`). **Writes must follow the same rule.**
+
+## Tables in scope
+
+`carry_class_vendor_data`, `enriched_vendor_county_listings`, and SQL in `migrations/` that touches vendor listings.
+
+## Before any vendor DB write
+
+1. Run `npm run check:vendor-db-env` and follow its recommendation.
+2. On ref mismatch, **only** use `DATABASE_URL` — not Supabase REST, Dashboard on the REST project, or `NEXT_PUBLIC_SUPABASE_URL` clients.
+3. Set `VENDORS_FETCH_VIA_DATABASE=1` in `.env.local` for local reads (do not commit).
+
+## How to write
+
+```bash
+npm run check:vendor-db-env
+npx prisma db execute --file migrations/your-file.sql --schema prisma/schema.prisma
+```
+
+Also OK: Prisma scripts, `psql "$DATABASE_URL"`, or `pg`.
+
+## Do NOT use for writes (when refs differ)
+
+Supabase JS `.insert/update/upsert`, Dashboard Table Editor on the REST project, or scripts using only `NEXT_PUBLIC_SUPABASE_URL`. When refs match, either path works; still prefer `DATABASE_URL` + migrations.
+
+## After production changes
+
+```bash
+curl -X POST "$NEXT_PUBLIC_APP_URL/api/revalidate-vendors" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+See `src/lib/vendors-db.ts`, `migrations/alameda-approved-instructors.sql`, `src/app/api/revalidate-vendors/route.ts`.

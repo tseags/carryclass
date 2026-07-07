@@ -34,6 +34,29 @@ npm run db:seed
 
 Vendor profiles load from the database in development/production. See `.env.example` for `DATABASE_URL`.
 
+### Vendor data updates
+
+Before changing vendor listing rows (`carry_class_vendor_data`, enriched tables, or SQL in `migrations/`):
+
+```bash
+npm run check:vendor-db-env
+```
+
+Apply SQL via Postgres (`DATABASE_URL`), not Supabase REST, unless the check reports matching project refs:
+
+```bash
+npx prisma db execute --file migrations/your-file.sql --schema prisma/schema.prisma
+```
+
+After production changes, bust the vendor cache:
+
+```bash
+curl -X POST "$NEXT_PUBLIC_APP_URL/api/revalidate-vendors" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Set `VENDORS_FETCH_VIA_DATABASE=1` in `.env.local` when local REST URL points at a different Supabase project than `DATABASE_URL`. Do not commit `.env.local`.
+
 ### Booking (dev)
 
 End-to-end booking uses **Stripe Checkout** with **Stripe Connect** (destination charges + platform fee). To exercise the flow locally:
