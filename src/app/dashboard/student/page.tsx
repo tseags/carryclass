@@ -2,15 +2,9 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { SavedListingsSection } from "@/components/SavedListingsSection";
-import { getCurrentUserSavedListingsPage } from "@/lib/saved-vendors";
 import { STUDENT_ROLE } from "@/lib/auth/roles";
 
-export default async function StudentDashboardPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function StudentDashboardPage() {
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in?intent=student");
@@ -22,11 +16,6 @@ export default async function StudentDashboardPage({
   }
 
   const firstName = user.firstName ?? "there";
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const rawSavedPage = resolvedSearchParams?.savedPage;
-  const parsedSavedPage = Number(Array.isArray(rawSavedPage) ? rawSavedPage[0] : rawSavedPage);
-  const savedPage = Number.isFinite(parsedSavedPage) && parsedSavedPage > 0 ? parsedSavedPage : 1;
-  const savedListingsPage = await getCurrentUserSavedListingsPage(savedPage, 12);
 
   return (
     <>
@@ -38,16 +27,10 @@ export default async function StudentDashboardPage({
               Welcome back, {firstName}
             </h1>
             <p className="mt-2 text-sm text-zinc-600">
-              Save and compare CCW classes, keep track of renewals, and follow instructors you like.
+              Keep track of renewals and follow instructors you like.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
-            <SavedListingsSection
-              initialItems={savedListingsPage.items}
-              totalCount={savedListingsPage.totalCount}
-              page={savedListingsPage.page}
-              totalPages={savedListingsPage.totalPages}
-            />
             <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
               <h2 className="text-sm font-semibold text-zinc-800">
                 County & renewal reminders
@@ -63,4 +46,3 @@ export default async function StudentDashboardPage({
     </>
   );
 }
-

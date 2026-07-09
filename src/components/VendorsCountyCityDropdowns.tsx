@@ -35,8 +35,12 @@ export function VendorsCountyCityDropdowns({
             name="county"
             value={county}
             onChange={(event) => {
+              const form = event.currentTarget.form;
               setCounty(event.target.value);
               setCity("");
+              const citySelect = form?.elements.namedItem("city") as HTMLSelectElement | null;
+              if (citySelect) citySelect.value = "";
+              form?.requestSubmit();
             }}
           >
             <option value="">Any county</option>
@@ -51,7 +55,14 @@ export function VendorsCountyCityDropdowns({
 
       <label className="vendors-filter-group">
         <span>City</span>
-        <select name="city" value={city} onChange={(event) => setCity(event.target.value)}>
+        <select
+          name="city"
+          value={city}
+          onChange={(event) => {
+            setCity(event.target.value);
+            event.currentTarget.form?.requestSubmit();
+          }}
+        >
           <option value="">Any city</option>
           {cities.map((cityOption) => (
             <option key={cityOption} value={cityOption}>

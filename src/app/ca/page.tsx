@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { VendorsSortSelect } from "@/components/VendorsSortSelect";
 import { getCountyDisplayName } from "@/data/counties";
 import { getCountyImageUrl } from "@/data/county-images";
 import { CALIFORNIA_COUNTIES } from "@/data/counties";
@@ -120,17 +121,14 @@ export default async function CaliforniaPage({
                 </label>
                 <label className="vendors-filter-group">
                   <span>Sort</span>
-                  <select name="sort" defaultValue={sort}>
+                  <VendorsSortSelect name="sort" defaultValue={sort}>
                     <option value="name">Name: A to Z</option>
                     <option value="name-desc">Name: Z to A</option>
-                  <option value="count-high">Most classes</option>
-                  <option value="count-low">Fewest classes</option>
-                </select>
-              </label>
-              <button type="submit" className="btn-primary w-button vendors-filters-submit">
-                Apply filters
-              </button>
-            </form>
+                    <option value="count-high">Most classes</option>
+                    <option value="count-low">Fewest classes</option>
+                  </VendorsSortSelect>
+                </label>
+              </form>
             </div>
           </aside>
 
@@ -140,15 +138,12 @@ export default async function CaliforniaPage({
               <form action="/ca" method="get" className="vendors-sort-group">
                 {qStr && <input type="hidden" name="q" value={qStr} />}
                 <span>Sort</span>
-                <select name="sort" defaultValue={sort} className="vendors-sort-select">
+                <VendorsSortSelect name="sort" defaultValue={sort} className="vendors-sort-select">
                   <option value="name">Name: A to Z</option>
                   <option value="name-desc">Name: Z to A</option>
                   <option value="count-high">Most classes</option>
                   <option value="count-low">Fewest classes</option>
-                </select>
-                <button type="submit" className="vendors-sort-apply">
-                  Apply
-                </button>
+                </VendorsSortSelect>
               </form>
             </div>
 

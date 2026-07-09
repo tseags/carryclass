@@ -679,13 +679,6 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   font-weight: 600;
 }
 
-.vendors-filters-submit {
-  margin-top: 4px;
-  width: 100%;
-  font-size: 13px !important;
-  padding: 10px 14px !important;
-}
-
 .vendors-results-main {
   min-width: 0;
   width: 100%;
@@ -729,21 +722,6 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   min-height: 36px;
   padding: 6px 10px;
   max-width: 180px;
-}
-
-.vendors-sort-apply {
-  border: 1px solid #d7d4cb;
-  border-radius: 8px;
-  background: #fff;
-  color: #141413;
-  font-size: 13px;
-  min-height: 36px;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-
-.vendors-sort-apply:hover {
-  border-color: #141413;
 }
 
 /* -------------------------------------------------------------------------- */

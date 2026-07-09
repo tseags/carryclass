@@ -6,13 +6,11 @@ import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorReviewsSection } from "@/components/VendorReviewsSection";
 import { VendorHeroMapDynamic } from "@/components/VendorHeroMapDynamic";
 import { getVendorBySlug, getRelatedVendorsForProfile } from "@/lib/vendors-db";
-import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import {
   formatCountyContactLabel,
   sortVendorCountyContacts,
 } from "@/lib/merge-canonical-vendors";
-import { SaveHeartButton } from "@/components/SaveHeartButton";
 import { getCountyDisplayName } from "@/data/counties";
 import type { VendorCountyContact } from "@/types";
 import type { Metadata } from "next";
@@ -173,11 +171,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     ? vendor.description
     : `${vendor.name} provides CCW instruction in ${vendor.city}, ${getCountyDisplayName(vendor.county)} County.`;
   const showAboutSupportCopy = Boolean(vendor.description);
-  const savedVendorIds = await getCurrentUserSavedVendorIds([
-    vendor.id,
-    ...otherVendors.map((entry) => entry.id),
-  ]);
-  const initialSaved = savedVendorIds.includes(vendor.id);
 
   const fallbackContactBlock: VendorCountyContact = {
     counties: vendor.county ? [vendor.county] : vendor.countiesServed.slice(0, 1),
@@ -250,13 +243,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                   <Link href={`/instructors/${vendor.slug}/book`} className={heroButtonClassName}>
                     Book Now
                   </Link>
-                  <SaveHeartButton
-                    vendorId={vendor.id}
-                    initialSaved={initialSaved}
-                    size="md"
-                    showFilledWhenSaved={false}
-                    colorVariant="burnt"
-                  />
                 </div>
               ) : (
                 <div className="mt-6 flex items-center gap-3">
@@ -270,13 +256,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       Visit website
                     </VendorWebsiteLink>
                   )}
-                  <SaveHeartButton
-                    vendorId={vendor.id}
-                    initialSaved={initialSaved}
-                    size="md"
-                    showFilledWhenSaved={false}
-                    colorVariant="burnt"
-                  />
                 </div>
               )}
             </div>
@@ -524,7 +503,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                           return (
                             <span
                               key={county}
-                              className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full border border-[#2f2e2b] bg-[#2f2e2b] text-center font-medium text-white ${getCountyPillClassName(countyName)}`}
+                              className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-2xl border border-[#2f2e2b] bg-[#2f2e2b] text-center font-medium text-white ${getCountyPillClassName(countyName)}`}
                             >
                               {countyName}
                             </span>
@@ -569,7 +548,6 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       listingReviews={otherVendorListingReviews.get(v.id) ?? null}
                       servedCounty={servedCounty}
                       showFeaturedBadge={false}
-                      initialSaved={savedVendorIds.includes(v.id)}
                     />
                   );
                 })}

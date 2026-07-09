@@ -10,7 +10,6 @@ import { HomeNewsletter } from "@/components/HomeNewsletter";
 import { ByTheNumbersStats } from "@/components/ByTheNumbersStats";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { getAllVendors } from "@/lib/vendors-db";
-import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { getCountyDisplayName } from "@/data/counties";
 import { SHOW_GEAR_SECTIONS, SHOW_SUBSCRIBE_SECTIONS } from "@/lib/feature-flags";
@@ -41,9 +40,6 @@ export default async function HomePage() {
           .slice(0, 3);
   const featuredListingReviewStats = await getApprovedReviewStatsByVendorIds(
     featuredVendors.map((v) => v.id)
-  );
-  const savedIds = new Set(
-    await getCurrentUserSavedVendorIds(featuredVendors.map((vendor) => vendor.id))
   );
   const { vendorCount, avgInitial, avgRenewal } = getCountyStats(vendors);
 
@@ -112,7 +108,6 @@ export default async function HomePage() {
                   showFeaturedBadge={
                     popularPicks.length >= 3 ? true : Boolean(vendor.featured)
                   }
-                  initialSaved={savedIds.has(vendor.id)}
                 />
               );
             })}

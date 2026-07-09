@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Vendor } from "@/types";
 import type { VendorListingReviewStats } from "@/lib/vendor-reviews";
-import { SaveHeartButton } from "@/components/SaveHeartButton";
 
 const LISTING_CARD_FALLBACK =
   "Sheriff-approved CCW instruction and renewal classes.";
@@ -35,7 +34,6 @@ interface PopularVendorCardProps {
   listingReviews: VendorListingReviewStats | null;
   servedCounty: string;
   showFeaturedBadge?: boolean;
-  initialSaved?: boolean;
 }
 
 export function PopularVendorCard({
@@ -43,21 +41,16 @@ export function PopularVendorCard({
   listingReviews,
   servedCounty,
   showFeaturedBadge = false,
-  initialSaved = false,
 }: PopularVendorCardProps) {
   const cardDescription =
     vendor.listingCardText?.trim() || LISTING_CARD_FALLBACK;
   const servesMultipleCounties = vendor.countiesServed.length > 1;
 
   return (
-    <div className="relative">
-      <div className="absolute right-3 top-3 z-20">
-        <SaveHeartButton vendorId={vendor.id} initialSaved={initialSaved} />
-      </div>
-      <Link
-        href={`/instructors/${vendor.slug}`}
-        className={`popular-vendors-redesign__card${showFeaturedBadge ? " popular-vendors-redesign__card--has-featured-badge" : ""}`}
-      >
+    <Link
+      href={`/instructors/${vendor.slug}`}
+      className={`popular-vendors-redesign__card${showFeaturedBadge ? " popular-vendors-redesign__card--has-featured-badge" : ""}`}
+    >
         {showFeaturedBadge ? (
           <div className="popular-vendors-redesign__featured">Featured</div>
         ) : null}
@@ -135,7 +128,6 @@ export function PopularVendorCard({
             </>
           )}
         </div>
-      </Link>
-    </div>
+    </Link>
   );
 }

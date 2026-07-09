@@ -8,10 +8,10 @@ import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdo
 import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
 import { CALIFORNIA_COUNTIES, getCountyDisplayName } from "@/data/counties";
 import { geocodeWithNominatim } from "@/lib/nominatim-geocode";
+import { VendorsSortSelect } from "@/components/VendorsSortSelect";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
 import { resolveVendorMapPins } from "@/lib/vendor-map-pins";
 import { getCitiesForCountyFilter, queryVendorsForListing } from "@/lib/vendors-db";
-import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import {
   buildZipCountyListingRedirectPath,
@@ -85,7 +85,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   };
 
   const sort = resolved.sort as string | undefined;
-  const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
   const cityOptions = await getCitiesForCountyFilter(filters.county);
   const vendorsFromQuery = await queryVendorsForListing(filters, sort);
 
@@ -95,11 +94,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
   const vendors = sortCountyListingVendors(vendorsFromQuery, listingReviewStats, sort);
 
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
-  const savedIds = new Set(
-    [...allSavedIds].filter((id) =>
-      vendors.some((vendor) => vendor.id === id)
-    )
-  );
 
   const hasFilter = Boolean(
     filters.county ||
@@ -201,40 +195,37 @@ export default async function VendorsPage({ searchParams }: PageProps) {
 
                 <label className="vendors-filter-group">
                   <span>Class type</span>
-                  <select name="classType" defaultValue={filters.classType ?? ""}>
+                  <VendorsSortSelect name="classType" defaultValue={filters.classType ?? ""}>
                     <option value="">All types</option>
                     <option value="initial">16-hr initial</option>
                     <option value="renewal">8-hr renewal</option>
                     <option value="both">Initial + renewal</option>
-                  </select>
+                  </VendorsSortSelect>
                 </label>
 
                 <label className="vendors-filter-group">
                   <span>Format</span>
-                  <select name="format" defaultValue={filters.format ?? ""}>
+                  <VendorsSortSelect name="format" defaultValue={filters.format ?? ""}>
                     <option value="">Any format</option>
                     <option value="in-person">In person</option>
                     <option value="online">Online</option>
                     <option value="hybrid">Hybrid</option>
-                  </select>
+                  </VendorsSortSelect>
                 </label>
 
                 <label className="vendors-filter-group">
                   <span>Category</span>
-                  <select name="category" defaultValue={filters.category ?? ""}>
+                  <VendorsSortSelect name="category" defaultValue={filters.category ?? ""}>
                     {CATEGORY_FILTER_OPTIONS.map((opt) => (
                       <option key={opt.value || "all"} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
-                  </select>
+                  </VendorsSortSelect>
                 </label>
 
                 {sort && <input type="hidden" name="sort" value={sort} />}
                 <input type="hidden" name="view" value={view} />
-                <button type="submit" className="btn-primary w-button vendors-filters-submit">
-                  Apply filters
-                </button>
               </form>
             </div>
           </aside>
@@ -317,16 +308,13 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                   )}
                   <input type="hidden" name="view" value={view} />
                   <span>Sort</span>
-                  <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
+                  <VendorsSortSelect name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
                     <option value="featured">Featured first</option>
                     <option value="price-low">Price: low to high</option>
                     <option value="price-high">Price: high to low</option>
                     <option value="name">Name: A to Z</option>
                     <option value="name-desc">Name: Z to A</option>
-                  </select>
-                  <button type="submit" className="vendors-sort-apply">
-                    Apply
-                  </button>
+                  </VendorsSortSelect>
                 </form>
               </div>
             </div>
@@ -347,7 +335,6 @@ export default async function VendorsPage({ searchParams }: PageProps) {
                         listingReviews={listingReviewStats.get(vendor.id) ?? null}
                         servedCounty={servedCounty}
                         showFeaturedBadge={Boolean(vendor.featured)}
-                        initialSaved={savedIds.has(vendor.id)}
                       />
                     );
                   })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 const PRICE_CEILING_TIERS = [150, 200, 300, 400] as const;
 
@@ -31,7 +32,10 @@ export function VendorsSidebarPriceSelect({
         id={selectId}
         aria-labelledby={ariaLabelledBy}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          flushSync(() => setValue(e.target.value));
+          e.currentTarget.form?.requestSubmit();
+        }}
       >
         <option value="listed">Price listed</option>
         <option value="">Any price</option>

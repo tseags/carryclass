@@ -7,6 +7,7 @@ import { SmoothScrollTo } from "@/components/SmoothScrollTo";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
 import { VendorsCountyCityDropdowns } from "@/components/VendorsCountyCityDropdowns";
 import { VendorsSidebarPriceSelect } from "@/components/VendorsSidebarPriceSelect";
+import { VendorsSortSelect } from "@/components/VendorsSortSelect";
 import { VendorsMapDynamic } from "@/components/VendorsMapDynamic";
 import {
   getCountyDisplayName,
@@ -23,7 +24,6 @@ import { GearCtaSection } from "@/components/GearCtaSection";
 import { CountyStatsSection } from "@/components/CountyStatsSection";
 import { CcwTimelineSection } from "@/components/CcwTimelineSection";
 import { countyHasTimelineData, getCcwTimelineForCounty } from "@/lib/ccw-timeline-db";
-import { getCurrentUserSavedVendorIds } from "@/lib/saved-vendors";
 import { SHOW_GEAR_SECTIONS } from "@/lib/feature-flags";
 import { getApprovedReviewStatsByVendorIds } from "@/lib/vendor-reviews";
 import { sortCountyListingVendors } from "@/lib/county-listing-sort";
@@ -112,8 +112,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
   const sort = resolved.sort as string | undefined;
   const view: "list" | "map" = resolved.view === "map" ? "map" : "list";
 
-  const allSavedIds = new Set(await getCurrentUserSavedVendorIds());
-
   const cityOptions = await getCitiesForCountyFilter(county);
 
   const vendorsFromQuery = await queryVendorsForListing(filters, sort);
@@ -122,10 +120,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
     vendorsFromQuery.map((v) => v.id)
   );
   const vendors = sortCountyListingVendors(vendorsFromQuery, listingReviewStats, sort);
-
-  const savedIds = new Set(
-    [...allSavedIds].filter((id) => vendors.some((vendor) => vendor.id === id))
-  );
 
   const countyImage = getCountyImageUrl(county);
   const timelineData = await getCcwTimelineForCounty(county);
@@ -269,29 +263,26 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
 
                 <label className="vendors-filter-group">
                   <span>Class type</span>
-                  <select name="classType" defaultValue={filters.classType ?? ""}>
+                  <VendorsSortSelect name="classType" defaultValue={filters.classType ?? ""}>
                     <option value="">All types</option>
                     <option value="initial">16-hr initial</option>
                     <option value="renewal">8-hr renewal</option>
                     <option value="both">Initial + renewal</option>
-                  </select>
+                  </VendorsSortSelect>
                 </label>
 
                 <label className="vendors-filter-group">
                   <span>Format</span>
-                  <select name="format" defaultValue={filters.format ?? ""}>
+                  <VendorsSortSelect name="format" defaultValue={filters.format ?? ""}>
                     <option value="">Any format</option>
                     <option value="in-person">In person</option>
                     <option value="online">Online</option>
                     <option value="hybrid">Hybrid</option>
-                  </select>
+                  </VendorsSortSelect>
                 </label>
 
                 <input type="hidden" name="view" value={view} />
                 {sort ? <input type="hidden" name="sort" value={sort} /> : null}
-                <button type="submit" className="btn-primary w-button vendors-filters-submit">
-                  Apply filters
-                </button>
               </form>
               <p className="vendors-filter-all-ca-link">
                 <Link href={`/instructors?county=${county}`} className="font-medium underline">
@@ -374,16 +365,13 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                   ) : null}
                   <input type="hidden" name="view" value={view} />
                   <span>Sort</span>
-                  <select name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
+                  <VendorsSortSelect name="sort" defaultValue={sort ?? "featured"} className="vendors-sort-select">
                     <option value="featured">Featured first</option>
                     <option value="price-low">Price: low to high</option>
                     <option value="price-high">Price: high to low</option>
                     <option value="name">Name: A to Z</option>
                     <option value="name-desc">Name: Z to A</option>
-                  </select>
-                  <button type="submit" className="vendors-sort-apply">
-                    Apply
-                  </button>
+                  </VendorsSortSelect>
                 </form>
               </div>
             </div>
@@ -398,7 +386,6 @@ export default async function CountyPage({ params, searchParams }: PageProps) {
                       listingReviews={listingReviewStats.get(vendor.id) ?? null}
                       servedCounty={displayName}
                       showFeaturedBadge={Boolean(vendor.featured)}
-                      initialSaved={savedIds.has(vendor.id)}
                     />
                   ))}
                 </div>
