@@ -24,10 +24,6 @@
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 /* ── Onboarding / Dashboard shared form input style ── */
 .input-field {
   display: block;
