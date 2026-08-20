@@ -78,6 +78,28 @@ export function getCountyDisplayName(slug: string): string {
   return COUNTY_DISPLAY_NAMES[slug] ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Infer a county slug from class location text when a California county name
+ * appears as a word (e.g. "Alameda County Range"). Returns null if none or
+ * more than one county matches — callers must not guess.
+ */
+export function countySlugFromClassLocation(text: string | null | undefined): string | null {
+  if (!text?.trim()) return null;
+  const lower = text.trim().toLowerCase();
+  const hits = new Set<string>();
+  for (const slug of CALIFORNIA_COUNTIES) {
+    if (lower === slug) {
+      hits.add(slug);
+      continue;
+    }
+    const name = COUNTY_DISPLAY_NAMES[slug].toLowerCase();
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`\\b${escaped}(?:\\s+county)?\\b`, "i");
+    if (re.test(lower)) hits.add(slug);
+  }
+  return hits.size === 1 ? [...hits][0] : null;
+}
+
 export function isValidCountySlug(slug: string): boolean {
   return CALIFORNIA_COUNTIES.includes(slug as CaliforniaCountySlug);
 }

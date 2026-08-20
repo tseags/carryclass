@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import type { VendorProfile, VendorCalendarClass, VendorClassType, VendorEmailTemplate } from "@/lib/onboarding-db";
+
+type DashboardClass = VendorCalendarClass & { registrationCount?: number };
 import type {
   DashboardReview,
   DashboardRegistration,
@@ -16,13 +18,12 @@ import { ReviewsDrawer } from "./ReviewsDrawer";
 import { EmailEditorPanel, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
 import { AddClassDrawer } from "./AddClassDrawer";
+import { RegistrationsCrm, registrationsForDisplay } from "./RegistrationsCrm";
 import { Step1Profile } from "@/components/onboarding/Step1Profile";
 import { Step2ClassTypes } from "@/components/onboarding/Step2ClassTypes";
 import { Step4Cancellation } from "@/components/onboarding/Step4Cancellation";
 import {
-  formatStudentName,
   formatLongDate,
-  formatShortDate,
   formatTime,
   formatCurrency,
 } from "./dashboard-format";
@@ -85,6 +86,26 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add a Gun",
 };
 
+function classTypeLabel(type: string | null | undefined): string {
+  if (!type) return "—";
+  return CLASS_TYPE_LABELS[type] ?? type;
+}
+
+const REGISTRATION_TYPE_LABELS: Record<string, string> = {
+  initial: "initial",
+  renewal: "renewal",
+  add_a_gun: "add a gun",
+};
+
+function registrationTypeLabel(type: string | null | undefined): string {
+  if (!type) return "—";
+  return REGISTRATION_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
+}
+
+function classDisplayName(r: DashboardRegistration): string {
+  return r.classTitle?.trim() || classTypeLabel(r.classType);
+}
+
 const TIMING_LABELS: Record<string, string> = {
   "24h_before": "24 hours before",
   "48h_before": "48 hours before",
@@ -97,7 +118,7 @@ const TIMING_LABELS: Record<string, string> = {
 interface Props {
   vendor: VendorProfile;
   firstName: string;
-  classes: VendorCalendarClass[];
+  classes: DashboardClass[];
   classTypes: VendorClassType[];
   registrations: DashboardRegistration[];
   reviews: DashboardReview[];
@@ -173,12 +194,16 @@ export function VendorDashboard(props: Props) {
   }
 
   function handleClassSaved(updated: VendorCalendarClass) {
-    setClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setClasses((prev) =>
+      prev.map((c) =>
+        c.id === updated.id ? { ...c, ...updated, registrationCount: c.registrationCount } : c
+      )
+    );
   }
 
   function handleClassAdded(created: VendorCalendarClass, updatedTypes: VendorClassType[]) {
     setClasses((prev) =>
-      [...prev, created].sort(
+      [...prev, { ...created, registrationCount: 0 }].sort(
         (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
       )
     );
@@ -310,7 +335,9 @@ export function VendorDashboard(props: Props) {
               onAddClass={() => setAddingClass(true)}
             />
           )}
-          {tab === "registrations" && <RegistrationsPanel registrations={props.registrations} full />}
+          {tab === "registrations" && (
+            <RegistrationsCrm registrations={props.registrations} classTypes={classTypes} />
+          )}
           {tab === "emails" &&
             (editorType ? (
               <EmailEditorPanel
@@ -409,7 +436,7 @@ function OverviewTab({
       </div>
 
       <ClassesPanel classes={classes} onEditClass={onEditClass} onCancelClass={onCancelClass} onAddClass={onAddClass} />
-      <RecentRegistrationsPanel registrations={registrations} />
+      <RecentRegistrationsPanel registrations={registrationsForDisplay(registrations)} />
       <EmailTemplatesPanel templates={templates} onEdit={onEditTemplate} onToggle={onToggleTemplate} />
       <PaymentsPanel vendor={vendor} payout={payout} />
     </div>
@@ -466,7 +493,7 @@ function ClassesPanel({
   onCancelClass,
   onAddClass,
 }: {
-  classes: VendorCalendarClass[];
+  classes: DashboardClass[];
   heading?: boolean;
   onEditClass: (cls: VendorCalendarClass) => void;
   onCancelClass: (cls: VendorCalendarClass) => void;
@@ -508,7 +535,7 @@ function ClassesPanel({
                 <th className="py-3 pr-4 w-44">Location</th>
                 <th className="py-3 pr-4">Class type</th>
                 <th className="py-3 pr-4">Spots</th>
-                <th className="py-3 pr-4">Schedule</th>
+                <th className="py-3 pr-4">Registrations</th>
                 <th className="py-3 pr-4">Status</th>
                 <th className="py-3 w-10" aria-label="Actions" />
               </tr>
@@ -527,15 +554,7 @@ function ClassesPanel({
                     {c.class_type ? CLASS_TYPE_LABELS[c.class_type] ?? c.class_type : "—"}
                   </td>
                   <td className="py-4 pr-4 text-gray-600">{c.max_students ?? "—"}</td>
-                  <td className="py-4 pr-4">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        c.is_recurring ? "bg-indigo-50 text-indigo-700" : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {c.is_recurring ? "Recurring" : "One-time"}
-                    </span>
-                  </td>
+                  <td className="py-4 pr-4 text-gray-600">{c.registrationCount ?? 0}</td>
                   <td className="py-4 pr-4">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusPill(c.is_active)}`}>
                       {c.is_active ? "Active" : "Inactive"}
@@ -661,79 +680,78 @@ function paymentPill(status: string) {
   return "bg-gray-100 text-gray-500";
 }
 
-function RecentRegistrationsPanel({ registrations }: { registrations: DashboardRegistration[] }) {
-  const recent = registrations.slice(0, 5);
+function RegistrationsTable({ registrations }: { registrations: DashboardRegistration[] }) {
+  if (registrations.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-gray-500">
+        No registrations yet. They&apos;ll appear here when students book through CarryClass.
+      </p>
+    );
+  }
+
   return (
-    <section className="rounded-lg border border-gray-200 p-5">
-      <h2 className="mb-4 text-sm font-semibold text-gray-900">Recent Registrations</h2>
-      {recent.length === 0 ? (
-        <p className="py-6 text-center text-sm text-gray-500">No registrations yet.</p>
-      ) : (
-        <>
-          <ul className="divide-y divide-gray-100">
-            {recent.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{formatStudentName(r.customerName)}</p>
-                  <p className="text-xs text-gray-500">
-                    Class {formatShortDate(r.classDate)} · Registered {formatShortDate(r.registeredOn)}
-                  </p>
-                </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
+    <div className="overflow-x-auto">
+      <table className="w-full table-fixed text-sm">
+        <colgroup>
+          <col className="w-[20%]" />
+          <col className="w-[22%]" />
+          <col className="w-[12%]" />
+          <col className="w-[13%]" />
+          <col className="w-[10%]" />
+          <col className="w-[13%]" />
+          <col className="w-[10%]" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+            <th className="py-3 pr-6">Student</th>
+            <th className="py-3 pr-6">Class</th>
+            <th className="py-3 pr-6">Type</th>
+            <th className="py-3 pr-6">Date</th>
+            <th className="py-3 pr-6">Time</th>
+            <th className="py-3 pr-6">Registered</th>
+            <th className="py-3">Payment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {registrations.map((r) => (
+            <tr key={r.id} className="border-b border-gray-100 last:border-0">
+              <td className="py-4 pr-6 align-top">
+                <p className="font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
+                <p className="mt-0.5 text-xs leading-snug text-gray-500 line-clamp-2">{r.customerEmail}</p>
+              </td>
+              <td className="py-4 pr-6 align-top text-gray-600">
+                <span className="block leading-snug line-clamp-2" title={classDisplayName(r)}>
+                  {classDisplayName(r)}
+                </span>
+              </td>
+              <td className="py-4 pr-6 align-top leading-snug text-gray-600">{registrationTypeLabel(r.classType)}</td>
+              <td className="py-4 pr-6 align-top font-medium leading-snug text-gray-900">
+                <span className="line-clamp-2">{formatLongDate(r.classDate)}</span>
+              </td>
+              <td className="py-4 pr-6 align-top leading-snug text-gray-600">{formatTime(r.classDate)}</td>
+              <td className="py-4 pr-6 align-top leading-snug text-gray-600">
+                <span className="line-clamp-2">{formatLongDate(r.registeredOn)}</span>
+              </td>
+              <td className="py-4 align-top">
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
                   {r.status}
                 </span>
-              </li>
-            ))}
-          </ul>
-          {registrations.length > recent.length && (
-            <p className="mt-3 text-right text-xs text-gray-400">
-              Showing {recent.length} of {registrations.length}
-            </p>
-          )}
-        </>
-      )}
-    </section>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function RegistrationsPanel({ registrations, full }: { registrations: DashboardRegistration[]; full?: boolean }) {
+function RecentRegistrationsPanel({ registrations }: { registrations: DashboardRegistration[] }) {
   return (
-    <section className={full ? "" : "rounded-lg border border-gray-200 p-5"}>
-      {full && <h1 className="mb-6 text-2xl font-bold text-gray-900">Registrations</h1>}
-      <div className="rounded-lg border border-gray-200 p-5">
-        {registrations.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500">
-            No registrations yet. They&apos;ll appear here when students book through CarryClass.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                  <th className="py-2 pr-4">Student</th>
-                  <th className="py-2 pr-4">Class Date</th>
-                  <th className="py-2 pr-4">Registered On</th>
-                  <th className="py-2">Payment Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {registrations.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100 last:border-0">
-                    <td className="py-3 pr-4 text-gray-900">{formatStudentName(r.customerName)}</td>
-                    <td className="py-3 pr-4 text-gray-600">{formatLongDate(r.classDate)}</td>
-                    <td className="py-3 pr-4 text-gray-600">{formatLongDate(r.registeredOn)}</td>
-                    <td className="py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+    <section className="rounded-lg border border-gray-200 p-6">
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
       </div>
+      <RegistrationsTable registrations={registrations.slice(0, 8)} />
     </section>
   );
 }

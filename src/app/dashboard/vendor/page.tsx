@@ -12,9 +12,12 @@ import {
 import {
   getDashboardReviews,
   getDashboardRegistrations,
+  attachCalendarToRegistrations,
   getDashboardStats,
   getDashboardPayout,
   getEmailMetrics,
+  getDashboardRegistrationCountsByStartMinute,
+  classStartMinute,
 } from "@/lib/dashboard-db";
 import { VendorDashboard } from "@/components/dashboard/VendorDashboard";
 
@@ -36,7 +39,7 @@ export default async function VendorDashboardPage() {
 
   const now = new Date();
 
-  const [allClasses, classTypes, templates, reviews, registrations, stats, payout, emailMetrics] =
+  const [allClasses, classTypes, templates, reviews, rawRegistrations, stats, payout, emailMetrics, registrationCounts] =
     await Promise.all([
       getCalendarClasses(vendor.id),
       getClassTypes(vendor.id),
@@ -46,9 +49,17 @@ export default async function VendorDashboardPage() {
       getDashboardStats(vendor.slug),
       getDashboardPayout(vendor.stripe_account_id),
       getEmailMetrics(vendor.id),
+      getDashboardRegistrationCountsByStartMinute(vendor.slug),
     ]);
 
-  const upcomingClasses = allClasses.filter((c) => new Date(c.start_time) > now);
+  const registrations = attachCalendarToRegistrations(rawRegistrations, allClasses);
+
+  const upcomingClasses = allClasses
+    .filter((c) => new Date(c.start_time) > now)
+    .map((c) => ({
+      ...c,
+      registrationCount: registrationCounts[classStartMinute(c.start_time)] ?? 0,
+    }));
 
   const templateMap = Object.fromEntries(
     templates.map((t) => [t.type, t])

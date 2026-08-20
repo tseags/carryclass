@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getVendorProfile } from "@/lib/onboarding-db";
-import { getDashboardRegistrations } from "@/lib/dashboard-db";
+import { getVendorProfile, getCalendarClasses } from "@/lib/onboarding-db";
+import { attachCalendarToRegistrations, getDashboardRegistrations } from "@/lib/dashboard-db";
 
 export const runtime = "nodejs";
 
@@ -16,6 +16,10 @@ export async function GET() {
     return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
   }
 
-  const registrations = await getDashboardRegistrations(vendor.slug);
+  const [raw, calendar] = await Promise.all([
+    getDashboardRegistrations(vendor.slug),
+    getCalendarClasses(vendor.id),
+  ]);
+  const registrations = attachCalendarToRegistrations(raw, calendar);
   return NextResponse.json({ registrations, count: registrations.length });
 }

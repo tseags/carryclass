@@ -10,6 +10,7 @@
  *
  * Never import this module from a client component.
  */
+import { countySlugFromClassLocation } from "@/data/counties";
 import { prisma } from "@/lib/db";
 import { isPrismaConnectionError } from "@/lib/prisma-connection-error";
 import { getStripe } from "@/lib/stripe";
@@ -28,10 +29,20 @@ export interface DashboardRegistration {
   id: string;
   customerName: string;
   customerEmail: string;
+  classTitle: string | null;
+  classType: string | null;
   classDate: string | null;
   registeredOn: string;
   status: string;
   paidAt: string | null;
+  classSessionId: string | null;
+  /** Calendar location when a session can be joined by start time. */
+  location: string | null;
+  /**
+   * Canonical county slug when location text uniquely names a CA county.
+   * Null when unknown or ambiguous — never inferred from vendor counties_served.
+   */
+  countySlug: string | null;
 }
 
 export interface DashboardStats {
@@ -120,10 +131,9 @@ export async function getDashboardReviews(slug: string | null): Promise<Dashboar
   }
 }
 
-/** Bookings for the instructor, newest first. */
+/** Bookings for the instructor, newest first. No silent cap — instructors need the full roster. */
 export async function getDashboardRegistrations(
-  slug: string | null,
-  limit = 100
+  slug: string | null
 ): Promise<DashboardRegistration[]> {
   const vendorId = await resolvePrismaVendorId(slug);
   if (!vendorId) return [];
@@ -132,7 +142,6 @@ export async function getDashboardRegistrations(
     const rows = await prisma.booking.findMany({
       where: { vendorId },
       orderBy: { createdAt: "desc" },
-      take: limit,
       select: {
         id: true,
         customerName: true,
@@ -140,7 +149,8 @@ export async function getDashboardRegistrations(
         status: true,
         paidAt: true,
         createdAt: true,
-        classSession: { select: { startsAt: true } },
+        classSessionId: true,
+        classSession: { select: { startsAt: true, title: true, classType: true } },
       },
     });
 
@@ -148,15 +158,117 @@ export async function getDashboardRegistrations(
       id: row.id,
       customerName: row.customerName,
       customerEmail: row.customerEmail,
+      classTitle: row.classSession?.title ?? null,
+      classType: row.classSession?.classType ?? null,
       classDate: row.classSession?.startsAt?.toISOString() ?? null,
       registeredOn: row.createdAt.toISOString(),
       status: row.status,
       paidAt: row.paidAt?.toISOString() ?? null,
+      classSessionId: row.classSessionId,
+      location: null,
+      countySlug: null,
     }));
   } catch (error) {
     if (isPrismaConnectionError(error)) return [];
     console.error("[dashboard-db] getDashboardRegistrations", error);
     return [];
+  }
+}
+
+type CalendarJoinRow = {
+  start_time: string;
+  title: string | null;
+  location: string | null;
+  range_location: string | null;
+};
+
+/**
+ * Join Supabase calendar classes onto Prisma bookings by start-minute (and title
+ * when several events share a minute). County is set only when location text
+ * uniquely names a California county.
+ */
+export function attachCalendarToRegistrations(
+  registrations: DashboardRegistration[],
+  calendarClasses: CalendarJoinRow[]
+): DashboardRegistration[] {
+  if (registrations.length === 0 || calendarClasses.length === 0) return registrations;
+
+  const byMinute = new Map<number, CalendarJoinRow[]>();
+  for (const cls of calendarClasses) {
+    const minute = classStartMinute(cls.start_time);
+    const list = byMinute.get(minute);
+    if (list) list.push(cls);
+    else byMinute.set(minute, [cls]);
+  }
+
+  return registrations.map((row) => {
+    if (!row.classDate) return row;
+    const candidates = byMinute.get(classStartMinute(row.classDate));
+    if (!candidates?.length) return row;
+
+    const title = row.classTitle?.trim().toLowerCase() ?? "";
+    const match =
+      (title
+        ? candidates.find((c) => (c.title?.trim().toLowerCase() ?? "") === title)
+        : undefined) ?? candidates[0];
+
+    const location = match.location?.trim() || match.range_location?.trim() || null;
+    const fromLocation = countySlugFromClassLocation(match.location);
+    const fromRange = countySlugFromClassLocation(match.range_location);
+    let countySlug: string | null = null;
+    if (fromLocation && fromRange && fromLocation !== fromRange) {
+      countySlug = null;
+    } else {
+      countySlug = fromLocation ?? fromRange;
+    }
+
+    return { ...row, location, countySlug };
+  });
+}
+
+/** Round a class start to the minute so calendar rows can join Prisma sessions. */
+export function classStartMinute(iso: string | Date): number {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return 0;
+  return Math.floor(t / 60_000);
+}
+
+/**
+ * Paid + pending booking counts keyed by class start minute.
+ * Calendar classes (Supabase) and bookable sessions (Prisma) share no id, so
+ * the dashboard joins them on start time.
+ */
+export async function getDashboardRegistrationCountsByStartMinute(
+  slug: string | null
+): Promise<Record<number, number>> {
+  const vendorId = await resolvePrismaVendorId(slug);
+  if (!vendorId) return {};
+
+  try {
+    const groups = await prisma.booking.groupBy({
+      by: ["classSessionId"],
+      where: { vendorId, status: { in: ["PAID", "PENDING"] } },
+      _count: { _all: true },
+    });
+    if (groups.length === 0) return {};
+
+    const sessions = await prisma.classSession.findMany({
+      where: { id: { in: groups.map((g) => g.classSessionId) } },
+      select: { id: true, startsAt: true },
+    });
+    const sessionMinute = new Map(sessions.map((s) => [s.id, classStartMinute(s.startsAt)]));
+
+    const counts: Record<number, number> = {};
+    for (const group of groups) {
+      const minute = sessionMinute.get(group.classSessionId);
+      if (minute == null) continue;
+      counts[minute] = (counts[minute] ?? 0) + group._count._all;
+    }
+    return counts;
+  } catch (error) {
+    if (isPrismaConnectionError(error)) return {};
+    console.error("[dashboard-db] getDashboardRegistrationCountsByStartMinute", error);
+    return {};
   }
 }
 
