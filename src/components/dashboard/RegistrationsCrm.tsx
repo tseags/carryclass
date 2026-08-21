@@ -15,21 +15,7 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add a Gun",
 };
 
-const REGISTRATION_TYPE_LABELS: Record<string, string> = {
-  initial: "initial",
-  renewal: "renewal",
-  add_a_gun: "add a gun",
-};
-
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-
-const PAYMENT_TABS = [
-  { key: null, label: "All" },
-  { key: "PAID", label: "Paid" },
-  { key: "PENDING", label: "Pending" },
-  { key: "REFUNDED", label: "Refunded" },
-  { key: "CANCELLED", label: "Cancelled" },
-] as const;
 
 type WhenFilter = "all" | "upcoming" | "past";
 
@@ -40,7 +26,6 @@ interface Filters {
   weekday: number | null;
   timeLabel: string | null;
   countySlug: string | null;
-  payment: string | null;
   when: WhenFilter;
 }
 
@@ -51,22 +36,12 @@ const EMPTY_FILTERS: Filters = {
   weekday: null,
   timeLabel: null,
   countySlug: null,
-  payment: null,
   when: "all",
 };
 
 function classTypeLabel(type: string | null | undefined): string {
   if (!type) return "—";
-  return CLASS_TYPE_LABELS[type] ?? type;
-}
-
-function registrationTypeLabel(type: string | null | undefined): string {
-  if (!type) return "—";
-  return REGISTRATION_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
-}
-
-function classDisplayName(r: DashboardRegistration): string {
-  return r.classTitle?.trim() || classTypeLabel(r.classType);
+  return CLASS_TYPE_LABELS[type] ?? "—";
 }
 
 function sessionKey(r: DashboardRegistration): string {
@@ -89,7 +64,7 @@ function parseClassDate(iso: string | null): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function applyFilters(regs: DashboardRegistration[], f: Filters, skipPayment = false): DashboardRegistration[] {
+function applyFilters(regs: DashboardRegistration[], f: Filters): DashboardRegistration[] {
   const q = f.query.trim().toLowerCase();
   const now = Date.now();
   return regs.filter((r) => {
@@ -100,7 +75,6 @@ function applyFilters(regs: DashboardRegistration[], f: Filters, skipPayment = f
     if (f.classType && r.classType !== f.classType) return false;
     if (f.sessionKey && sessionKey(r) !== f.sessionKey) return false;
     if (f.countySlug && r.countySlug !== f.countySlug) return false;
-    if (!skipPayment && f.payment && r.status.toUpperCase() !== f.payment) return false;
 
     const date = parseClassDate(r.classDate);
     if (f.weekday !== null) {
@@ -127,7 +101,6 @@ function filtersAreActive(f: Filters): boolean {
     f.weekday !== null ||
     f.timeLabel !== null ||
     f.countySlug !== null ||
-    f.payment !== null ||
     f.when !== "all"
   );
 }
@@ -290,7 +263,7 @@ export function RegistrationsCrm({
       const key = sessionKey(r);
       if (seen.has(key)) continue;
       const date = parseClassDate(r.classDate);
-      const label = `${classDisplayName(r)}${date ? ` · ${formatLongDate(r.classDate)} · ${formatTime(r.classDate)}` : ""}`;
+      const label = `${classTypeLabel(r.classType)}${date ? ` · ${formatLongDate(r.classDate)} · ${formatTime(r.classDate)}` : ""}`;
       seen.set(key, { key, label, sort: date?.getTime() ?? 0 });
     }
     return [...seen.values()].sort((a, b) => a.sort - b.sort);
@@ -322,20 +295,6 @@ export function RegistrationsCrm({
   }, [registrations]);
 
   const showCounty = countyOptions.length > 0;
-
-  const baseFiltered = useMemo(
-    () => applyFilters(registrations, filters, true),
-    [registrations, filters]
-  );
-
-  const tabCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: baseFiltered.length };
-    for (const r of baseFiltered) {
-      const s = r.status.toUpperCase();
-      counts[s] = (counts[s] ?? 0) + 1;
-    }
-    return counts;
-  }, [baseFiltered]);
 
   const filtered = useMemo(() => applyFilters(registrations, filters), [registrations, filters]);
 
@@ -369,13 +328,8 @@ export function RegistrationsCrm({
     setMoreOpen(false);
   }
 
-  const visibleTabs = PAYMENT_TABS.filter((tab) => {
-    if (tab.key === null) return true;
-    return (tabCounts[tab.key] ?? 0) > 0;
-  });
-
   return (
-    <section className="rounded-lg border border-gray-200 p-5 sm:p-6">
+    <section className="rounded-lg border border-gray-200 bg-gray-50 p-5 sm:p-6">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Registrations</h2>
@@ -393,30 +347,6 @@ export function RegistrationsCrm({
           Showing sample registrations so you can try filters. Live bookings will replace this list.
         </p>
       )}
-
-      {/* Payment status tabs */}
-      <div className="-mx-1 mb-3 overflow-x-auto border-b border-gray-200">
-        <div className="flex min-w-max gap-1 px-1">
-          {visibleTabs.map((tab) => {
-            const isActive = filters.payment === tab.key;
-            const count = tab.key === null ? tabCounts.all : (tabCounts[tab.key] ?? 0);
-            return (
-              <button
-                key={tab.label}
-                type="button"
-                onClick={() => patch({ payment: tab.key })}
-                className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "border-[#C1440E] font-semibold text-[#C1440E]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab.label} ({count})
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Compact filter toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -452,7 +382,7 @@ export function RegistrationsCrm({
             <option value="">All class types</option>
             {typeOptions.map((t) => (
               <option key={t} value={t}>
-                {registrationTypeLabel(t)}
+                {classTypeLabel(t)}
               </option>
             ))}
           </select>
@@ -626,21 +556,19 @@ function RegistrationsTable({
     <div className="overflow-x-auto">
       <table className="w-full table-fixed text-sm">
         <colgroup>
+          <col className="w-[32%]" />
           <col className="w-[28%]" />
-          <col className="w-[26%]" />
-          <col className="w-[12%]" />
-          {showCounty && <col className="w-[12%]" />}
+          {showCounty && <col className="w-[14%]" />}
           <col className="w-[16%]" />
           <col className="w-[10%]" />
         </colgroup>
         <thead>
           <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-            <th className="py-2.5 pr-4">Name</th>
-            <th className="py-2.5 pr-4">Class</th>
-            <th className="py-2.5 pr-4">Type</th>
-            {showCounty && <th className="py-2.5 pr-4">County</th>}
-            <th className="py-2.5 pr-4">Date</th>
-            <th className="py-2.5">Payment</th>
+            <th className="!py-4 !pr-4">Name</th>
+            <th className="!py-4 !pr-4">Class</th>
+            {showCounty && <th className="!py-4 !pr-4">County</th>}
+            <th className="!py-4 !pr-4">Date</th>
+            <th className="!py-4">Payment</th>
           </tr>
         </thead>
         <tbody>
@@ -652,28 +580,25 @@ function RegistrationsTable({
                 selectedId === r.id ? "bg-[#C1440E]/5" : ""
               }`}
             >
-              <td className="py-3 pr-4 align-top">
-                <p className="font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
-                <p className="mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerEmail}</p>
+              <td className="!py-5 !pr-4 align-top">
+                <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
+                <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerEmail}</p>
               </td>
-              <td className="py-3 pr-4 align-top text-gray-600">
-                <span className="block leading-snug line-clamp-2" title={classDisplayName(r)}>
-                  {classDisplayName(r)}
+              <td className="!py-5 !pr-4 align-top text-gray-600">
+                <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>
+                  {classTypeLabel(r.classType)}
                 </span>
               </td>
-              <td className="py-3 pr-4 align-top leading-snug text-gray-600">
-                {registrationTypeLabel(r.classType)}
-              </td>
               {showCounty && (
-                <td className="py-3 pr-4 align-top leading-snug text-gray-600">
+                <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">
                   {r.countySlug ? getCountyDisplayName(r.countySlug) : "—"}
                 </td>
               )}
-              <td className="py-3 pr-4 align-top leading-snug text-gray-900">
+              <td className="!py-5 !pr-4 align-top leading-snug text-gray-900">
                 <span className="line-clamp-2">{formatLongDate(r.classDate)}</span>
                 <span className="text-xs text-gray-500">{formatTime(r.classDate)}</span>
               </td>
-              <td className="py-3 align-top">
+              <td className="!py-5 align-top">
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
                   {r.status}
                 </span>
@@ -708,11 +633,7 @@ function StudentDrawer({
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Class</dt>
-            <dd className="mt-1 text-gray-900">{classDisplayName(r)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Type</dt>
-            <dd className="mt-1 text-gray-900">{registrationTypeLabel(r.classType)}</dd>
+            <dd className="mt-1 text-gray-900">{classTypeLabel(r.classType)}</dd>
           </div>
           {r.countySlug && (
             <div>

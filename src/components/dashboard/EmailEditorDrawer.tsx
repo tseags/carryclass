@@ -262,8 +262,8 @@ export function EmailEditorPanel({
                     onClick={() => setSendMode("relative")}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       sendMode === "relative"
-                        ? "bg-[#C1440E] text-white"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-gray-900 !text-white"
+                        : "!text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     Relative to class
@@ -273,8 +273,8 @@ export function EmailEditorPanel({
                     onClick={() => setSendMode("scheduled")}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       sendMode === "scheduled"
-                        ? "bg-[#C1440E] text-white"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-gray-900 !text-white"
+                        : "!text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     Specific date &amp; time
@@ -394,13 +394,13 @@ export function EmailEditorPanel({
             </div>
           </div>
 
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="!mt-6 !mb-0 text-xs text-gray-400">
             Merge tags like <span className="font-mono">{"{student_name}"}</span> are shown
             literally here and filled with real booking details when the email is sent.
           </p>
 
           {testMessage && (
-            <p className={`mt-2 text-xs ${testStatus === "error" ? "text-red-600" : "text-emerald-600"}`}>
+            <p className={`!mt-2 text-xs ${testStatus === "error" ? "text-red-600" : "text-emerald-600"}`}>
               {testMessage}
             </p>
           )}
@@ -409,7 +409,7 @@ export function EmailEditorPanel({
             <button
               type="button"
               onClick={resetToDefault}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="rounded-lg !border !border-gray-300 px-4 py-2 text-sm font-medium !text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Reset to default
             </button>
@@ -417,7 +417,7 @@ export function EmailEditorPanel({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-[#C1440E] px-6 py-2 text-sm font-medium text-white hover:bg-[#a53a0c] disabled:opacity-60 transition-colors"
+              className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium !text-white hover:bg-black disabled:opacity-60 transition-colors"
             >
               {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
             </button>

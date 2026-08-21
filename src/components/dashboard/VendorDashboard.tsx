@@ -88,22 +88,7 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
 
 function classTypeLabel(type: string | null | undefined): string {
   if (!type) return "—";
-  return CLASS_TYPE_LABELS[type] ?? type;
-}
-
-const REGISTRATION_TYPE_LABELS: Record<string, string> = {
-  initial: "initial",
-  renewal: "renewal",
-  add_a_gun: "add a gun",
-};
-
-function registrationTypeLabel(type: string | null | undefined): string {
-  if (!type) return "—";
-  return REGISTRATION_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
-}
-
-function classDisplayName(r: DashboardRegistration): string {
-  return r.classTitle?.trim() || classTypeLabel(r.classType);
+  return CLASS_TYPE_LABELS[type] ?? "—";
 }
 
 const TIMING_LABELS: Record<string, string> = {
@@ -336,7 +321,18 @@ export function VendorDashboard(props: Props) {
             />
           )}
           {tab === "registrations" && (
-            <RegistrationsCrm registrations={props.registrations} classTypes={classTypes} />
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <StatCard
+                  label="Total Registrations"
+                  sublabel="via CarryClass"
+                  value={props.stats.totalRegistrations}
+                />
+                <StatCard label="This Month" value={props.stats.registrationsThisMonth} />
+                <StatCard label="Upcoming Classes" value={classes.length} />
+              </div>
+              <RegistrationsCrm registrations={props.registrations} classTypes={classTypes} />
+            </div>
           )}
           {tab === "emails" &&
             (editorType ? (
@@ -445,7 +441,7 @@ function OverviewTab({
 
 function StatCard({ label, sublabel, value }: { label: string; sublabel?: string; value: number }) {
   return (
-    <div className="rounded-lg border border-gray-200 p-5">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
       <p className="text-2xl font-bold text-gray-900">{value}</p>
       <p className="mt-1 text-sm font-medium text-gray-700">{label}</p>
       {sublabel && <p className="text-xs text-gray-400">{sublabel}</p>}
@@ -458,7 +454,7 @@ function ReviewsStatCard({ count, onClick }: { count: number; onClick: () => voi
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-gray-200 p-5 text-left transition-colors hover:border-[#C1440E] hover:bg-[#C1440E]/5"
+      className="rounded-lg border border-gray-200 bg-gray-50 p-5 text-left transition-colors hover:border-[#C1440E] hover:bg-[#C1440E]/5"
     >
       {count > 0 ? (
         <>
@@ -500,7 +496,7 @@ function ClassesPanel({
   onAddClass: () => void;
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 p-6">
+    <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
       <div className="mb-5 flex items-center justify-between">
         <h2 className={heading ? "text-lg font-semibold text-gray-900" : "text-sm font-semibold text-gray-900"}>
           Classes &amp; Schedule
@@ -530,37 +526,37 @@ function ClassesPanel({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                <th className="py-3 pr-4 whitespace-nowrap">Date</th>
-                <th className="py-3 pr-4 whitespace-nowrap">Time</th>
-                <th className="py-3 pr-4 w-44">Location</th>
-                <th className="py-3 pr-4">Class type</th>
-                <th className="py-3 pr-4">Spots</th>
-                <th className="py-3 pr-4">Registrations</th>
-                <th className="py-3 pr-4">Status</th>
-                <th className="py-3 w-10" aria-label="Actions" />
+                <th className="!py-4 !pr-4 whitespace-nowrap">Date</th>
+                <th className="!py-4 !pr-4 whitespace-nowrap">Time</th>
+                <th className="!py-4 !pr-4 w-44">Location</th>
+                <th className="!py-4 !pr-4">Class type</th>
+                <th className="!py-4 !pr-4">Spots</th>
+                <th className="!py-4 !pr-4">Registrations</th>
+                <th className="!py-4 !pr-4">Status</th>
+                <th className="!py-4 w-10" aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {classes.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 last:border-0">
-                  <td className="py-4 pr-4 font-medium text-gray-900 whitespace-nowrap">{formatLongDate(c.start_time)}</td>
-                  <td className="py-4 pr-4 text-gray-600 whitespace-nowrap">{formatTime(c.start_time)}</td>
-                  <td className="py-4 pr-4 text-gray-600">
-                    <span className="block max-w-44 line-clamp-2" title={c.location || undefined}>
+                  <td className="!py-5 !pr-4 align-top font-medium leading-snug text-gray-900 whitespace-nowrap">{formatLongDate(c.start_time)}</td>
+                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600 whitespace-nowrap">{formatTime(c.start_time)}</td>
+                  <td className="!py-5 !pr-4 align-top text-gray-600">
+                    <span className="block max-w-44 leading-snug line-clamp-2" title={c.location || undefined}>
                       {c.location || "—"}
                     </span>
                   </td>
-                  <td className="py-4 pr-4 text-gray-600">
-                    {c.class_type ? CLASS_TYPE_LABELS[c.class_type] ?? c.class_type : "—"}
+                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">
+                    {classTypeLabel(c.class_type)}
                   </td>
-                  <td className="py-4 pr-4 text-gray-600">{c.max_students ?? "—"}</td>
-                  <td className="py-4 pr-4 text-gray-600">{c.registrationCount ?? 0}</td>
-                  <td className="py-4 pr-4">
+                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.max_students ?? "—"}</td>
+                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.registrationCount ?? 0}</td>
+                  <td className="!py-5 !pr-4 align-top">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusPill(c.is_active)}`}>
                       {c.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="py-4 text-right">
+                  <td className="!py-5 align-top text-right">
                     <ClassRowMenu
                       onEdit={() => onEditClass(c)}
                       onCancel={() => onCancelClass(c)}
@@ -693,46 +689,43 @@ function RegistrationsTable({ registrations }: { registrations: DashboardRegistr
     <div className="overflow-x-auto">
       <table className="w-full table-fixed text-sm">
         <colgroup>
-          <col className="w-[20%]" />
-          <col className="w-[22%]" />
+          <col className="w-[26%]" />
+          <col className="w-[24%]" />
+          <col className="w-[14%]" />
+          <col className="w-[10%]" />
+          <col className="w-[14%]" />
           <col className="w-[12%]" />
-          <col className="w-[13%]" />
-          <col className="w-[10%]" />
-          <col className="w-[13%]" />
-          <col className="w-[10%]" />
         </colgroup>
         <thead>
           <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-            <th className="py-3 pr-6">Student</th>
-            <th className="py-3 pr-6">Class</th>
-            <th className="py-3 pr-6">Type</th>
-            <th className="py-3 pr-6">Date</th>
-            <th className="py-3 pr-6">Time</th>
-            <th className="py-3 pr-6">Registered</th>
-            <th className="py-3">Payment</th>
+            <th className="!py-4 !pr-6">Student</th>
+            <th className="!py-4 !pr-6">Class</th>
+            <th className="!py-4 !pr-6">Date</th>
+            <th className="!py-4 !pr-6">Time</th>
+            <th className="!py-4 !pr-6">Registered</th>
+            <th className="!py-4">Payment</th>
           </tr>
         </thead>
         <tbody>
           {registrations.map((r) => (
             <tr key={r.id} className="border-b border-gray-100 last:border-0">
-              <td className="py-4 pr-6 align-top">
-                <p className="font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
-                <p className="mt-0.5 text-xs leading-snug text-gray-500 line-clamp-2">{r.customerEmail}</p>
+              <td className="!py-5 !pr-6 align-top">
+                <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
+                <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-2">{r.customerEmail}</p>
               </td>
-              <td className="py-4 pr-6 align-top text-gray-600">
-                <span className="block leading-snug line-clamp-2" title={classDisplayName(r)}>
-                  {classDisplayName(r)}
+              <td className="!py-5 !pr-6 align-top text-gray-600">
+                <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>
+                  {classTypeLabel(r.classType)}
                 </span>
               </td>
-              <td className="py-4 pr-6 align-top leading-snug text-gray-600">{registrationTypeLabel(r.classType)}</td>
-              <td className="py-4 pr-6 align-top font-medium leading-snug text-gray-900">
+              <td className="!py-5 !pr-6 align-top font-medium leading-snug text-gray-900">
                 <span className="line-clamp-2">{formatLongDate(r.classDate)}</span>
               </td>
-              <td className="py-4 pr-6 align-top leading-snug text-gray-600">{formatTime(r.classDate)}</td>
-              <td className="py-4 pr-6 align-top leading-snug text-gray-600">
+              <td className="!py-5 !pr-6 align-top leading-snug text-gray-600">{formatTime(r.classDate)}</td>
+              <td className="!py-5 !pr-6 align-top leading-snug text-gray-600">
                 <span className="line-clamp-2">{formatLongDate(r.registeredOn)}</span>
               </td>
-              <td className="py-4 align-top">
+              <td className="!py-5 align-top">
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
                   {r.status}
                 </span>
@@ -747,7 +740,7 @@ function RegistrationsTable({ registrations }: { registrations: DashboardRegistr
 
 function RecentRegistrationsPanel({ registrations }: { registrations: DashboardRegistration[] }) {
   return (
-    <section className="rounded-lg border border-gray-200 p-6">
+    <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
       <div className="mb-5 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
       </div>
@@ -821,7 +814,7 @@ function EmailTemplatesPanel({
           return (
             <div
               key={type}
-              className="flex flex-col gap-4 rounded-lg border border-gray-200 p-5 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -892,7 +885,7 @@ function PaymentsPanel({
 }) {
   const connected = Boolean(vendor.stripe_account_id) || payout.connected;
   return (
-    <section className="rounded-lg border border-gray-200 p-5">
+    <section className="rounded-lg border border-gray-200 bg-gray-50 p-5">
       <h2 className={heading ? "mb-4 text-lg font-semibold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
         Payments
       </h2>
@@ -1004,7 +997,7 @@ function ListingSection({
   return (
     <section
       id={id}
-      className="scroll-mt-[calc(var(--header-height)+1rem)] rounded-lg border border-gray-200 p-6"
+      className="scroll-mt-[calc(var(--header-height)+1rem)] rounded-lg border border-gray-200 bg-gray-50 p-6"
     >
       {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
       {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
@@ -1019,7 +1012,7 @@ function SettingsTab({ vendor }: { vendor: VendorProfile }) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-      <section className="rounded-lg border border-gray-200 p-5">
+      <section className="rounded-lg border border-gray-200 bg-gray-50 p-5">
         <h2 className="text-sm font-semibold text-gray-900">Account</h2>
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between">
