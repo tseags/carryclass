@@ -147,8 +147,9 @@ export default function ForInstructorsPage() {
                 <div className="for-instructors-eyebrow">For CCW instructors</div>
                 <h1 className="for-instructors-hero__title">
                   List CCW classes for free.
-                  <br />
-                  Get more visibility and online bookings.
+                  <span className="for-instructors-hero__title-line">
+                    Get more visibility and online bookings.
+                  </span>
                 </h1>
                 <p className="for-instructors-hero__sub">
                   CarryClass is California&apos;s CCW class directory. Claim your training
