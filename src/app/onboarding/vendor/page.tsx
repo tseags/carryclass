@@ -20,6 +20,6 @@ export default async function VendorOnboardingPage() {
     });
   }
 
-  redirect("/onboard");
+  redirect("/instructors/claim");
 }
 

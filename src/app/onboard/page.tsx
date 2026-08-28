@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getOrCreateVendorProfile } from "@/lib/onboarding-db";
+import { userHasClaimedListing } from "@/lib/claim-db";
 import { VENDOR_ROLE } from "@/lib/auth/roles";
 import { clerkClient } from "@clerk/nextjs/server";
 
@@ -23,6 +24,11 @@ export default async function OnboardPage() {
     name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
     email: user.emailAddresses[0]?.emailAddress,
   });
+
+  // Claim-only: must verify an existing directory listing before onboarding.
+  if (!(await userHasClaimedListing(userId))) {
+    redirect("/instructors/claim");
+  }
 
   // Already published → go to dashboard
   if (vendor.is_published) {

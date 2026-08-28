@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { AnimatedStatsGrid, type AnimatedStat } from "@/components/AnimatedStatsGrid";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -12,19 +13,22 @@ export const metadata = pageMetadata({
 
 const BENEFITS = [
   {
-    title: "Get found by county",
-    description:
-      "Students search by county, class type, and format. Your listing appears where they are already looking for sheriff-approved CCW training.",
-  },
-  {
     title: "Accept bookings online",
     description:
-      "Connect Stripe to let students book and pay for class sessions directly from your profile. You keep your class fee; we charge a 5% platform service fee per booking.",
+      "Connect Stripe and let students book and pay directly from your profile after you claim your existing listing. Students pay a separate 5% platform fee at checkout on top of your class price — so you keep 100% of what you charge.",
+    icon: "booking",
   },
   {
-    title: "Build trust with reviews",
+    title: "Free instructor dashboard",
     description:
-      "Show pricing, class details, and student reviews in one place so prospects can compare options and choose your class with confidence.",
+      "Run your classes from one free backend: automatic confirmation, reminder, and follow-up emails; real-time registrations; and one place to update your profile, pricing, and class details.",
+    icon: "dashboard",
+  },
+  {
+    title: "Get more visibility",
+    description:
+      "CarryClass reaches thousands of high-intent students browsing CCW classes across California who are ready to book. Your listing appears where they compare instructors by county, price, and reviews.",
+    icon: "visibility",
   },
 ] as const;
 
@@ -33,7 +37,7 @@ const STEPS = [
     step: "1",
     title: "Claim your listing",
     description:
-      "Find your existing profile or request a new one. We match your account to the right instructor listing across California counties.",
+      "Find your existing sheriff-approved page and verify with the email or phone already on that listing. We do not create duplicate listings.",
   },
   {
     step: "2",
@@ -53,12 +57,17 @@ const FAQS = [
   {
     question: "Is it free to list my classes?",
     answer:
-      "Listing in the CarryClass directory is free. When you enable online booking through Stripe Connect, a 5% platform service fee applies to each completed booking.",
+      "Listing in the CarryClass directory is free. When you enable online booking through Stripe Connect, students pay a separate 5% platform service fee at checkout on top of your class price — so you keep 100% of what you charge.",
   },
   {
-    question: "What if I am already listed?",
+    question: "Why should I claim my profile?",
     answer:
-      "Search for your business on CarryClass, then claim your listing so we can link your instructor account to the correct profile and give you edit access.",
+      "Claiming your profile allows you to add more information and accept online bookings directly on getcarryclass.com. Plus, get a free dashboard to send automatic confirmation, reminder, and follow-up emails; see real-time registrations; and one place to update your profile, pricing, and class details.",
+  },
+  {
+    question: "How do you verify that I own the listing?",
+    answer:
+      "We send a one-time code to the email or phone already stored on your listing (from the sheriff-approved vendor data). You cannot enter a different contact to claim someone else’s page.",
   },
   {
     question: "Do I need Stripe to get started?",
@@ -72,137 +81,254 @@ const FAQS = [
   },
 ] as const;
 
+const STATS: AnimatedStat[] = [
+  { number: "100%", label: "Of your class fee you keep" },
+  { number: "5%", label: "Platform fee paid by students" },
+  { number: "$0", label: "Cost to list your classes" },
+  { number: "5 minutes", label: "To set up profile and accept bookings" },
+];
+
+function BenefitIcon({ type }: { type: (typeof BENEFITS)[number]["icon"] }) {
+  const strokeProps = {
+    stroke: "#c96442",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  } as const;
+
+  const svgProps = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 22 22",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": true,
+  } as const;
+
+  if (type === "booking") {
+    return (
+      <svg {...svgProps}>
+        <rect x="3.5" y="5" width="15" height="13" rx="2.5" {...strokeProps} />
+        <path d="M3.5 9.5h15" {...strokeProps} />
+        <path d="M7.5 3.5v3M14.5 3.5v3" {...strokeProps} />
+        <path d="M8 13.5l2 2 4-4" {...strokeProps} />
+      </svg>
+    );
+  }
+
+  if (type === "dashboard") {
+    return (
+      <svg {...svgProps}>
+        <rect x="3.5" y="4" width="7" height="5.5" rx="1.5" {...strokeProps} />
+        <rect x="11.5" y="4" width="7" height="5.5" rx="1.5" {...strokeProps} />
+        <rect x="3.5" y="12.5" width="15" height="5.5" rx="1.5" {...strokeProps} />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...svgProps}>
+      <circle cx="9.5" cy="9.5" r="5.5" {...strokeProps} />
+      <path d="M13.5 13.5L18 18" {...strokeProps} />
+    </svg>
+  );
+}
+
 export default function ForInstructorsPage() {
   return (
     <>
       <Header />
-      <main className="bg-neutral-200">
-        <section className="section">
-          <div className="container-default w-container">
-            <div className="top-section-card home">
-              <div className="inner-container _588px _100-tablet">
-                <p className="text-200 bold color-secondary-2 mg-bottom-12px">
-                  For CCW instructors
-                </p>
-                <h1 className="mg-bottom-12px">
-                  Reach more students. Fill more classes.
+      <main className="home-page-sections for-instructors-page">
+        {/* Hero */}
+        <div className="section-2">
+          <div className="container-default home w-container">
+            <div className="top-section-card home for-instructors-hero--centered">
+              <div className="for-instructors-hero__inner">
+                <div className="for-instructors-eyebrow">For CCW instructors</div>
+                <h1 className="for-instructors-hero__title">
+                  Reach more students and fill more classes.
                 </h1>
-                <p className="mg-bottom-24px">
-                  CarryClass is California&apos;s CCW class directory. List your training
-                  business, show up in county searches, and optionally accept bookings
-                  online — so students find you when they are ready to train.
+                <p className="for-instructors-hero__sub">
+                  CarryClass is California&apos;s CCW class directory. Claim your training
+                  business, show up in county searches, and accept bookings online.
                 </p>
-                <div className="buttons-row">
-                  <Link
-                    href="/instructors/claim"
-                    className="btn-primary button-row w-button"
-                  >
+                <div className="buttons-row for-instructors-hero__buttons">
+                  <Link href="/instructors/claim" className="btn-primary w-button">
                     Claim your listing
                   </Link>
-                  <Link
-                    href="/sign-up?intent=vendor"
-                    className="btn-secondary w-button"
-                  >
-                    Create instructor account
+                  <Link href="/instructors" className="btn-secondary w-button">
+                    View all instructors
                   </Link>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="container-default w-container">
-            <div className="text-center mg-bottom-32px">
-              <div className="inner-container _588px center">
-                <h2 className="mg-bottom-12px">Why instructors use CarryClass</h2>
-                <p className="mg-bottom-0">
-                  A focused directory built for CCW training — not a generic business
-                  listing. Show up where students compare classes, prices, and reviews.
+                <p className="for-instructors-hero__note">
+                  Free to list · Verified with the contact already on your listing
                 </p>
               </div>
             </div>
-            <div className="grid-3-columns top-section-link-cards-grid">
-              {BENEFITS.map((benefit) => (
-                <div key={benefit.title} className="card pd-44px---20px">
-                  <h3 className="heading-h4-size mg-bottom-8px">{benefit.title}</h3>
-                  <p className="color-neutral-600 mg-bottom-0">{benefit.description}</p>
-                </div>
-              ))}
-            </div>
           </div>
-        </section>
+        </div>
 
-        <section className="section">
+        {/* Why instructors use CarryClass */}
+        <section
+          className="for-instructors-benefits"
+          aria-labelledby="for-instructors-benefits-heading"
+        >
           <div className="container-default w-container">
-            <div className="text-center mg-bottom-32px">
-              <div className="inner-container _458px center">
-                <h2 className="mg-bottom-12px">How it works</h2>
-                <p className="mg-bottom-0">
-                  Get listed in a few steps. Add booking and payments when you are ready
-                  to take enrollments online.
-                </p>
-              </div>
-            </div>
-            <div className="grid-3-columns gap-row-32px">
-              {STEPS.map((item) => (
-                <div key={item.step} className="card pd-44px---20px">
-                  <div className="text-200 bold color-secondary-2 mg-bottom-12px">
-                    Step {item.step}
-                  </div>
-                  <h3 className="heading-h4-size mg-bottom-8px">{item.title}</h3>
-                  <p className="color-neutral-600 mg-bottom-0">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="container-default w-container">
-            <div className="top-section-card v2">
-              <div className="inner-container _588px center text-center">
-                <h2 className="color-neutral-100 mg-bottom-12px">
-                  Ready to claim your spot?
+            <div className="for-instructors-section-header">
+              <div className="for-instructors-section-header__copy">
+                <div className="for-instructors-eyebrow">Why CarryClass</div>
+                <h2 id="for-instructors-benefits-heading" className="for-instructors-heading">
+                  <span className="for-instructors-heading__accent">Why instructors use</span>{" "}
+                  CarryClass
                 </h2>
-                <p className="color-neutral-300 mg-bottom-24px">
-                  Join instructors across California who use CarryClass to reach students
-                  searching for sheriff-approved CCW classes.
+                <p className="for-instructors-section-sub">
+                  Online booking, a free instructor dashboard, and statewide visibility
+                  — built for CCW training, not a generic business listing.
                 </p>
-                <div className="buttons-row center">
-                  <Link href="/instructors/claim" className="btn-primary w-button">
-                    Get started
-                  </Link>
-                  <Link
-                    href="mailto:matthiasseager@gmail.com"
-                    className="btn-secondary w-button"
-                  >
-                    Contact us
-                  </Link>
-                </div>
               </div>
+              <div className="for-instructors-section-header__btn">
+                <Link
+                  href="/instructors"
+                  className="btn-secondary w-button popular-vendors-redesign__view-all"
+                >
+                  See example listings
+                </Link>
+              </div>
+            </div>
+            <div className="for-instructors-card-grid">
+              {BENEFITS.map((benefit) => (
+                <article key={benefit.title} className="for-instructors-card">
+                  <div className="for-instructors-card__icon-wrap" aria-hidden="true">
+                    <BenefitIcon type={benefit.icon} />
+                  </div>
+                  <h3 className="for-instructors-card__title">{benefit.title}</h3>
+                  <p className="for-instructors-card__copy">{benefit.description}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="section">
+        {/* How it works */}
+        <section
+          className="for-instructors-steps"
+          aria-labelledby="for-instructors-steps-heading"
+        >
           <div className="container-default w-container">
-            <div className="text-center mg-bottom-32px">
-              <div className="inner-container _588px center">
-                <h2 className="mg-bottom-12px">Instructor FAQs</h2>
-                <p className="mg-bottom-0">
+            <div className="for-instructors-section-header">
+              <div className="for-instructors-section-header__copy">
+                <div className="for-instructors-eyebrow">How it works</div>
+                <h2 id="for-instructors-steps-heading" className="for-instructors-heading">
+                  <span className="for-instructors-heading__accent">Three steps</span> to a
+                  live listing
+                </h2>
+                <p className="for-instructors-section-sub">
+                  Get listed in a few steps. Add booking and payments when you are ready to
+                  take enrollments online.
+                </p>
+              </div>
+            </div>
+            <ol className="for-instructors-card-grid">
+              {STEPS.map((item) => (
+                <li key={item.step} className="for-instructors-card for-instructors-step">
+                  <div className="for-instructors-step__number" aria-hidden="true">
+                    {item.step}
+                  </div>
+                  <h3 className="for-instructors-card__title">{item.title}</h3>
+                  <p className="for-instructors-card__copy">{item.description}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Directory scope */}
+        <section className="by-the-numbers" aria-labelledby="for-instructors-stats-heading">
+          <div className="container-default w-container">
+            <div className="by-the-numbers__inner">
+              <div className="by-the-numbers__copy">
+                <div className="by-the-numbers__eyebrow">Where your listing lives</div>
+                <h2 id="for-instructors-stats-heading" className="by-the-numbers__heading">
+                  Students are already
+                  <br />
+                  searching your county.
+                </h2>
+                <p className="by-the-numbers__body">
+                  CarryClass indexes sheriff-approved CCW instructors statewide. Claiming
+                  your page puts you in front of students comparing classes right now.
+                </p>
+                <ul className="by-the-numbers__bullets">
+                  <li>
+                    <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
+                    Free directory listing, no subscription
+                  </li>
+                  <li>
+                    <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
+                    Appear in every county you serve
+                  </li>
+                  <li>
+                    <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
+                    Online booking only when you want it
+                  </li>
+                </ul>
+              </div>
+              <AnimatedStatsGrid stats={STATS} />
+            </div>
+          </div>
+        </section>
+
+        {/* FAQs */}
+        <section className="for-instructors-faq" aria-labelledby="for-instructors-faq-heading">
+          <div className="container-default w-container">
+            <div className="for-instructors-section-header">
+              <div className="for-instructors-section-header__copy">
+                <div className="for-instructors-eyebrow">Instructor FAQs</div>
+                <h2 id="for-instructors-faq-heading" className="for-instructors-heading">
+                  <span className="for-instructors-heading__accent">Questions</span> before
+                  you claim
+                </h2>
+                <p className="for-instructors-section-sub">
                   Common questions about listing, claiming, and booking on CarryClass.
                 </p>
               </div>
             </div>
-            <div className="inner-container _824px center">
-              <div className="grid-1-column gap-row-24px">
-                {FAQS.map((faq) => (
-                  <div key={faq.question} className="card pd-44px---20px">
-                    <h3 className="heading-h5-size mg-bottom-8px">{faq.question}</h3>
-                    <p className="color-neutral-600 mg-bottom-0">{faq.answer}</p>
-                  </div>
-                ))}
+            <div className="for-instructors-faq__list">
+              {FAQS.map((faq) => (
+                <details key={faq.question} className="for-instructors-faq__item">
+                  <summary className="for-instructors-faq__summary">
+                    <h3 className="for-instructors-faq__question">{faq.question}</h3>
+                    <span className="for-instructors-faq__chevron" aria-hidden="true" />
+                  </summary>
+                  <p className="for-instructors-faq__answer">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Closing CTA */}
+        <section className="for-instructors-cta" aria-labelledby="for-instructors-cta-heading">
+          <div className="for-instructors-cta__inner">
+            <div className="for-instructors-cta__row">
+              <div className="for-instructors-cta__copy">
+                <h2 id="for-instructors-cta-heading" className="for-instructors-cta__heading">
+                  Ready to claim your spot?
+                </h2>
+                <p className="for-instructors-cta__body">
+                  Join instructors across California who use CarryClass to reach students
+                  searching for sheriff-approved CCW classes.
+                </p>
+              </div>
+              <div className="buttons-row for-instructors-cta__buttons">
+                <Link href="/instructors/claim" className="btn-primary w-button">
+                  Get started
+                </Link>
+                <Link
+                  href="mailto:matthiasseager@gmail.com"
+                  className="btn-secondary w-button"
+                >
+                  Contact us
+                </Link>
               </div>
             </div>
           </div>

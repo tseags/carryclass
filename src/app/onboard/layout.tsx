@@ -1,8 +1,19 @@
-import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { getVendorProfile } from "@/lib/onboarding-db";
+import { userHasClaimedListing } from "@/lib/claim-db";
 
-export default function OnboardLayout({ children }: { children: ReactNode }) {
+export default async function OnboardLayout({ children }: { children: React.ReactNode }) {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in?intent=vendor");
+
+  const claimed = await userHasClaimedListing(userId);
+  if (!claimed) {
+    redirect("/instructors/claim");
+  }
+
   return (
     <>
       <Header />
