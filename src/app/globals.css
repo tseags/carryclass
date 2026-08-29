@@ -1966,6 +1966,16 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   padding: 80px 0;
 }
+.for-instructors-faq .for-instructors-section-header {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.for-instructors-faq .for-instructors-section-header__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
 .for-instructors-section-header {
   display: flex;
@@ -2074,6 +2084,7 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   display: grid;
   gap: 12px;
   max-width: 860px;
+  margin: 0 auto;
 }
 .for-instructors-faq__item {
   background: #ffffff;
