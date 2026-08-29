@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CONTACT_EMAIL } from "@/lib/site-url";
 
 type SearchHit = {
   slug: string;
@@ -194,7 +195,7 @@ export function ClaimListingFlow() {
             <p className="paragraph-small color-neutral-600">
               No listings matched. CarryClass only supports claiming an existing
               sheriff-approved page. If you don&apos;t see yours,{" "}
-              <a href="mailto:matthiasseager@gmail.com" className="text-decoration-none">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
                 contact us
               </a>
               .
@@ -269,7 +270,7 @@ export function ClaimListingFlow() {
           {!listing.channels.email.available && !listing.channels.phone.available ? (
             <p className="paragraph-small color-neutral-600 mg-bottom-16px">
               This listing has no email or phone on file.{" "}
-              <a href="mailto:matthiasseager@gmail.com" className="text-decoration-none">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
                 Contact us
               </a>{" "}
               to claim it manually.

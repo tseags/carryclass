@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnimatedStatsGrid, type AnimatedStat } from "@/components/AnimatedStatsGrid";
 import { pageMetadata } from "@/lib/seo";
+import { CONTACT_EMAIL } from "@/lib/site-url";
 
 export const metadata = pageMetadata({
   title: "For CCW Instructors",
@@ -327,7 +328,7 @@ export default function ForInstructorsPage() {
                   Get started
                 </Link>
                 <Link
-                  href="mailto:matthiasseager@gmail.com"
+                  href={`mailto:${CONTACT_EMAIL}`}
                   className="btn-secondary w-button"
                 >
                   Contact us

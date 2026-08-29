@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { pageMetadata } from "@/lib/seo";
+import { CONTACT_EMAIL } from "@/lib/site-url";
 
 export const metadata = pageMetadata({
   title: "Privacy Policy",
@@ -76,10 +77,10 @@ export default function PrivacyPage() {
           <p>
             Questions about this Privacy Policy can be sent to{" "}
             <a
-              href="mailto:matthiasseager@gmail.com"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="font-medium text-zinc-900 underline underline-offset-2"
             >
-              matthiasseager@gmail.com
+              {CONTACT_EMAIL}
             </a>
             .
           </p>
