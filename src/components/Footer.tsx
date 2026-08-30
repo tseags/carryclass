@@ -79,10 +79,10 @@ export function Footer() {
           <p>&copy; 2026 CarryClass. All rights reserved.</p>
           <nav className="flex items-center gap-6">
             <Link href="/privacy" className="site-footer__link">
-              Privacy
+              Privacy Policy
             </Link>
             <Link href="/terms" className="site-footer__link">
-              Terms
+              Terms &amp; Conditions
             </Link>
           </nav>
         </div>

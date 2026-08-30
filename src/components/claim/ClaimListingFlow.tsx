@@ -241,7 +241,17 @@ export function ClaimListingFlow() {
           </p>
           <p className="paragraph-small color-neutral-600 mg-bottom-16px">
             Choose how to verify. The code is sent only to the contact on your
-            directory / sheriff record.
+            directory / sheriff record. By choosing text verification, you agree to
+            receive a one-time SMS from CarryClass. Message and data rates may
+            apply. Reply STOP to opt out. See our{" "}
+            <a href="/privacy" className="text-decoration-none">
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a href="/terms" className="text-decoration-none">
+              Terms &amp; Conditions
+            </a>
+            .
           </p>
           <div className="buttons-row mg-bottom-16px">
             {listing.channels.email.available ? (
