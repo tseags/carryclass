@@ -11,7 +11,10 @@ import {
 import { parseCountySlugFromCarryClassVendorSlug } from "@/lib/carryclass-vendor-slug";
 import { filterVendors } from "@/lib/filter-vendors";
 import { applyListingSort } from "@/lib/vendor-listing-sort";
-import { mergeCanonicalVendors } from "@/lib/merge-canonical-vendors";
+import {
+  findSourceRowIdsForCanonicalSlug,
+  mergeCanonicalVendors,
+} from "@/lib/merge-canonical-vendors";
 import { VENDOR_MERGE_OVERRIDES } from "@/data/vendor-merge-overrides";
 import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
 import {
@@ -19,8 +22,11 @@ import {
   isVendorVisibleToAudience,
   type VendorAudience,
 } from "@/lib/vendor-audience";
+import type { CarryClassListingPublishPatch } from "@/lib/publish-vendor-live-map";
 import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
+
+export type { CarryClassListingPublishPatch };
 
 const VENDOR_DB_TABLES = new Set([
   "carry_class_vendor_data",
@@ -1337,4 +1343,63 @@ export async function getAllUniqueCities(options?: VendorQueryOptions): Promise<
 
   const cities = (data ?? []).map((r) => r.city as string).filter(Boolean);
   return [...new Set(cities)].sort();
+}
+
+/**
+ * Resolve raw `carry_class_vendor_data.id` values for a merged canonical slug.
+ * Reads via DATABASE_URL when refs differ (same path as production listing reads).
+ */
+export async function findCarryClassSourceRowIdsForSlug(
+  slug: string
+): Promise<string[]> {
+  const rows = await fetchRawVendorRowsViaDatabase();
+  const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
+  return findSourceRowIdsForCanonicalSlug(mapped, slug, {
+    overrides: VENDOR_MERGE_OVERRIDES,
+  });
+}
+
+/**
+ * Update claimed listing source rows. Always writes via DATABASE_URL / Prisma.
+ * Never inserts — claim requires an existing directory row.
+ */
+export async function updateCarryClassVendorListingRows(
+  rowIds: string[],
+  patch: CarryClassListingPublishPatch
+): Promise<number> {
+  const ids = [...new Set(rowIds.map((id) => id.trim()).filter(Boolean))];
+  if (ids.length === 0) return 0;
+
+  const table = vendorDbTable().replace(/"/g, "");
+  const idPlaceholders = ids.map((_, i) => `$${i + 12}`).join(", ");
+  const result = await prisma.$executeRawUnsafe(
+    `UPDATE public."${table}"
+     SET
+       vendor_description = $1,
+       phone = $2,
+       email = $3,
+       website_url = $4,
+       address = $5,
+       price_16hr_full = $6,
+       price_8hr_renewal = $7,
+       price_add_a_gun = $8,
+       logo_path = $9,
+       accepts_bookings = $10,
+       stripe_connect_account_id = $11,
+       updated_at = now()
+     WHERE id::text IN (${idPlaceholders})`,
+    patch.vendor_description,
+    patch.phone,
+    patch.email,
+    patch.website_url,
+    patch.address,
+    patch.price_16hr_full,
+    patch.price_8hr_renewal,
+    patch.price_add_a_gun,
+    patch.logo_path,
+    patch.accepts_bookings,
+    patch.stripe_connect_account_id,
+    ...ids
+  );
+  return typeof result === "number" ? result : ids.length;
 }

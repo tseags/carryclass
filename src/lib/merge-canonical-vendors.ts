@@ -380,6 +380,24 @@ function mergeGroup(
   );
 }
 
+function groupSourceVendors(
+  vendors: Vendor[],
+  overrides: VendorMergeOverrides
+): Map<string, Vendor[]> {
+  const cleaned = vendors.filter((v) => !isJunkRow(v));
+  const groups = new Map<string, Vendor[]>();
+  for (const vendor of cleaned) {
+    const key = getRowGroupKey(vendor, overrides);
+    const bucket = groups.get(key);
+    if (bucket) {
+      bucket.push(vendor);
+    } else {
+      groups.set(key, [vendor]);
+    }
+  }
+  return groups;
+}
+
 /**
  * Collapse per-county source rows into a single canonical vendor per business.
  *
@@ -395,18 +413,7 @@ export function mergeCanonicalVendors(
   options: MergeCanonicalVendorsOptions = {}
 ): Vendor[] {
   const overrides = options.overrides ?? {};
-  const cleaned = vendors.filter((v) => !isJunkRow(v));
-
-  const groups = new Map<string, Vendor[]>();
-  for (const vendor of cleaned) {
-    const key = getRowGroupKey(vendor, overrides);
-    const bucket = groups.get(key);
-    if (bucket) {
-      bucket.push(vendor);
-    } else {
-      groups.set(key, [vendor]);
-    }
-  }
+  const groups = groupSourceVendors(vendors, overrides);
 
   const merged: Vendor[] = [];
   for (const [key, group] of groups.entries()) {
@@ -415,6 +422,30 @@ export function mergeCanonicalVendors(
 
   merged.sort((a, b) => a.name.localeCompare(b.name));
   return merged;
+}
+
+/**
+ * Given pre-merge source rows (Vendor.id = raw table PK), return the raw ids
+ * that belong to the canonical group whose merged slug matches `slug`.
+ */
+export function findSourceRowIdsForCanonicalSlug(
+  sourceVendors: Vendor[],
+  slug: string,
+  options: MergeCanonicalVendorsOptions = {}
+): string[] {
+  const target = slug.trim();
+  if (!target) return [];
+
+  const overrides = options.overrides ?? {};
+  const groups = groupSourceVendors(sourceVendors, overrides);
+
+  for (const [key, group] of groups.entries()) {
+    const merged = mergeGroup(key, group, overrides);
+    if (merged.slug === target) {
+      return group.map((v) => v.id).filter(Boolean);
+    }
+  }
+  return [];
 }
 
 /**

@@ -37,4 +37,8 @@ curl -X POST "$NEXT_PUBLIC_APP_URL/api/revalidate-vendors" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 
+## Publish → live hedge
+
+Instructor publish syncs listing rows + Prisma booking vendor only when the claimed slug is allowed by `PUBLISH_LIVE_SLUG_ALLOWLIST` (empty/unset = everyone). Book Now (`accepts_bookings`) is set only when onboarding has `stripe_account_id`. See README Instructor funnel + `.env.example`.
+
 See `src/lib/vendors-db.ts`, `migrations/alameda-approved-instructors.sql`, `src/app/api/revalidate-vendors/route.ts`.

@@ -441,6 +441,27 @@ function checkEnv(): void {
   } else {
     record("ok", "env CLAIM_CODE_PEPPER", "Set.");
   }
+
+  // Publish → live hedge: non-empty allowlist means only listed claimed slugs
+  // get listing UPDATE + Prisma Vendor/ClassSession sync. Easy to forget in prod.
+  const allowlistRaw = process.env.PUBLISH_LIVE_SLUG_ALLOWLIST;
+  const allowlistSlugs = (allowlistRaw ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (allowlistSlugs.length === 0) {
+    record(
+      "ok",
+      "env PUBLISH_LIVE_SLUG_ALLOWLIST",
+      "Unset/empty — full go-live (every publish syncs to directory + booking)."
+    );
+  } else {
+    record(
+      "warn",
+      "env PUBLISH_LIVE_SLUG_ALLOWLIST",
+      `NOT FULLY LIVE — allowlist active (${allowlistSlugs.length} slug(s): ${allowlistSlugs.join(", ")}). Other publishes set is_published but skip live sync. Clear this env for full go-live.`
+    );
+  }
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────
@@ -471,6 +492,20 @@ async function main(): Promise<void> {
   await checkListingSource();
   await checkOnboardingSchema();
   await checkStorageBucket();
+
+  const allowlistActive = results.some(
+    (r) =>
+      r.area === "env PUBLISH_LIVE_SLUG_ALLOWLIST" && r.status === "warn"
+  );
+  if (allowlistActive) {
+    console.log("");
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    console.log("!  PUBLISH_LIVE_SLUG_ALLOWLIST is set — NOT FULL GO-LIVE.    !");
+    console.log("!  Only allowlisted claimed slugs sync listing + booking.    !");
+    console.log("!  Clear PUBLISH_LIVE_SLUG_ALLOWLIST for full go-live.       !");
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    console.log("");
+  }
 
   const icon: Record<Status, string> = { ok: "✓", warn: "!", fail: "✗" };
   for (const r of results) {

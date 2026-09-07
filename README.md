@@ -114,7 +114,7 @@ npm run ensure:vendor-assets-bucket
 2. Sign up with `?intent=vendor`, which routes through `/onboarding/vendor` and back to `/instructors/claim`.
 3. Search a real listing by business name and pick it. Codes are sent **only** to the email/phone already on the directory row, never to user-supplied input, so pick a listing whose contact you control.
 
-   For claim-funnel smoke tests without emailing live businesses, use the hidden test listing: sign in on `/instructors/claim` and search **INTERNAL** or **Claim Funnel**. That row (`matthiasseager@gmail.com`, Alpine County) is excluded from the public directory but appears in authenticated claim search. The claim slug is the **merged** canonical slug (search results show it — not the pre-merge `{name}-{county}-{hash}` form).
+   For claim-funnel smoke tests without emailing live businesses, use the hidden test listing: sign in on `/instructors/claim` and search **INTERNAL** or **Claim Funnel**. That row (`matthiasseager@gmail.com`, Alpine County) is excluded from the public directory but appears in authenticated claim search. The claim slug is the **merged** canonical slug — currently `internal-claim-funnel-test-6b7e67a50b` (copy from claim search results if it ever drifts; not the pre-merge `{name}-{county}-{hash}` form).
 
 4. Enter the code. In development the code is also logged to the server console (`[claim] email code for …`); set `CLAIM_DEV_LOG_CODES=1` to get that outside dev. Email needs `RESEND_API_KEY`; SMS needs all three `TWILIO_*` vars, otherwise use the email channel.
 5. Verify redirects to `/onboard`, which forwards to `/onboard/step/{onboarding_step}`.
@@ -122,7 +122,20 @@ npm run ensure:vendor-assets-bucket
 
 Guards worth checking: `/onboard` before claiming bounces to `/instructors/claim`, and `/dashboard/vendor` before publishing bounces to `/onboard`. Step URLs are **not** gated on `onboarding_step`, so a claimed user can open `/onboard/step/5` directly.
 
-Publishing sets `is_published` on the onboarding `vendors` row. It does **not** yet write the public listing or Prisma bookings — that bridge is separate work, so a published instructor will not appear in the public directory yet.
+Publishing (step 6) syncs the claimed listing into the live directory and booking system, then sets `is_published` on the onboarding `vendors` row:
+
+1. Updates matching `carry_class_vendor_data` source row(s) via `DATABASE_URL` (bio, contact, prices, logo, `accepts_bookings`, Stripe Connect id) — never inserts a new directory row.
+2. Upserts the Prisma `Vendor` keyed by the claimed slug (`acceptsBookings` / `accepts_bookings` are **true only when** onboarding `stripe_account_id` is present).
+3. Upserts Prisma `ClassSession` rows from active onboarding calendar classes (`initial` / `renewal` only).
+
+**Live sync allowlist:** set `PUBLISH_LIVE_SLUG_ALLOWLIST` to a comma-separated list of claimed slugs (e.g. the claim-funnel test listing above) so only those publishes run steps 1–3. Other instructors can still finish onboarding (`is_published`), but live sync is skipped and logged. **Full go-live:** clear / unset `PUBLISH_LIVE_SLUG_ALLOWLIST`. `npm run check:instructor-funnel` warns loudly when the allowlist is set.
+
+Re-publish is idempotent (listing UPDATE + Prisma upsert; existing sessions matched by vendor + start time + class type are updated, not deleted). Apply `migrations/publish-booking-columns.sql` once so listing rows can store `accepts_bookings` / `stripe_connect_account_id`:
+
+```bash
+npm run check:vendor-db-env
+npm run migrate:sql -- --file migrations/publish-booking-columns.sql --target listings
+```
 
 ### Booking (dev)
 
