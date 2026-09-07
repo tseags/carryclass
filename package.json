@@ -18,7 +18,13 @@
     "import:ccw-timelines": "tsx scripts/import-ccw-timelines.ts",
     "seed:ccw-timelines": "tsx scripts/seed-ccw-timelines.ts",
     "worktree:audit": "bash scripts/worktree-audit.sh",
-    "check:vendor-db-env": "tsx scripts/check-vendor-db-env.ts"
+    "check:vendor-db-env": "tsx scripts/check-vendor-db-env.ts",
+    "check:instructor-funnel": "tsx scripts/check-instructor-funnel.ts",
+    "check:onboarding-schema": "tsx scripts/inspect-onboarding-schema.ts",
+    "check:stripe-connect": "tsx scripts/check-stripe-connect.ts",
+    "configure:clerk-branding": "tsx scripts/configure-clerk-branding.ts",
+    "ensure:vendor-assets-bucket": "tsx scripts/ensure-vendor-assets-bucket.ts",
+    "migrate:sql": "tsx scripts/apply-sql-migration.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({ error: "Missing slug" }, { status: 400 });
   }
 
-  const listing = await getVendorBySlug(slug);
+  const listing = await getVendorBySlug(slug, { audience: "claim" });
   if (!listing) {
     return NextResponse.json({ error: "Listing not found." }, { status: 404 });
   }

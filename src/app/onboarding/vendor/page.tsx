@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
-import { VENDOR_ROLE } from "@/lib/auth/roles";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { ensureVendorRole } from "@/lib/auth/ensure-vendor-role";
 
 export default async function VendorOnboardingPage() {
   const { userId } = await auth();
@@ -13,12 +13,7 @@ export default async function VendorOnboardingPage() {
     redirect("/sign-in?intent=vendor");
   }
 
-  if (user.publicMetadata.role !== VENDOR_ROLE) {
-    const client = await clerkClient();
-    await client.users.updateUser(userId, {
-      publicMetadata: { role: VENDOR_ROLE },
-    });
-  }
+  await ensureVendorRole(userId, user);
 
   redirect("/instructors/claim");
 }

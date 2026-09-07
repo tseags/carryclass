@@ -45,8 +45,15 @@ npm run check:vendor-db-env
 Apply SQL via Postgres (`DATABASE_URL`), not Supabase REST, unless the check reports matching project refs:
 
 ```bash
-npx prisma db execute --file migrations/your-file.sql --schema prisma/schema.prisma
+npm run migrate:sql -- --file migrations/your-file.sql --target listings
 ```
+
+That wrapper exists because two footguns make the bare Prisma CLI unreliable here:
+
+- **`prisma` CLI reads `.env`, never `.env.local`.** Real credentials live in `.env.local`, so `npx prisma db execute --schema prisma/schema.prisma` silently uses whatever `.env` holds — including unedited `.env.example` placeholders.
+- **`prisma db execute` hangs forever on Supabase's transaction pooler (`:6543`).** It never errors or times out. The wrapper rewrites the port to `:5432` (session mode) for DDL only; app runtime still uses `:6543`.
+
+The wrapper resolves env the way Next.js does and prints the target project ref before writing. Add `--dry-run` to see the resolved target without executing.
 
 After production changes, bust the vendor cache:
 
@@ -56,6 +63,66 @@ curl -X POST "$NEXT_PUBLIC_APP_URL/api/revalidate-vendors" \
 ```
 
 Set `VENDORS_FETCH_VIA_DATABASE=1` in `.env.local` when local REST URL points at a different Supabase project than `DATABASE_URL`. Do not commit `.env.local`.
+
+### Instructor self-serve funnel
+
+The instructor path is `/for-instructors` → sign up → `/instructors/claim` → `/onboard/step/1`–`6` → `/dashboard/vendor`.
+
+Run the pre-flight before smoke-testing; it checks env, schema, and storage across both Supabase projects and exits non-zero on anything blocking:
+
+```bash
+npm run check:instructor-funnel
+```
+
+#### Two Supabase projects
+
+This funnel spans two backing stores, and **each migration must go to its own project**. Applying one to the other creates tables the app never reads.
+
+| Data | Accessed via | Connection | Migration |
+| --- | --- | --- | --- |
+| Claim codes (`claim_verifications`) | Prisma raw SQL (`src/lib/claim-db.ts`) | `DATABASE_URL` | `migrations/claim-verifications.sql` |
+| Public listings (`carry_class_vendor_data`) | Prisma raw SQL (`src/lib/vendors-db.ts`) | `DATABASE_URL` | vendor listing SQL |
+| Onboarding profile (`vendors`, `vendor_*`) | Supabase REST via `supabaseAdmin()` (`src/lib/onboarding-db.ts`) | `NEXT_PUBLIC_SUPABASE_URL` | `migrations/onboarding.sql` |
+| Profile / gallery images | Supabase Storage `vendor-assets` | `NEXT_PUBLIC_SUPABASE_URL` | `npm run ensure:vendor-assets-bucket` |
+
+`npm run check:vendor-db-env` reports whether the two refs match. When they differ, set `ONBOARDING_DATABASE_URL` in `.env.local` to the REST project's Postgres URL so onboarding DDL is applied there:
+
+```bash
+npm run migrate:sql -- --file migrations/claim-verifications.sql --target listings
+npm run migrate:sql -- --file migrations/onboarding.sql --target onboarding
+```
+
+Both migrations are idempotent (`IF NOT EXISTS` / guarded `DO` blocks), so re-running them is how you pick up columns added since the first apply. To see live drift against `migrations/onboarding.sql`:
+
+```bash
+npm run check:onboarding-schema
+```
+
+Without `ONBOARDING_DATABASE_URL`, `--target onboarding` refuses to run rather than guessing; paste `migrations/onboarding.sql` into that project's SQL Editor instead.
+
+#### Storage
+
+Uploads go through `/api/upload-vendor-asset` using the service role key, so no RLS policy is needed, but the bucket must exist and be **public** — `getPublicUrl()` otherwise returns URLs that fail. This is idempotent:
+
+```bash
+npm run ensure:vendor-assets-bucket
+```
+
+#### Smoke test
+
+1. `/for-instructors` — CTA lands on `/instructors/claim`.
+2. Sign up with `?intent=vendor`, which routes through `/onboarding/vendor` and back to `/instructors/claim`.
+3. Search a real listing by business name and pick it. Codes are sent **only** to the email/phone already on the directory row, never to user-supplied input, so pick a listing whose contact you control.
+
+   For claim-funnel smoke tests without emailing live businesses, use the hidden test listing: sign in on `/instructors/claim` and search **INTERNAL** or **Claim Funnel**. That row (`matthiasseager@gmail.com`, Alpine County) is excluded from the public directory but appears in authenticated claim search. The claim slug is the **merged** canonical slug (search results show it — not the pre-merge `{name}-{county}-{hash}` form).
+
+4. Enter the code. In development the code is also logged to the server console (`[claim] email code for …`); set `CLAIM_DEV_LOG_CODES=1` to get that outside dev. Email needs `RESEND_API_KEY`; SMS needs all three `TWILIO_*` vars, otherwise use the email channel.
+5. Verify redirects to `/onboard`, which forwards to `/onboard/step/{onboarding_step}`.
+6. Walk steps 1–6. Step 5 will not advance until Stripe Connect returns a `stripe_account_id`; step 6 publishes and redirects to `/dashboard/vendor`.
+
+Guards worth checking: `/onboard` before claiming bounces to `/instructors/claim`, and `/dashboard/vendor` before publishing bounces to `/onboard`. Step URLs are **not** gated on `onboarding_step`, so a claimed user can open `/onboard/step/5` directly.
+
+Publishing sets `is_published` on the onboarding `vendors` row. It does **not** yet write the public listing or Prisma bookings — that bridge is separate work, so a published instructor will not appear in the public directory yet.
 
 ### Booking (dev)
 

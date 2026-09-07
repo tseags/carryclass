@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
 
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
 /** `/onboard` and subpaths only — must not match `/onboarding` */
 const isOnboardRoute = createRouteMatcher(["/onboard", "/onboard/(.*)"]);
+/** Clerk fallback after sign-up can land here instead of /instructors/claim */
+const isVendorSignupMisroute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/onboarding",
+  "/onboarding/student",
+]);
 
 function isVendorOnboardingPath(pathname: string): boolean {
   return (
@@ -15,11 +22,21 @@ function isVendorOnboardingPath(pathname: string): boolean {
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
+
+  if (
+    userId &&
+    req.cookies.get(VENDOR_SIGNUP_INTENT_COOKIE)?.value === "vendor" &&
+    isVendorSignupMisroute(req)
+  ) {
+    const res = NextResponse.redirect(new URL("/instructors/claim", req.url));
+    res.cookies.set(VENDOR_SIGNUP_INTENT_COOKIE, "", { maxAge: 0, path: "/" });
+    return res;
+  }
+
   if (!isDashboardRoute(req) && !isOnboardRoute(req)) {
     return NextResponse.next();
   }
-
-  const { userId } = await auth();
   if (!userId) {
     // Keep sign-in on the app origin (embedded /sign-in). redirectToSignIn() sends
     // users to accounts.getcarryclass.com, which breaks sessions on localhost.

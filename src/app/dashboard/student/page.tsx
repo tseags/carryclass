@@ -3,11 +3,16 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { STUDENT_ROLE } from "@/lib/auth/roles";
+import { userHasClaimedListing } from "@/lib/claim-db";
 
 export default async function StudentDashboardPage() {
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in?intent=student");
+  }
+
+  if (await userHasClaimedListing(userId)) {
+    redirect("/onboard");
   }
 
   const user = await currentUser();

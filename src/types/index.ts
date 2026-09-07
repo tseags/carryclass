@@ -60,6 +60,8 @@ export interface Vendor {
   enrichmentConfidence?: "high" | "medium" | "low";
   /** Upstream crawl status (e.g. "success", "failed"); rows with failures are dropped before merge. */
   crawlStatus?: string;
+  /** When true, row is omitted from public directory pages but remains claimable. */
+  hiddenFromDirectory?: boolean;
   createdAt: string;
 }
 

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const listing = await getVendorBySlug(slug);
+  const listing = await getVendorBySlug(slug, { audience: "claim" });
   if (!listing) {
     return NextResponse.json({ error: "Listing not found." }, { status: 404 });
   }

@@ -1475,6 +1475,67 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   cursor: not-allowed;
 }
 
+/* Claim listing search — selectable result tiles (not Webflow btn-secondary) */
+.claim-search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.claim-search-results > li + li {
+  margin-top: 12px;
+}
+.claim-search-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.35);
+  border-radius: 12px;
+  color: #141413;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(26, 26, 24, 0.02);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+.claim-search-result:hover:not(:disabled) {
+  border-color: rgba(17, 24, 39, 0.65);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.claim-search-result:focus-visible {
+  outline: 2px solid #141413;
+  outline-offset: 2px;
+  border-color: rgba(17, 24, 39, 0.65);
+}
+.claim-search-result:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.claim-search-result__name {
+  display: block;
+  color: #141413;
+  font-weight: 700;
+}
+.claim-search-result__meta {
+  display: block;
+  margin-top: 4px;
+  color: #586071;
+}
+.claim-search-result:hover:not(:disabled) .claim-search-result__name,
+.claim-search-result:focus-visible .claim-search-result__name {
+  color: #c96442;
+}
+
+/* Claim listing flow — form spacing (.input resets margin-bottom to 0) */
+.claim-listing-flow .buttons-row {
+  gap: 8px;
+}
+.claim-listing-flow form .buttons-row {
+  margin-top: 16px;
+}
+
 @media (max-width: 991px) {
   .home-testimonials {
     padding: 64px 0;

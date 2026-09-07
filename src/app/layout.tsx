@@ -66,6 +66,21 @@ export default function RootLayout({
   return (
     <ClerkProvider
       {...clerkConfig}
+      localization={{
+        applicationName: "CarryClass",
+        signIn: {
+          start: {
+            title: "Sign in to CarryClass",
+            subtitle: "Welcome back",
+          },
+        },
+        signUp: {
+          start: {
+            title: "Create your CarryClass account",
+            subtitle: "Welcome",
+          },
+        },
+      }}
       appearance={{
         options: {
           unsafe_disableDevelopmentModeWarnings: true,

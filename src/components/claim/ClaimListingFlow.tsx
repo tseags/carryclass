@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
 import { CONTACT_EMAIL } from "@/lib/site-url";
 
 type SearchHit = {
@@ -39,10 +40,13 @@ type Step = "search" | "channel" | "code" | "done";
 
 export function ClaimListingFlow() {
   const router = useRouter();
+  const { session } = useClerk();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
+  /** Query string that produced the current results (null = no search run yet). */
+  const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [channel, setChannel] = useState<"email" | "phone" | null>(null);
   const [verificationId, setVerificationId] = useState<string | null>(null);
@@ -51,26 +55,52 @@ export function ClaimListingFlow() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const runSearch = useCallback(async () => {
+  useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
       setResults([]);
+      setSearchedQuery(null);
+      setSearching(false);
       return;
     }
+
     setSearching(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/claim/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Search failed");
-      setResults(data.results ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
-      setResults([]);
-    } finally {
-      setSearching(false);
-    }
+    const controller = new AbortController();
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/claim/search?q=${encodeURIComponent(q)}`, {
+            signal: controller.signal,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Search failed");
+          setResults(data.results ?? []);
+          setSearchedQuery(q);
+          setError(null);
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          setError(err instanceof Error ? err.message : "Search failed");
+          setResults([]);
+          setSearchedQuery(q);
+        } finally {
+          if (!controller.signal.aborted) setSearching(false);
+        }
+      })();
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
+
+  const trimmedQuery = query.trim();
+  const showNoResults =
+    trimmedQuery.length >= 2 &&
+    !searching &&
+    searchedQuery === trimmedQuery &&
+    results.length === 0;
 
   async function selectListing(hit: SearchHit) {
     setError(null);
@@ -138,7 +168,10 @@ export function ClaimListingFlow() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Verification failed");
       setStep("done");
-      router.push(data.redirectTo || "/onboard");
+      // Refresh Clerk session so role metadata is current before onboarding.
+      await session?.reload();
+      const dest = data.redirectTo || "/onboard";
+      window.location.assign(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -147,7 +180,7 @@ export function ClaimListingFlow() {
   }
 
   return (
-    <div className="inner-container _588px _100-tablet">
+    <div className="claim-listing-flow inner-container _588px _100-tablet">
       <h1 className="mg-bottom-12px">Claim your CCW listing</h1>
       <p className="mg-bottom-20px">
         Find the page that already exists for your business (the sheriff-approved
@@ -166,33 +199,26 @@ export function ClaimListingFlow() {
           <label className="field-label" htmlFor="claim-search">
             Search by business name
           </label>
-          <div className="buttons-row mg-bottom-16px" style={{ alignItems: "stretch", gap: 8 }}>
-            <input
-              id="claim-search"
-              className="input w-input"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void runSearch();
-                }
-              }}
-              placeholder="e.g. Paladin Tactical"
-              autoComplete="organization"
-            />
-            <button
-              type="button"
-              className="btn-primary w-button"
-              onClick={() => void runSearch()}
-              disabled={searching || query.trim().length < 2}
-            >
-              {searching ? "Searching…" : "Search"}
-            </button>
-          </div>
+          <input
+            id="claim-search"
+            className="input w-input mg-bottom-16px"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. Paladin Tactical"
+            autoComplete="organization"
+            aria-autocomplete="list"
+            aria-controls="claim-search-results"
+            aria-expanded={results.length > 0}
+          />
 
-          {results.length === 0 && query.trim().length >= 2 && !searching ? (
-            <p className="paragraph-small color-neutral-600">
+          {searching && trimmedQuery.length >= 2 ? (
+            <p className="paragraph-small color-neutral-600 mg-bottom-16px" aria-live="polite">
+              Searching…
+            </p>
+          ) : null}
+
+          {showNoResults ? (
+            <p className="paragraph-small color-neutral-600 mg-bottom-16px">
               No listings matched. CarryClass only supports claiming an existing
               sheriff-approved page. If you don&apos;t see yours,{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
@@ -202,18 +228,17 @@ export function ClaimListingFlow() {
             </p>
           ) : null}
 
-          <ul className="mg-bottom-0" style={{ listStyle: "none", padding: 0 }}>
+          <ul id="claim-search-results" className="claim-search-results mg-bottom-0">
             {results.map((hit) => (
-              <li key={hit.slug} className="mg-bottom-12px">
+              <li key={hit.slug}>
                 <button
                   type="button"
-                  className="btn-secondary w-button"
-                  style={{ width: "100%", textAlign: "left", height: "auto", padding: "12px 16px" }}
+                  className="claim-search-result"
                   disabled={busy || (hit.claimed && !hit.claimedByYou)}
                   onClick={() => void selectListing(hit)}
                 >
-                  <strong>{hit.name}</strong>
-                  <span className="paragraph-small color-neutral-600" style={{ display: "block" }}>
+                  <strong className="claim-search-result__name">{hit.name}</strong>
+                  <span className="claim-search-result__meta paragraph-small">
                     {hit.city}
                     {hit.countyLabel ? ` · ${hit.countyLabel} County` : ""}
                     {hit.claimed
@@ -312,7 +337,7 @@ export function ClaimListingFlow() {
             </label>
             <input
               id="claim-code"
-              className="input w-input mg-bottom-16px"
+              className="input w-input"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"

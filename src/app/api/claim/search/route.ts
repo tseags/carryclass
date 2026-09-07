@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const vendors = await queryVendorsForListing({ search: q }, "name");
+  const vendors = await queryVendorsForListing({ search: q }, "name", { audience: "claim" });
   const limited = vendors.slice(0, 25);
 
   const results = await Promise.all(

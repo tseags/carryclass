@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ClaimListingFlow } from "@/components/claim/ClaimListingFlow";
 import { pageMetadata } from "@/lib/seo";
 import { getVendorProfile } from "@/lib/onboarding-db";
 import { userHasClaimedListing } from "@/lib/claim-db";
+import { ensureVendorRole } from "@/lib/auth/ensure-vendor-role";
 import { redirect } from "next/navigation";
 
 export const metadata = pageMetadata({
@@ -19,6 +20,7 @@ export default async function ClaimVendorListingPage() {
   const { userId } = await auth();
 
   if (userId) {
+    await ensureVendorRole(userId, await currentUser());
     const profile = await getVendorProfile(userId);
     const claimed = (await userHasClaimedListing(userId)) || Boolean(profile?.slug);
     if (claimed) {
@@ -46,7 +48,7 @@ export default async function ClaimVendorListingPage() {
                   </p>
                   <div className="buttons-row">
                     <Link
-                      href="/sign-up?intent=vendor"
+                      href="/sign-up?intent=vendor&redirect_url=/instructors/claim"
                       className="btn-primary button-row w-button"
                     >
                       Sign up as an instructor

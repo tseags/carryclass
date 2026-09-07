@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const listing = await getVendorBySlug(result.verification.listing_slug);
+  const listing = await getVendorBySlug(result.verification.listing_slug, { audience: "claim" });
   if (!listing) {
     return NextResponse.json(
       { error: "Listing no longer found." },

@@ -14,6 +14,11 @@ import { applyListingSort } from "@/lib/vendor-listing-sort";
 import { mergeCanonicalVendors } from "@/lib/merge-canonical-vendors";
 import { VENDOR_MERGE_OVERRIDES } from "@/data/vendor-merge-overrides";
 import { getRelatedVendorsForVendorProfile } from "@/lib/related-vendors";
+import {
+  filterVendorsByAudience,
+  isVendorVisibleToAudience,
+  type VendorAudience,
+} from "@/lib/vendor-audience";
 import { prisma } from "@/lib/db";
 import { supabaseForVendorReads } from "@/lib/supabase";
 
@@ -24,6 +29,11 @@ const VENDOR_DB_TABLES = new Set([
 
 /** Shared across pages — invalidate via `revalidateTag(VENDOR_DATA_CACHE_TAG)`. */
 export const VENDOR_DATA_CACHE_TAG = "carry-class-vendors";
+
+export type VendorQueryOptions = {
+  /** Public directory (default) omits `hiddenFromDirectory` rows; claim flows include them. */
+  audience?: VendorAudience;
+};
 const VENDOR_LIST_REVALIDATE_SECONDS = 86_400;
 
 function supabaseProjectRef(): string | null {
@@ -615,6 +625,10 @@ function mapCarryClassVendorRow(row: Record<string, unknown>): Vendor | null {
     updatedAt,
     enrichmentConfidence,
     crawlStatus,
+    hiddenFromDirectory: boolFromRow(row, [
+      "hiddenFromDirectory",
+      "hidden_from_directory",
+    ]),
     createdAt,
   };
 }
@@ -886,8 +900,10 @@ function applyVendorFiltersToSupabaseQuery(query: any, filters: VendorFilters): 
 
 export async function queryVendorsForListing(
   filters: VendorFilters,
-  sort: string | undefined
+  sort: string | undefined,
+  options?: VendorQueryOptions
 ): Promise<Vendor[]> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return [];
@@ -905,11 +921,12 @@ export async function queryVendorsForListing(
     const mapped = countySlug
       ? await getCarryClassVendorsForCountyCached(countySlug)
       : await getCarryClassVendorsCached();
-    const refined = filterVendors(mapped, filters);
+    const refined = filterVendorsByAudience(filterVendors(mapped, filters), audience);
     console.log("📦 queryVendorsForListing CarryClass path:", {
       mappedCount: mapped.length,
       afterFilterCount: refined.length,
       sort,
+      audience,
     });
     return applyListingSort(refined, sort);
   }
@@ -935,11 +952,15 @@ export async function queryVendorsForListing(
     .map((row) => mapRow(row as Record<string, unknown>))
     .filter((v): v is Vendor => v != null);
 
-  const refined = filterVendors(mapped, filters);
+  const refined = filterVendorsByAudience(filterVendors(mapped, filters), audience);
   return applyListingSort(refined, sort);
 }
 
-export async function getCitiesForCountyFilter(countySlug?: string): Promise<string[]> {
+export async function getCitiesForCountyFilter(
+  countySlug?: string,
+  options?: VendorQueryOptions
+): Promise<string[]> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return [];
@@ -954,9 +975,10 @@ export async function getCitiesForCountyFilter(countySlug?: string): Promise<str
       vendorTable(),
       { countySlug }
     );
-    const vendors = slug
-      ? await getCarryClassVendorsForCountyCached(slug)
-      : await getCarryClassVendorsCached();
+    const vendors = filterVendorsByAudience(
+      slug ? await getCarryClassVendorsForCountyCached(slug) : await getCarryClassVendorsCached(),
+      audience
+    );
     const cities = vendors.map((v) => v.city).filter(Boolean);
     console.log("📦 getCitiesForCountyFilter CarryClass:", {
       vendorPool: vendors.length,
@@ -997,21 +1019,30 @@ export async function getCitiesForCountyFilter(countySlug?: string): Promise<str
 
 export async function getRelatedVendorsForProfile(
   origin: Vendor,
-  limit = 3
+  limit = 3,
+  options?: VendorQueryOptions
 ): Promise<Vendor[]> {
+  const audience = options?.audience ?? "public";
   const countySlug = (origin.county || origin.countiesServed[0] || "").toLowerCase();
   if (!countySlug) return [];
 
   if (isCarryClassVendorShape()) {
-    const vendors = await getCarryClassVendorsForCountyCached(countySlug);
+    const vendors = filterVendorsByAudience(
+      await getCarryClassVendorsForCountyCached(countySlug),
+      audience
+    );
     return getRelatedVendorsForVendorProfile(origin, vendors, limit);
   }
 
-  const countyVendors = await getVendorsByCounty(countySlug);
+  const countyVendors = await getVendorsByCounty(countySlug, options);
   return getRelatedVendorsForVendorProfile(origin, countyVendors, limit);
 }
 
-export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
+export async function getVendorBySlug(
+  slug: string,
+  options?: VendorQueryOptions
+): Promise<Vendor | null> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return null;
@@ -1026,11 +1057,12 @@ export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
       });
       const countyVendors = await getCarryClassVendorsForCountyCached(countyFromSlug);
       const countyHit = countyVendors.find((v) => v.slug === slug) ?? null;
-      if (countyHit) {
+      if (countyHit && isVendorVisibleToAudience(countyHit, audience)) {
         console.log("📦 getVendorBySlug CarryClass (county):", {
           county: countyFromSlug,
           pool: countyVendors.length,
           hit: true,
+          audience,
         });
         return countyHit;
       }
@@ -1041,8 +1073,12 @@ export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
     });
     const vendors = await getCarryClassVendorsCached();
     const hit = vendors.find((v) => v.slug === slug) ?? null;
-    console.log("📦 getVendorBySlug CarryClass (fallback):", { pool: vendors.length, hit: Boolean(hit) });
-    return hit;
+    console.log("📦 getVendorBySlug CarryClass (fallback):", {
+      pool: vendors.length,
+      hit: Boolean(hit),
+      audience,
+    });
+    return hit && isVendorVisibleToAudience(hit, audience) ? hit : null;
   }
 
   logSupabaseSelectStart("getVendorBySlug (legacy)", vendorTable(), { slug });
@@ -1056,10 +1092,12 @@ export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
   }
 
   if (!data) return null;
-  return mapRow(data as Record<string, unknown>);
+  const vendor = mapRow(data as Record<string, unknown>);
+  return vendor && isVendorVisibleToAudience(vendor, audience) ? vendor : null;
 }
 
-export async function getAllVendors(): Promise<Vendor[]> {
+export async function getAllVendors(options?: VendorQueryOptions): Promise<Vendor[]> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return [];
@@ -1067,8 +1105,8 @@ export async function getAllVendors(): Promise<Vendor[]> {
 
   if (isCarryClassVendorShape()) {
     logSupabaseSelectStart("getAllVendors (CarryClass — cache)", vendorTable(), "(none)");
-    const list = sortByName(await getCarryClassVendorsCached());
-    console.log("📦 getAllVendors CarryClass:", { count: list.length });
+    const list = filterVendorsByAudience(sortByName(await getCarryClassVendorsCached()), audience);
+    console.log("📦 getAllVendors CarryClass:", { count: list.length, audience });
     return list;
   }
 
@@ -1086,14 +1124,20 @@ export async function getAllVendors(): Promise<Vendor[]> {
     return [];
   }
 
-  return sortByName(
-    (data ?? [])
-      .map((row) => mapRow(row as Record<string, unknown>))
-      .filter((v): v is Vendor => v != null)
+  return filterVendorsByAudience(
+    sortByName(
+      (data ?? [])
+        .map((row) => mapRow(row as Record<string, unknown>))
+        .filter((v): v is Vendor => v != null)
+    ),
+    audience
   );
 }
 
-export async function getVendorCountsByCounty(): Promise<Record<string, number>> {
+export async function getVendorCountsByCounty(
+  options?: VendorQueryOptions
+): Promise<Record<string, number>> {
+  const audience = options?.audience ?? "public";
   const counts: Record<string, number> = {};
 
   if (!isSupabaseConfigured()) {
@@ -1103,7 +1147,7 @@ export async function getVendorCountsByCounty(): Promise<Record<string, number>>
 
   if (isCarryClassVendorShape()) {
     logSupabaseSelectStart("getVendorCountsByCounty (CarryClass — cache)", vendorTable(), "(none)");
-    const vendors = await getCarryClassVendorsCached();
+    const vendors = filterVendorsByAudience(await getCarryClassVendorsCached(), audience);
     for (const v of vendors) {
       for (const raw of v.countiesServed.length ? v.countiesServed : [v.county]) {
         const s = raw.toLowerCase();
@@ -1142,7 +1186,11 @@ export async function getVendorCountsByCounty(): Promise<Record<string, number>>
   return counts;
 }
 
-export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> {
+export async function getVendorsByCounty(
+  countySlug: string,
+  options?: VendorQueryOptions
+): Promise<Vendor[]> {
+  const audience = options?.audience ?? "public";
   const slug = countySlug.toLowerCase();
 
   if (!isSupabaseConfigured()) {
@@ -1154,10 +1202,14 @@ export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> 
     logSupabaseSelectStart("getVendorsByCounty (CarryClass — county scope)", vendorTable(), {
       countySlug,
     });
-    const list = sortByName(await getCarryClassVendorsForCountyCached(slug));
+    const list = filterVendorsByAudience(
+      sortByName(await getCarryClassVendorsForCountyCached(slug)),
+      audience
+    );
     console.log("📦 getVendorsByCounty CarryClass:", {
       matched: list.length,
       countySlug,
+      audience,
     });
     return list;
   }
@@ -1177,14 +1229,22 @@ export async function getVendorsByCounty(countySlug: string): Promise<Vendor[]> 
     return [];
   }
 
-  return sortByName(
-    (data ?? [])
-      .map((row) => mapRow(row as Record<string, unknown>))
-      .filter((v): v is Vendor => v != null)
+  return filterVendorsByAudience(
+    sortByName(
+      (data ?? [])
+        .map((row) => mapRow(row as Record<string, unknown>))
+        .filter((v): v is Vendor => v != null)
+    ),
+    audience
   );
 }
 
-export async function getVendorsByCity(city: string, countySlug?: string): Promise<Vendor[]> {
+export async function getVendorsByCity(
+  city: string,
+  countySlug?: string,
+  options?: VendorQueryOptions
+): Promise<Vendor[]> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return [];
@@ -1192,7 +1252,7 @@ export async function getVendorsByCity(city: string, countySlug?: string): Promi
 
   if (isCarryClassVendorShape()) {
     logSupabaseSelectStart("getVendorsByCity (CarryClass — cache)", vendorTable(), { city, countySlug });
-    const vendors = await getCarryClassVendorsCached();
+    const vendors = filterVendorsByAudience(await getCarryClassVendorsCached(), audience);
     const cityLower = city.toLowerCase();
     const list = sortByName(
       vendors.filter((v) => {
@@ -1224,19 +1284,26 @@ export async function getVendorsByCity(city: string, countySlug?: string): Promi
     return [];
   }
 
-  return sortByName(
-    (data ?? [])
-      .map((row) => mapRow(row as Record<string, unknown>))
-      .filter((v): v is Vendor => v != null)
+  return filterVendorsByAudience(
+    sortByName(
+      (data ?? [])
+        .map((row) => mapRow(row as Record<string, unknown>))
+        .filter((v): v is Vendor => v != null)
+    ),
+    audience
   );
 }
 
-export async function getUniqueCitiesInCounty(countySlug: string): Promise<string[]> {
-  const vendors = await getVendorsByCounty(countySlug);
+export async function getUniqueCitiesInCounty(
+  countySlug: string,
+  options?: VendorQueryOptions
+): Promise<string[]> {
+  const vendors = await getVendorsByCounty(countySlug, options);
   return [...new Set(vendors.map((v) => v.city))].sort();
 }
 
-export async function getAllUniqueCities(): Promise<string[]> {
+export async function getAllUniqueCities(options?: VendorQueryOptions): Promise<string[]> {
+  const audience = options?.audience ?? "public";
   if (!isSupabaseConfigured()) {
     console.error("[vendors-db] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
     return [];
@@ -1244,10 +1311,14 @@ export async function getAllUniqueCities(): Promise<string[]> {
 
   if (isCarryClassVendorShape()) {
     logSupabaseSelectStart("getAllUniqueCities (CarryClass — cache)", vendorTable(), "(none)");
-    const vendors = await getCarryClassVendorsCached();
+    const vendors = filterVendorsByAudience(await getCarryClassVendorsCached(), audience);
     const cities = vendors.map((v) => v.city).filter(Boolean);
     const unique = [...new Set(cities)].sort();
-    console.log("📦 getAllUniqueCities CarryClass:", { vendors: vendors.length, uniqueCities: unique.length });
+    console.log("📦 getAllUniqueCities CarryClass:", {
+      vendors: vendors.length,
+      uniqueCities: unique.length,
+      audience,
+    });
     return unique;
   }
 
