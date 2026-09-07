@@ -324,16 +324,16 @@ describe("mergeCanonicalVendors", () => {
     ] as const;
     const rows = [
       makeRow({
-        id: "d0720a54-1e01-4870-bea3-40760bd0958f",
+        id: "3df1d4e8-fd9b-45e2-b3b5-cd3105d22e1f",
         name: "Safe Insight",
         county: "el-dorado",
         website: "https://safeinsight.myshopify.com/collections/non-resident-ccw",
-        priceInitial: 399,
+        priceInitial: 400,
         priceRenewal: 299,
         updatedAt: "2026-04-13T04:37:12Z",
       }),
       makeRow({
-        id: "721f9ccf-ce7f-4cdf-b572-1e93684d74fb",
+        id: "07cb90d4-6b0c-4cc9-9468-0b15a8737281",
         name: "Safe Insight",
         county: "lassen",
         website: "https://www.safeinsight.net",
@@ -342,7 +342,7 @@ describe("mergeCanonicalVendors", () => {
         priceRenewal: 300,
       }),
       makeRow({
-        id: "861dc127-b1f1-4543-98ae-0bb736e51f45",
+        id: "b1b6d881-60b6-4a4c-b8a9-0697c03a5b17",
         name: "Safe Insight",
         county: "los-angeles",
         website: "https://www.safeinsight.net",
@@ -350,7 +350,7 @@ describe("mergeCanonicalVendors", () => {
         city: "Artesia",
       }),
       makeRow({
-        id: "2a484a48-f701-43e4-be08-6bd899928cfb",
+        id: "2dc9be00-444c-43b1-b110-04f411302d66",
         name: "Safe Insight, LLC",
         county: "orange",
         website: "https://www.safeinsight.net",
@@ -361,14 +361,14 @@ describe("mergeCanonicalVendors", () => {
         updatedAt: "2026-04-13T20:06:39Z",
       }),
       makeRow({
-        id: "b0155c8f-efef-4dbb-84b3-9ff58a21c979",
+        id: "0508b6ac-6960-4189-b7e1-fe07ee395e01",
         name: "Safe Insight",
         county: "tuolumne",
         website: "https://safeinsight.net/california-ccw",
         phone: "877-217-7233",
       }),
       makeRow({
-        id: "3386d4d3-5a7f-4154-8d5a-9cfd4fb25437",
+        id: "083fd6c2-4b39-4fb7-806e-8612ee724281",
         name: "Safe Insight",
         county: "ventura",
         website: "https://www.safeinsight.net",
@@ -385,7 +385,7 @@ describe("mergeCanonicalVendors", () => {
     expect(merged).toHaveLength(1);
     const v = merged[0];
     expect(v.countiesServed.sort()).toEqual([...counties].sort());
-    expect(v.priceInitial).toBe(399);
+    expect(v.priceInitial).toBe(400);
     expect(v.priceRenewal).toBe(299);
     expect(v.website).toBe("https://www.safeinsight.net");
     expect(v.countyContacts?.length).toBeGreaterThan(0);
