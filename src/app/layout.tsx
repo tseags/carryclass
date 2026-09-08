@@ -67,7 +67,6 @@ export default function RootLayout({
     <ClerkProvider
       {...clerkConfig}
       localization={{
-        applicationName: "CarryClass",
         signIn: {
           start: {
             title: "Sign in to CarryClass",
