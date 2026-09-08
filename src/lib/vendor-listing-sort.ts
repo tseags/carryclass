@@ -1,23 +1,27 @@
 import type { Vendor } from "@/types";
-import { vendorHasListedCoursePrice } from "@/lib/filter-vendors";
 
-function comparableCoursePrice(v: Vendor, direction: "asc" | "desc"): number | undefined {
-  const prices = [v.priceMin, v.priceMax, v.priceInitial, v.priceRenewal].filter(
-    (p): p is number => p != null
-  );
-  if (prices.length === 0) return undefined;
-  return direction === "asc" ? Math.min(...prices) : Math.max(...prices);
+/** 0 = has 16-hr initial, 1 = renewal only, 2 = no course pricing */
+function priceSortTier(v: Vendor): number {
+  if (v.priceInitial != null) return 0;
+  if (v.priceRenewal != null) return 1;
+  return 2;
+}
+
+/** Sort key within a tier: initial for tier 0, renewal for tier 1. */
+function priceWithinTier(v: Vendor): number | undefined {
+  if (v.priceInitial != null) return v.priceInitial;
+  if (v.priceRenewal != null) return v.priceRenewal;
+  return undefined;
 }
 
 function sortByComparablePrice(vendors: Vendor[], direction: "asc" | "desc"): Vendor[] {
   const sign = direction === "asc" ? 1 : -1;
   return [...vendors].sort((a, b) => {
-    const aHasPrice = vendorHasListedCoursePrice(a);
-    const bHasPrice = vendorHasListedCoursePrice(b);
-    if (aHasPrice !== bHasPrice) return aHasPrice ? -1 : 1;
+    const tierDiff = priceSortTier(a) - priceSortTier(b);
+    if (tierDiff !== 0) return tierDiff;
 
-    const aPrice = comparableCoursePrice(a, direction);
-    const bPrice = comparableCoursePrice(b, direction);
+    const aPrice = priceWithinTier(a);
+    const bPrice = priceWithinTier(b);
     if (aPrice != null && bPrice != null && aPrice !== bPrice) {
       return (aPrice - bPrice) * sign;
     }
