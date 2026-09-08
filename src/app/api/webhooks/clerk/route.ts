@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { sendClerkVerificationCodeEmail } from "@/lib/clerk-auth-email";
 
@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 /** Clerk auth emails we deliver ourselves (CarryClass branding via Resend). */
 const HANDLED_SLUGS = new Set(["verification_code", "reset_password_code"]);
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   if (!process.env.CLERK_WEBHOOK_SIGNING_SECRET?.trim()) {
     console.error("CLERK_WEBHOOK_SIGNING_SECRET is not set");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
