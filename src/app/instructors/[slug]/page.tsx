@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PopularVendorCard } from "@/components/PopularVendorCard";
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return pageMetadata({
     title,
     description,
-    path: `/instructors/${slug}`,
+    path: `/instructors/${vendor.slug}`,
     imageUrl: vendor.imageUrl ?? null,
   });
 }
@@ -90,6 +90,13 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
   if (!vendor) {
     notFound();
+  }
+
+  // Fingerprint match after a winner-name rename — send crawlers/bookmarks to the canonical slug.
+  if (vendor.slug !== slug) {
+    const tabQuery =
+      selectedTab !== "about" ? `?tab=${encodeURIComponent(selectedTab)}` : "";
+    permanentRedirect(`/instructors/${vendor.slug}${tabQuery}`);
   }
 
   const otherVendors = await getRelatedVendorsForProfile(vendor, 3);

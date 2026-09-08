@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getVendorBySlug } from "@/lib/vendors-db";
@@ -16,8 +16,11 @@ export default async function VendorBookPage({ params }: PageProps) {
   if (!vendor || !vendor.acceptsBookings) {
     notFound();
   }
+  if (vendor.slug !== slug) {
+    permanentRedirect(`/instructors/${vendor.slug}/book`);
+  }
 
-  const bookingData = await getUpcomingSessionsForVendorSlug(slug);
+  const bookingData = await getUpcomingSessionsForVendorSlug(vendor.slug);
   const sessions: SerializableSession[] =
     bookingData?.sessions?.map((s) => ({
       id: s.id,

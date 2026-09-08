@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getVendorBySlug } from "@/lib/vendors-db";
@@ -14,6 +14,10 @@ export default async function BookingSuccessPage({ params, searchParams }: PageP
   const { session_id: sessionId } = await searchParams;
   const vendor = await getVendorBySlug(slug);
   if (!vendor || !vendor.acceptsBookings) notFound();
+  if (vendor.slug !== slug) {
+    const qs = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
+    permanentRedirect(`/instructors/${vendor.slug}/book/success${qs}`);
+  }
 
   if (!sessionId || !sessionId.startsWith("cs_")) {
     return (

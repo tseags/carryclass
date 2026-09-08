@@ -8,7 +8,11 @@ import {
   COUNTY_DISPLAY_NAMES,
   type CaliforniaCountySlug,
 } from "@/data/counties";
-import { parseCountySlugFromCarryClassVendorSlug } from "@/lib/carryclass-vendor-slug";
+import {
+  extractCarryClassSlugFingerprint,
+  findVendorBySlugFingerprint,
+  parseCountySlugFromCarryClassVendorSlug,
+} from "@/lib/carryclass-vendor-slug";
 import { filterVendors } from "@/lib/filter-vendors";
 import { applyListingSort } from "@/lib/vendor-listing-sort";
 import {
@@ -1078,13 +1082,32 @@ export async function getVendorBySlug(
       slug,
     });
     const vendors = await getCarryClassVendorsCached();
-    const hit = vendors.find((v) => v.slug === slug) ?? null;
+    const exactHit = vendors.find((v) => v.slug === slug) ?? null;
+    if (exactHit && isVendorVisibleToAudience(exactHit, audience)) {
+      console.log("📦 getVendorBySlug CarryClass (fallback):", {
+        pool: vendors.length,
+        hit: true,
+        via: "exact",
+        audience,
+      });
+      return exactHit;
+    }
+
+    // Winner-name renames change the slug prefix but keep the group-key fingerprint.
+    // Match on that suffix so old /instructors/[slug] links still resolve.
+    const fingerprint = extractCarryClassSlugFingerprint(slug);
+    const fingerprintHit = fingerprint
+      ? findVendorBySlugFingerprint(vendors, fingerprint)
+      : null;
     console.log("📦 getVendorBySlug CarryClass (fallback):", {
       pool: vendors.length,
-      hit: Boolean(hit),
+      hit: Boolean(fingerprintHit),
+      via: fingerprintHit ? "fingerprint" : "miss",
       audience,
     });
-    return hit && isVendorVisibleToAudience(hit, audience) ? hit : null;
+    return fingerprintHit && isVendorVisibleToAudience(fingerprintHit, audience)
+      ? fingerprintHit
+      : null;
   }
 
   logSupabaseSelectStart("getVendorBySlug (legacy)", vendorTable(), { slug });
