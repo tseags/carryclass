@@ -14,9 +14,9 @@ export const metadata = pageMetadata({
 
 const BENEFITS = [
   {
-    title: "Accept bookings online",
+    title: "Accept bookings online (optional)",
     description:
-      "Connect Stripe and let students book and pay directly from your profile after you claim your existing listing. Students pay a separate 5% platform fee at checkout on top of your class price — so you keep 100% of what you charge.",
+      "Claiming and updating your listing is free and never requires Stripe. Connect Stripe Connect when you want students to book and pay from your profile — then they pay a separate 5% platform fee at checkout on top of your class price, so you keep 100% of what you charge.",
     icon: "booking",
   },
   {
@@ -48,9 +48,9 @@ const STEPS = [
   },
   {
     step: "3",
-    title: "Start accepting students",
+    title: "Publish and manage from your dashboard",
     description:
-      "Publish class sessions and connect Stripe when you are ready. Students can book from your profile while you manage everything from your dashboard.",
+      "Publish your listing and schedule with or without Stripe. Connect Stripe whenever you are ready and online booking turns on from that point forward.",
   },
 ] as const;
 
@@ -58,12 +58,12 @@ const FAQS = [
   {
     question: "Is it free to list my classes?",
     answer:
-      "Listing in the CarryClass directory is free. When you enable online booking through Stripe Connect, students pay a separate 5% platform service fee at checkout on top of your class price — so you keep 100% of what you charge.",
+      "Listing in the CarryClass directory is free, and so is claiming and updating your page. The 5% platform service fee only applies to online bookings: once you enable them through Stripe Connect, students pay that fee at checkout on top of your class price — so you keep 100% of what you charge.",
   },
   {
     question: "Why should I claim my profile?",
     answer:
-      "Claiming your profile allows you to add more information and accept online bookings directly on getcarryclass.com. Plus, get a free dashboard to send automatic confirmation, reminder, and follow-up emails; see real-time registrations; and one place to update your profile, pricing, and class details.",
+      "Claiming your profile lets you add more information, and — if you connect Stripe — accept online bookings directly on getcarryclass.com. Plus, get a free dashboard to send automatic confirmation, reminder, and follow-up emails; see real-time registrations; and one place to update your profile, pricing, and class details.",
   },
   {
     question: "How do you verify that I own the listing?",
@@ -73,7 +73,7 @@ const FAQS = [
   {
     question: "Do I need Stripe to get started?",
     answer:
-      "No. You can claim and update your listing without Stripe. Online booking is optional and available once you complete Stripe Connect onboarding.",
+      "No. You can claim your listing, finish every onboarding step, publish, and keep editing your page without Stripe — you can skip the payments step entirely. Online booking and payments are the one thing that requires Stripe Connect: until you connect, your profile shows your details and schedule but students cannot book or pay through CarryClass. Connect from your dashboard any time and booking turns on.",
   },
   {
     question: "Which counties do you cover?",
@@ -86,7 +86,7 @@ const STATS: AnimatedStat[] = [
   { number: "100%", label: "Of your class fee you keep" },
   { number: "5%", label: "Platform fee paid by students" },
   { number: "$0", label: "Cost to list your classes" },
-  { number: "5 minutes", label: "To set up profile and accept bookings" },
+  { number: "5 minutes", label: "To claim and publish your listing" },
 ];
 
 function BenefitIcon({ type }: { type: (typeof BENEFITS)[number]["icon"] }) {
@@ -154,7 +154,7 @@ export default function ForInstructorsPage() {
                 </h1>
                 <p className="for-instructors-hero__sub">
                   CarryClass is California&apos;s CCW class directory. Claim your training
-                  business, show up in county searches, and accept bookings online.
+                  business, show up in county searches, and add online bookings when you want them.
                 </p>
                 <div className="buttons-row for-instructors-hero__buttons">
                   <Link href="/instructors/claim" className="btn-primary w-button">
@@ -186,7 +186,7 @@ export default function ForInstructorsPage() {
                   CarryClass
                 </h2>
                 <p className="for-instructors-section-sub">
-                  Online booking, a free instructor dashboard, and statewide visibility
+                  Optional online booking, a free instructor dashboard, and statewide visibility
                   — built for CCW training, not a generic business listing.
                 </p>
               </div>

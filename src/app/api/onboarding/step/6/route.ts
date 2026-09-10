@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { VENDOR_DATA_CACHE_TAG } from "@/lib/vendors-db";
 import { auth } from "@clerk/nextjs/server";
 import {
   getCalendarClasses,
@@ -9,6 +7,7 @@ import {
   updateVendorProfile,
 } from "@/lib/onboarding-db";
 import { syncPublishedVendorToLive } from "@/lib/publish-vendor-live";
+import { revalidatePublishedVendorPaths } from "@/lib/publish-vendor-revalidate";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -54,14 +53,7 @@ export async function POST(req: NextRequest) {
       onboarding_step: 7,
     });
 
-    if (vendor.slug?.trim()) {
-      revalidatePath(`/instructors/${vendor.slug.trim()}`);
-    }
-    revalidateTag(VENDOR_DATA_CACHE_TAG, "max");
-    revalidatePath("/sitemap.xml");
-    revalidatePath("/");
-    revalidatePath("/instructors");
-    revalidatePath("/ca");
+    revalidatePublishedVendorPaths(vendor.slug);
   }
 
   return NextResponse.json({ ok: true });

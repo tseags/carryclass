@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getVendorProfile, updateVendorProfile } from "@/lib/onboarding-db";
+import {
+  getCalendarClasses,
+  getClassTypes,
+  getVendorProfile,
+  updateVendorProfile,
+} from "@/lib/onboarding-db";
+import { syncPublishedVendorToLive } from "@/lib/publish-vendor-live";
+import { revalidatePublishedVendorPaths } from "@/lib/publish-vendor-revalidate";
 import {
   getStripeConnectConfigError,
   getStripeConnectRedirectUri,
@@ -77,6 +84,32 @@ export async function GET(req: NextRequest) {
     }
 
     await updateVendorProfile(vendor.id, { stripe_account_id: stripeAccountId });
+
+    // Already-published instructors skipped Stripe during onboarding, so their
+    // listing is live with bookings off. Re-run the publish sync to flip
+    // accepts_bookings on and scaffold their bookable sessions.
+    if (vendor.is_published) {
+      try {
+        const [classTypes, calendarClasses] = await Promise.all([
+          getClassTypes(vendor.id),
+          getCalendarClasses(vendor.id),
+        ]);
+        await syncPublishedVendorToLive({
+          profile: { ...vendor, stripe_account_id: stripeAccountId },
+          classTypes,
+          calendarClasses,
+        });
+        revalidatePublishedVendorPaths(vendor.slug);
+      } catch (syncError) {
+        console.error("[stripe-connect/callback] bookings re-sync failed:", syncError);
+        return NextResponse.redirect(
+          `${baseUrl}/dashboard/vendor?stripe_error=${encodeURIComponent(
+            "Stripe connected, but we could not turn on bookings. Try publishing your listing again."
+          )}`
+        );
+      }
+      return NextResponse.redirect(`${baseUrl}/dashboard/vendor?stripe=connected`);
+    }
 
     return NextResponse.redirect(`${baseUrl}/onboard/step/5?connected=1`);
   } catch (err) {

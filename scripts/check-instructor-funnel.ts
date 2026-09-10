@@ -398,9 +398,9 @@ function checkEnv(): void {
     record("warn", "env twilio", `Partially set (${twilioSet.join(", ")}) — SMS claims will fail.`);
   }
 
-  // Step 5 is a hard gate: /api/onboarding/step/5 returns 400 until Connect
-  // OAuth sets stripe_account_id, so missing Stripe config stops every
-  // instructor before step 6, publish, and /dashboard/vendor.
+  // Step 5 is skippable: instructors finish onboarding, publish, and edit their
+  // listing without Connect. Missing Stripe config only costs them bookings
+  // (accepts_bookings stays false), so it is a warning, not a funnel blocker.
   const stripeSecret = process.env.STRIPE_SECRET_KEY?.trim();
   const stripeClientId = process.env.STRIPE_CLIENT_ID?.trim();
   if (!stripeSecret || !stripeClientId) {
@@ -409,15 +409,15 @@ function checkEnv(): void {
       !stripeClientId ? "STRIPE_CLIENT_ID" : null,
     ].filter(Boolean);
     record(
-      "fail",
+      "warn",
       "env stripe connect",
-      `Missing ${missing.join(" + ")} — onboarding step 5 cannot be completed, so nobody reaches step 6 or the dashboard.`
+      `Missing ${missing.join(" + ")} — claim → onboard → publish → dashboard still works, but nobody can connect Stripe, so every listing stays bookings-off.`
     );
   } else if (!stripeSecret.startsWith("sk_")) {
     record(
-      "fail",
+      "warn",
       "env stripe connect",
-      "STRIPE_SECRET_KEY must be a full secret key (sk_test_/sk_live_) — restricted keys (rk_) cannot complete Connect OAuth."
+      "STRIPE_SECRET_KEY must be a full secret key (sk_test_/sk_live_) — restricted keys (rk_) cannot complete Connect OAuth, so bookings can never be enabled."
     );
   } else {
     record(

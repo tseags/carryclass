@@ -193,10 +193,11 @@ export async function syncPublishedVendorToLive(input: {
     select: { id: true },
   });
 
-  const sessions = calendarClassesToSessions(
-    input.calendarClasses,
-    input.classTypes
-  );
+  // No Stripe Connect ⇒ no bookable inventory. Sessions are scaffolded on the
+  // re-sync that runs once the instructor connects (stripe-connect/callback).
+  const sessions = vendorData.acceptsBookings
+    ? calendarClassesToSessions(input.calendarClasses, input.classTypes)
+    : [];
   const { created, updated } = await upsertClassSessionsForVendor(
     prismaVendor.id,
     sessions

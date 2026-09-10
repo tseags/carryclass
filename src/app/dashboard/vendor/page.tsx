@@ -21,7 +21,11 @@ import {
 } from "@/lib/dashboard-db";
 import { VendorDashboard } from "@/components/dashboard/VendorDashboard";
 
-export default async function VendorDashboardPage() {
+export default async function VendorDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stripe_error?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in?intent=vendor");
@@ -83,6 +87,7 @@ export default async function VendorDashboardPage() {
         payout={payout}
         emailMetrics={emailMetrics}
         publicProfileUrl={publicProfileUrl}
+        stripeError={(await searchParams).stripe_error ?? null}
       />
     </>
   );

@@ -25,7 +25,6 @@ export function Step5Stripe({
   const connected = isConnected || justConnected;
 
   async function advanceStep() {
-    if (!connected) return;
     setSaving(true);
     try {
       await fetch("/api/onboarding/step/5", { method: "POST" });
@@ -99,10 +98,11 @@ export function Step5Stripe({
               className="h-9 w-auto"
             />
           </div>
-          <h2 className="text-lg font-semibold text-zinc-900 mb-1">Connect Stripe to get paid</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 mb-1">Connect Stripe to take bookings</h2>
           <p className="text-sm text-zinc-500 max-w-sm mx-auto mb-6">
-            CarryClass adds a small platform fee per booking charged directly to the student on top of
-            your class price — so you keep 100% of what you charge.
+            Stripe is what lets students book and pay online. CarryClass adds a small platform fee per
+            booking charged directly to the student on top of your class price — so you keep 100% of
+            what you charge.
           </p>
           <a
             href="/api/stripe-connect/connect"
@@ -119,6 +119,17 @@ export function Step5Stripe({
         </div>
       )}
 
+      {!connected && (
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
+          <p className="text-sm font-semibold text-zinc-800">Not ready for Stripe? Skip it.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600">
+            <li>You can still publish and keep updating your listing — profile, contact, and pricing.</li>
+            <li>Online booking stays off: students won&apos;t be able to book or pay through CarryClass.</li>
+            <li>Connect Stripe later from your dashboard and bookings turn on right away.</li>
+          </ul>
+        </div>
+      )}
+
       <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
@@ -127,17 +138,17 @@ export function Step5Stripe({
         >
           Back
         </button>
-        {connected && (
-          <button
-            type="button"
-            onClick={advanceStep}
-            disabled={saving}
-            className="btn-primary w-button inline-flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {saving && <Spinner />}
-            Continue
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={advanceStep}
+          disabled={saving}
+          className={`${
+            connected ? "btn-primary" : "btn-secondary"
+          } w-button inline-flex items-center justify-center gap-2 disabled:opacity-60`}
+        >
+          {saving && <Spinner />}
+          {connected ? "Continue" : "Skip for now — continue without booking"}
+        </button>
       </div>
     </div>
   );
@@ -145,7 +156,7 @@ export function Step5Stripe({
 
 function Spinner() {
   return (
-    <svg className="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>

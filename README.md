@@ -118,7 +118,7 @@ npm run ensure:vendor-assets-bucket
 
 4. Enter the code. In development the code is also logged to the server console (`[claim] email code for …`); set `CLAIM_DEV_LOG_CODES=1` to get that outside dev. Email needs `RESEND_API_KEY`; SMS needs all three `TWILIO_*` vars, otherwise use the email channel.
 5. Verify redirects to `/onboard`, which forwards to `/onboard/step/{onboarding_step}`.
-6. Walk steps 1–6. Step 5 will not advance until Stripe Connect returns a `stripe_account_id`; step 6 publishes and redirects to `/dashboard/vendor`.
+6. Walk steps 1–6. Step 5 (Stripe Connect) is **optional** — "Skip for now" advances to step 6 without a `stripe_account_id`. Step 6 publishes and redirects to `/dashboard/vendor`.
 
 Guards worth checking: `/onboard` before claiming bounces to `/instructors/claim`, and `/dashboard/vendor` before publishing bounces to `/onboard`. Step URLs are **not** gated on `onboarding_step`, so a claimed user can open `/onboard/step/5` directly.
 
@@ -126,7 +126,9 @@ Publishing (step 6) syncs the claimed listing into the live directory and bookin
 
 1. Updates matching `carry_class_vendor_data` source row(s) via `DATABASE_URL` (bio, contact, prices, logo, `accepts_bookings`, Stripe Connect id) — never inserts a new directory row.
 2. Upserts the Prisma `Vendor` keyed by the claimed slug (`acceptsBookings` / `accepts_bookings` are **true only when** onboarding `stripe_account_id` is present).
-3. Upserts Prisma `ClassSession` rows from active onboarding calendar classes (`initial` / `renewal` only).
+3. Upserts Prisma `ClassSession` rows from active onboarding calendar classes (`initial` / `renewal` only) — **skipped entirely** when Stripe is absent, so a listing-only instructor never has bookable inventory.
+
+**Stripe Connect is optional; bookings are what it gates.** Without `stripe_account_id` an instructor can claim, finish all six steps, publish, and keep editing their listing — the profile, contact details, and pricing all go live. What stays off is booking: `accepts_bookings` / `acceptsBookings` are false, no `ClassSession` rows are scaffolded, `/instructors/{slug}` hides Book Now, `/instructors/{slug}/book` redirects to the profile, and `/api/bookings/checkout` refuses. The dashboard shows a persistent "Listing is live. Connect Stripe to accept bookings." banner plus an inline prompt on Classes & Schedule. Connecting later from the dashboard (`/api/stripe-connect/connect`) re-runs the same publish sync in `/api/stripe-connect/callback`, which flips `accepts_bookings` on and scaffolds the sessions.
 
 **Live sync allowlist:** set `PUBLISH_LIVE_SLUG_ALLOWLIST` to a comma-separated list of claimed slugs (e.g. the claim-funnel test listing above) so only those publishes run steps 1–3. Other instructors can still finish onboarding (`is_published`), but live sync is skipped and logged. **Full go-live:** clear / unset `PUBLISH_LIVE_SLUG_ALLOWLIST`. `npm run check:instructor-funnel` warns loudly when the allowlist is set.
 

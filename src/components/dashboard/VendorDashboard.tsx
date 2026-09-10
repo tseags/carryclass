@@ -19,6 +19,11 @@ import { EmailEditorPanel, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
 import { AddClassDrawer } from "./AddClassDrawer";
 import { RegistrationsCrm, registrationsForDisplay } from "./RegistrationsCrm";
+import {
+  ConnectStripeBanner,
+  ConnectStripeNotice,
+  STRIPE_CONNECT_HREF,
+} from "./ConnectStripePrompt";
 import { Step1Profile } from "@/components/onboarding/Step1Profile";
 import { Step2ClassTypes } from "@/components/onboarding/Step2ClassTypes";
 import { Step4Cancellation } from "@/components/onboarding/Step4Cancellation";
@@ -112,6 +117,8 @@ interface Props {
   payout: DashboardPayout;
   emailMetrics: DashboardEmailMetrics;
   publicProfileUrl: string | null;
+  /** Surfaced from `?stripe_error=` after a failed Connect round-trip. */
+  stripeError?: string | null;
 }
 
 export function VendorDashboard(props: Props) {
@@ -127,6 +134,7 @@ export function VendorDashboard(props: Props) {
   const [editingClass, setEditingClass] = useState<VendorCalendarClass | null>(null);
   const [addingClass, setAddingClass] = useState(false);
   const [activeSection, setActiveSection] = useState<string>(LISTING_SUBSECTIONS[0].id);
+  const bookingsEnabled = Boolean(vendor.stripe_account_id);
 
   // Scroll-spy: highlight the listing subsection currently in view.
   useEffect(() => {
@@ -287,6 +295,11 @@ export function VendorDashboard(props: Props) {
       {/* Main content */}
       <main className="flex-1 bg-white">
         <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
+          {!bookingsEnabled && (
+            <div className="mb-6">
+              <ConnectStripeBanner error={props.stripeError} />
+            </div>
+          )}
           {tab === "overview" && (
             <OverviewTab
               {...props}
@@ -315,6 +328,7 @@ export function VendorDashboard(props: Props) {
             <ClassesPanel
               classes={classes}
               heading
+              bookingsEnabled={bookingsEnabled}
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
               onAddClass={() => setAddingClass(true)}
@@ -431,7 +445,13 @@ function OverviewTab({
         <ReviewsStatCard count={stats.totalReviews} onClick={onOpenReviews} />
       </div>
 
-      <ClassesPanel classes={classes} onEditClass={onEditClass} onCancelClass={onCancelClass} onAddClass={onAddClass} />
+      <ClassesPanel
+        classes={classes}
+        bookingsEnabled={Boolean(vendor.stripe_account_id)}
+        onEditClass={onEditClass}
+        onCancelClass={onCancelClass}
+        onAddClass={onAddClass}
+      />
       <RecentRegistrationsPanel registrations={registrationsForDisplay(registrations)} />
       <EmailTemplatesPanel templates={templates} onEdit={onEditTemplate} onToggle={onToggleTemplate} />
       <PaymentsPanel vendor={vendor} payout={payout} />
@@ -485,12 +505,14 @@ function statusPill(active: boolean) {
 function ClassesPanel({
   classes,
   heading,
+  bookingsEnabled,
   onEditClass,
   onCancelClass,
   onAddClass,
 }: {
   classes: DashboardClass[];
   heading?: boolean;
+  bookingsEnabled: boolean;
   onEditClass: (cls: VendorCalendarClass) => void;
   onCancelClass: (cls: VendorCalendarClass) => void;
   onAddClass: () => void;
@@ -509,6 +531,14 @@ function ClassesPanel({
           Add Class
         </button>
       </div>
+
+      {!bookingsEnabled && (
+        <ConnectStripeNotice
+          className="mb-5"
+          title="These classes aren't bookable yet"
+          body="Your schedule shows on your listing, but students can't reserve a seat or pay online until you connect Stripe."
+        />
+      )}
 
       {classes.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-500">
@@ -909,14 +939,14 @@ function PaymentsPanel({
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Connect Stripe to accept paid bookings from students.
+            Connect Stripe to accept paid bookings from students. Your listing stays live either way.
           </p>
-          <Link
-            href="/onboard/step/5"
-            className="inline-block rounded-lg bg-[#C1440E] px-4 py-2 text-sm font-medium text-white hover:bg-[#a53a0c] transition-colors"
+          <a
+            href={STRIPE_CONNECT_HREF}
+            className="inline-block rounded-lg bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white hover:bg-[#a53a0c] transition-colors"
           >
             Connect Stripe →
-          </Link>
+          </a>
         </div>
       )}
     </section>

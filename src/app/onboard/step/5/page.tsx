@@ -5,12 +5,24 @@ import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Step5Stripe } from "@/components/onboarding/Step5Stripe";
 import { getStripeConnectRedirectUri } from "@/lib/stripe-connect-config";
 
-export default async function Step5Page() {
+export default async function Step5Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in?intent=vendor");
 
   const vendor = await getOrCreateVendorProfile(userId);
-  if (vendor.is_published) redirect("/dashboard/vendor");
+  if (vendor.is_published) {
+    // Published instructors connect from the dashboard — carry any OAuth error there.
+    const { error } = await searchParams;
+    redirect(
+      error
+        ? `/dashboard/vendor?stripe_error=${encodeURIComponent(error)}`
+        : "/dashboard/vendor"
+    );
+  }
 
   const isConnected = Boolean(vendor.stripe_account_id);
 
@@ -22,7 +34,8 @@ export default async function Step5Page() {
           <div className="mb-6">
             <h1 className="onboard-step-title">Get paid for your classes</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Connect your Stripe account to accept payments from students.
+              Optional. Connect Stripe to let students book and pay online — or skip it and publish a
+              listing-only profile.
             </p>
           </div>
           <Step5Stripe

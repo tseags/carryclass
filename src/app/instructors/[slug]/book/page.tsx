@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getVendorBySlug } from "@/lib/vendors-db";
@@ -13,8 +13,13 @@ interface PageProps {
 export default async function VendorBookPage({ params }: PageProps) {
   const { slug } = await params;
   const vendor = await getVendorBySlug(slug);
-  if (!vendor || !vendor.acceptsBookings) {
+  if (!vendor) {
     notFound();
+  }
+  // Listing-only instructor (no Stripe Connect): send visitors to the profile
+  // rather than a dead end — contact details live there.
+  if (!vendor.acceptsBookings) {
+    redirect(`/instructors/${vendor.slug}`);
   }
   if (vendor.slug !== slug) {
     permanentRedirect(`/instructors/${vendor.slug}/book`);

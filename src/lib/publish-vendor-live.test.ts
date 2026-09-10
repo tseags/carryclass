@@ -214,6 +214,19 @@ describe("buildPrismaVendorData", () => {
     expect(data.acceptsBookings).toBe(false);
     expect(data.stripeConnectAccountId).toBeNull();
   });
+
+  it("still publishes listing content for a skipped-Stripe instructor", () => {
+    const noStripe = profile({ stripe_account_id: null });
+    const types = [classType({ class_type: "initial", price: 200 })];
+    const patch = buildListingPatch(noStripe, types);
+    const data = buildPrismaVendorData(noStripe, listing(), types);
+
+    expect(patch.vendor_description).toBe("We teach CCW.");
+    expect(patch.phone).toBe("925-555-1212");
+    expect(patch.price_16hr_full).toBe("200");
+    expect(data.description).toBe("We teach CCW.");
+    expect(data.priceInitial).toBe(200);
+  });
 });
 
 describe("calendarClassesToSessions", () => {
