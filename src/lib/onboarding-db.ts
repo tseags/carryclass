@@ -145,7 +145,13 @@ export async function getOrCreateVendorProfile(
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to create vendor profile: ${error.message}`);
+  if (error) {
+    const hint =
+      /invalid api key/i.test(error.message)
+        ? " Check SUPABASE_SERVICE_ROLE_KEY matches the project in NEXT_PUBLIC_SUPABASE_URL, then restart the dev server."
+        : "";
+    throw new Error(`Failed to create vendor profile: ${error.message}.${hint}`);
+  }
   return created as VendorProfile;
 }
 

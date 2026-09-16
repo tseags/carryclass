@@ -10,6 +10,26 @@ h1.onboard-step-title {
   color: #141413 !important;
 }
 
+/* Claim search result tiles — Webflow/button resets strip borders from globals */
+button.claim-search-result {
+  border: 1px solid rgba(20, 20, 19, 0.28) !important;
+  background-color: #fafafa !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+button.claim-search-result:hover:not(:disabled),
+button.claim-search-result:focus-visible:not(:disabled) {
+  border-color: rgba(20, 20, 19, 0.55) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Claim flow title → subtitle gap (Webflow p rules zero out Tailwind mt-*) */
+.claim-listing-flow p.claim-flow-subtitle {
+  margin-top: 28px !important;
+  margin-bottom: 0 !important;
+}
+
 /* Publish CTA — subtler hover than default btn-primary scale(1.06) */
 button.onboard-publish-btn.btn-primary:hover:not(:disabled),
 button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {

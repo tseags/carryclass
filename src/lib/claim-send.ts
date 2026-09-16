@@ -42,7 +42,8 @@ export async function sendClaimEmailCode(input: {
   maybeLogDevCode("email", input.to, input.code);
   const resend = getResend();
   const { error } = await resend.emails.send({
-    from: DEFAULT_FROM_EMAIL,
+    // Display name only — still sends from the verified bookings@ address.
+    from: `CarryClass <${DEFAULT_FROM_EMAIL}>`,
     to: input.to,
     subject: `Your CarryClass claim code: ${input.code}`,
     text: [

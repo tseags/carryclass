@@ -1475,11 +1475,22 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   cursor: not-allowed;
 }
 
+/* Claim page title — keep one line on typical widths; allow wrap on very narrow phones */
+h1.claim-page-title {
+  white-space: nowrap;
+}
+@media (max-width: 380px) {
+  h1.claim-page-title {
+    white-space: normal;
+  }
+}
+
 /* Claim listing search — selectable result tiles (not Webflow btn-secondary) */
-.claim-search-results {
+/* .input sets margin-bottom: 0, so space results with margin-top instead */
+.claim-listing-flow .claim-search-results {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 20px 0 0;
 }
 .claim-search-results > li + li {
   margin-top: 12px;
@@ -1489,25 +1500,26 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   width: 100%;
   text-align: left;
   padding: 12px 16px;
-  background: #ffffff;
-  border: 1px solid rgba(17, 24, 39, 0.35);
+  background: #fafafa;
+  border: 1px solid rgba(20, 20, 19, 0.28);
   border-radius: 12px;
   color: #141413;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(26, 26, 24, 0.02);
+  box-shadow: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background-color 0.2s ease;
 }
 .claim-search-result:hover:not(:disabled) {
-  border-color: rgba(17, 24, 39, 0.65);
+  border-color: rgba(20, 20, 19, 0.55);
+  background: #ffffff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .claim-search-result:focus-visible {
   outline: 2px solid #141413;
   outline-offset: 2px;
-  border-color: rgba(17, 24, 39, 0.65);
+  border-color: rgba(20, 20, 19, 0.55);
 }
 .claim-search-result:disabled {
   opacity: 0.55;
@@ -1534,6 +1546,9 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
 }
 .claim-listing-flow form .buttons-row {
   margin-top: 16px;
+}
+.claim-listing-flow .field-label {
+  text-align: left;
 }
 
 @media (max-width: 991px) {

@@ -74,9 +74,9 @@ Run the pre-flight before smoke-testing; it checks env, schema, and storage acro
 npm run check:instructor-funnel
 ```
 
-#### Two Supabase projects
+#### Supabase projects
 
-This funnel spans two backing stores, and **each migration must go to its own project**. Applying one to the other creates tables the app never reads.
+Keep `NEXT_PUBLIC_SUPABASE_URL` (plus its anon and service_role keys) and `DATABASE_URL` on the **same** Supabase project. A split across two projects is legacy: it needs every migration routed by hand, and a service_role key from the wrong project surfaces as `Invalid API key` when claim creates a vendor profile.
 
 | Data | Accessed via | Connection | Migration |
 | --- | --- | --- | --- |
@@ -85,7 +85,7 @@ This funnel spans two backing stores, and **each migration must go to its own pr
 | Onboarding profile (`vendors`, `vendor_*`) | Supabase REST via `supabaseAdmin()` (`src/lib/onboarding-db.ts`) | `NEXT_PUBLIC_SUPABASE_URL` | `migrations/onboarding.sql` |
 | Profile / gallery images | Supabase Storage `vendor-assets` | `NEXT_PUBLIC_SUPABASE_URL` | `npm run ensure:vendor-assets-bucket` |
 
-`npm run check:vendor-db-env` reports whether the two refs match. When they differ, set `ONBOARDING_DATABASE_URL` in `.env.local` to the REST project's Postgres URL so onboarding DDL is applied there:
+`npm run check:vendor-db-env` reports whether the two refs match, and it should say **yes**. When they match, `--target onboarding` resolves `DATABASE_URL` on its own and `ONBOARDING_DATABASE_URL` should stay unset:
 
 ```bash
 npm run migrate:sql -- --file migrations/claim-verifications.sql --target listings
@@ -98,7 +98,7 @@ Both migrations are idempotent (`IF NOT EXISTS` / guarded `DO` blocks), so re-ru
 npm run check:onboarding-schema
 ```
 
-Without `ONBOARDING_DATABASE_URL`, `--target onboarding` refuses to run rather than guessing; paste `migrations/onboarding.sql` into that project's SQL Editor instead.
+On a legacy split setup the refs differ, and `--target onboarding` refuses to run rather than guessing. Point `ONBOARDING_DATABASE_URL` at the REST project's Postgres URL, or paste `migrations/onboarding.sql` into that project's SQL Editor — but prefer consolidating onto one project instead.
 
 #### Storage
 

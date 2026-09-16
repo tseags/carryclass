@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import { CONTACT_EMAIL } from "@/lib/site-url";
+import { ClaimProgress, claimStepToProgress } from "@/components/claim/ClaimProgress";
 
 type SearchHit = {
   slug: string;
@@ -37,6 +38,17 @@ type ListingDetail = {
 };
 
 type Step = "search" | "channel" | "code" | "done";
+
+function ClaimFlowError({ message }: { message: string }) {
+  return (
+    <p
+      className="mt-3 mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
+    >
+      {message}
+    </p>
+  );
+}
 
 export function ClaimListingFlow() {
   const router = useRouter();
@@ -179,20 +191,53 @@ export function ClaimListingFlow() {
     }
   }
 
-  return (
-    <div className="claim-listing-flow inner-container _588px _100-tablet">
-      <h1 className="mg-bottom-12px">Claim your CCW listing</h1>
-      <p className="mg-bottom-20px">
-        Find the page that already exists for your business (the sheriff-approved
-        listing). We&apos;ll send a one-time code to the <strong>email or phone
-        on that listing</strong> — not a new contact you type in.
-      </p>
+  const header =
+    step === "channel" && listing
+      ? {
+            title: "Verify it\u2019s you",
+          subtitle: (
+            <>
+              Claiming <strong className="font-semibold text-zinc-700">{listing.name}</strong>
+              {listing.city || listing.countyLabel
+                ? ` (${[listing.city, listing.countyLabel ? `${listing.countyLabel} County` : null]
+                    .filter(Boolean)
+                    .join(", ")})`
+                : null}
+              . We'll send a one-time code to the email or phone already on this listing.
+            </>
+          ),
+        }
+      : step === "code" && listing
+        ? {
+            title: "Enter your code",
+            subtitle: (
+              <>
+                Sent via {channel} to <strong className="font-semibold text-zinc-700">{destinationMasked}</strong>.
+              </>
+            ),
+          }
+        : step === "done"
+          ? {
+              title: "Listing claimed",
+              subtitle: "Redirecting you to onboarding…",
+            }
+          : {
+              title: "Claim your CCW listing",
+              subtitle:
+                "Search for your sheriff-approved listing. We'll verify with the email or phone already on it.",
+            };
 
-      {error ? (
-        <p className="paragraph-small color-red-600 mg-bottom-16px" role="alert">
-          {error}
-        </p>
-      ) : null}
+  const showSmsNote =
+    step === "channel" && listing?.channels.phone.available === true;
+
+  return (
+    <>
+      <ClaimProgress currentStep={claimStepToProgress(step)} />
+      <div className="claim-listing-flow rounded-2xl border border-neutral-300/70 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-6">
+          <h1 className="onboard-step-title claim-page-title">{header.title}</h1>
+          <p className="claim-flow-subtitle mt-8 text-sm text-zinc-500">{header.subtitle}</p>
+        </div>
 
       {step === "search" ? (
         <>
@@ -211,6 +256,8 @@ export function ClaimListingFlow() {
             aria-expanded={results.length > 0}
           />
 
+          {error ? <ClaimFlowError message={error} /> : null}
+
           {searching && trimmedQuery.length >= 2 ? (
             <p className="paragraph-small color-neutral-600 mg-bottom-16px" aria-live="polite">
               Searching…
@@ -219,8 +266,8 @@ export function ClaimListingFlow() {
 
           {showNoResults ? (
             <p className="paragraph-small color-neutral-600 mg-bottom-16px">
-              No listings matched. CarryClass only supports claiming an existing
-              sheriff-approved page. If you don&apos;t see yours,{" "}
+              No listings matched. You can only claim an existing sheriff-approved
+              page. If yours is missing,{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
                 contact us
               </a>
@@ -233,7 +280,7 @@ export function ClaimListingFlow() {
               <li key={hit.slug}>
                 <button
                   type="button"
-                  className="claim-search-result"
+                  className="claim-search-result border border-[#141413]/30 bg-[#fafafa]"
                   disabled={busy || (hit.claimed && !hit.claimedByYou)}
                   onClick={() => void selectListing(hit)}
                 >
@@ -259,25 +306,6 @@ export function ClaimListingFlow() {
 
       {step === "channel" && listing ? (
         <>
-          <p className="mg-bottom-12px">
-            Claiming <strong>{listing.name}</strong>
-            {listing.city ? ` (${listing.city}` : ""}
-            {listing.countyLabel ? `${listing.city ? ", " : " ("}${listing.countyLabel} County)` : listing.city ? ")" : ""}
-          </p>
-          <p className="paragraph-small color-neutral-600 mg-bottom-16px">
-            Choose how to verify. The code is sent only to the contact on your
-            directory / sheriff record. By choosing text verification, you agree to
-            receive a one-time SMS from CarryClass. Message and data rates may
-            apply. Reply STOP to opt out. See our{" "}
-            <a href="/privacy" className="text-decoration-none">
-              Privacy Policy
-            </a>{" "}
-            and{" "}
-            <a href="/terms" className="text-decoration-none">
-              Terms &amp; Conditions
-            </a>
-            .
-          </p>
           <div className="buttons-row mg-bottom-16px">
             {listing.channels.email.available ? (
               <button
@@ -311,6 +339,19 @@ export function ClaimListingFlow() {
               to claim it manually.
             </p>
           ) : null}
+          {showSmsNote ? (
+            <p className="mb-4 text-xs leading-relaxed text-zinc-400">
+              Text rates may apply. Reply STOP to opt out.{" "}
+              <a href="/privacy" className="text-decoration-none">
+                Privacy
+              </a>{" "}
+              ·{" "}
+              <a href="/terms" className="text-decoration-none">
+                Terms
+              </a>
+            </p>
+          ) : null}
+          {error ? <ClaimFlowError message={error} /> : null}
           <button
             type="button"
             className="text-decoration-none paragraph-small"
@@ -327,13 +368,9 @@ export function ClaimListingFlow() {
 
       {step === "code" && listing ? (
         <>
-          <p className="mg-bottom-12px">
-            Enter the 6-digit code we sent via {channel} to{" "}
-            <strong>{destinationMasked}</strong>.
-          </p>
           <form onSubmit={(e) => void submitCode(e)}>
             <label className="field-label" htmlFor="claim-code">
-              Verification code
+              6-digit code
             </label>
             <input
               id="claim-code"
@@ -347,6 +384,7 @@ export function ClaimListingFlow() {
               placeholder="123456"
               required
             />
+            {error ? <ClaimFlowError message={error} /> : null}
             <div className="buttons-row">
               <button
                 type="submit"
@@ -379,10 +417,7 @@ export function ClaimListingFlow() {
           </button>
         </>
       ) : null}
-
-      {step === "done" ? (
-        <p className="mg-bottom-0">Listing claimed. Redirecting to onboarding…</p>
-      ) : null}
-    </div>
+      </div>
+    </>
   );
 }
