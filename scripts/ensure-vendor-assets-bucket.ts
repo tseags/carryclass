@@ -5,6 +5,9 @@
  * Lives on the REST project (NEXT_PUBLIC_SUPABASE_URL) because the upload route
  * goes through supabaseAdmin(), not DATABASE_URL. Idempotent.
  *
+ * Object keys are `{vendorId}/profile.{ext}` and `{vendorId}/gallery/{ts}.{ext}`
+ * inside this bucket.
+ *
  * Usage: npm run ensure:vendor-assets-bucket
  */
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { VendorProfile } from "@/lib/onboarding-db";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
+import { LocationInput } from "@/components/dashboard/LocationInput";
+import { parseWebsiteInput } from "@/lib/vendor-website-url";
 
 const BADGE_OPTIONS = [
   "NRA Certified",
@@ -13,6 +15,20 @@ const BADGE_OPTIONS = [
   "Spanish Speaking",
   "Law Enforcement Background",
 ];
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+function validateImageFile(file: File): string | null {
+  if (file.size > MAX_IMAGE_BYTES) return "File too large (max 5MB)";
+  const type = file.type;
+  if (type === "image/jpeg" || type === "image/png") return null;
+  if (type) return "Only JPG and PNG allowed";
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+    return null;
+  }
+  return "Only JPG and PNG allowed";
+}
 
 interface Props {
   vendor: VendorProfile;
@@ -35,6 +51,8 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const [websiteError, setWebsiteError] = useState("");
 
   const [form, setForm] = useState({
     name: vendor.name ?? "",
@@ -53,9 +71,6 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const [countyQuery, setCountyQuery] = useState("");
   const [countyOpen, setCountyOpen] = useState(false);
   const [countyHighlight, setCountyHighlight] = useState(0);
-
-  const profileInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const countyMatches = useMemo(() => {
     const q = countyQuery.trim().toLowerCase();
@@ -150,39 +165,72 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     }
   }
 
+  async function uploadVendorAsset(
+    file: File,
+    type: "profile" | "gallery"
+  ): Promise<string> {
+    const clientError = validateImageFile(file);
+    if (clientError) throw new Error(clientError);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+
+    const res = await fetch("/api/upload-vendor-asset", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await res.json().catch(() => null)) as
+      | { url?: string; error?: string }
+      | null;
+    if (!res.ok || !data?.url) {
+      throw new Error(
+        (typeof data?.error === "string" && data.error) ||
+          `Upload failed (${res.status})`
+      );
+    }
+    return data.url;
+  }
+
   async function uploadProfilePhoto(file: File) {
     setUploadingProfile(true);
+    setPhotoError("");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "profile");
-      formData.append("vendorId", vendor.id);
-      const res = await fetch("/api/upload-vendor-asset", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) setForm((f) => ({ ...f, photoUrl: data.url }));
+      const url = await uploadVendorAsset(file, "profile");
+      setForm((f) => ({ ...f, photoUrl: url }));
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploadingProfile(false);
     }
   }
 
-  async function uploadGalleryPhoto(file: File) {
-    if (form.galleryUrls.length >= 5) return;
+  async function uploadGalleryPhotos(files: FileList | File[]) {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+
     setUploadingGallery(true);
+    setPhotoError("");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "gallery");
-      formData.append("vendorId", vendor.id);
-      const res = await fetch("/api/upload-vendor-asset", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url)
-        setForm((f) => ({ ...f, galleryUrls: [...f.galleryUrls, data.url] }));
+      let remaining = 5 - form.galleryUrls.length;
+      if (remaining <= 0) {
+        setPhotoError("Gallery is full (max 5 photos)");
+        return;
+      }
+
+      let uploaded = 0;
+      for (const file of list) {
+        if (remaining <= 0) break;
+        const url = await uploadVendorAsset(file, "gallery");
+        setForm((f) => ({ ...f, galleryUrls: [...f.galleryUrls, url] }));
+        uploaded += 1;
+        remaining -= 1;
+      }
+      if (list.length > uploaded && remaining <= 0) {
+        setPhotoError("Gallery is full (max 5 photos). Extra files were skipped.");
+      }
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploadingGallery(false);
     }
@@ -195,8 +243,29 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     }));
   }
 
+  function normalizeWebsiteField(): string | null | false {
+    const result = parseWebsiteInput(form.website);
+    if (!result.ok) {
+      setWebsiteError(result.error);
+      return false;
+    }
+    setWebsiteError("");
+    const next = result.value ?? "";
+    if (next !== form.website) {
+      setForm((f) => ({ ...f, website: next }));
+    }
+    return result.value;
+  }
+
+  function handleWebsiteBlur() {
+    normalizeWebsiteField();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const website = normalizeWebsiteField();
+    if (website === false) return;
+
     setSaving(true);
     setSaved(false);
     setError("");
@@ -208,7 +277,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           name: form.name,
           phone: form.phone,
           email: form.email,
-          website: form.website,
+          website,
           address: form.address,
           county: form.county,
           countiesServed: form.countiesServed,
@@ -218,7 +287,14 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           galleryUrls: form.galleryUrls,
         }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        if (res.status === 400 && typeof data?.error === "string") {
+          setWebsiteError(data.error);
+          return;
+        }
+        throw new Error("Save failed");
+      }
       if (isDashboard) {
         onSaved?.({
           ...vendor,
@@ -226,7 +302,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           canonical_name: form.name || vendor.canonical_name,
           phone: form.phone || null,
           email: form.email || null,
-          website: form.website || null,
+          website,
           address: form.address || null,
           county: form.county || null,
           counties_served: form.countiesServed,
@@ -293,20 +369,26 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
               placeholder="you@example.com"
             />
           </Field>
-          <Field label="Website">
+          <Field label="Website" error={websiteError}>
             <input
-              type="url"
+              type="text"
+              inputMode="url"
+              autoComplete="url"
               value={form.website}
-              onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+              onChange={(e) => {
+                setWebsiteError("");
+                setForm((f) => ({ ...f, website: e.target.value }));
+              }}
+              onBlur={handleWebsiteBlur}
+              aria-invalid={Boolean(websiteError)}
               className="input-field"
-              placeholder="https://yoursite.com"
+              placeholder="mysite.com or https://mysite.com"
             />
           </Field>
           <Field label="Address" className="sm:col-span-2">
-            <input
-              type="text"
+            <LocationInput
               value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              onChange={(address) => setForm((f) => ({ ...f, address }))}
               className="input-field"
               placeholder="Street address, city, CA ZIP"
             />
@@ -520,24 +602,25 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                 </svg>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => profileInputRef.current?.click()}
-              disabled={uploadingProfile}
-              className="text-sm text-zinc-600 border border-zinc-200 rounded-lg px-3 py-1.5 hover:bg-zinc-50 disabled:opacity-40 transition-colors"
+            {/* Label + sr-only input: more reliable than display:none + programmatic click */}
+            <label
+              className={`inline-flex cursor-pointer items-center text-sm text-zinc-600 border border-zinc-200 rounded-lg px-3 py-1.5 hover:bg-zinc-50 transition-colors ${
+                uploadingProfile ? "pointer-events-none opacity-40" : ""
+              }`}
             >
               {uploadingProfile ? "Uploading..." : "Choose photo"}
-            </button>
-            <input
-              ref={profileInputRef}
-              type="file"
-              accept="image/jpeg,image/png"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) uploadProfilePhoto(file);
-              }}
-            />
+              <input
+                type="file"
+                accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                className="sr-only"
+                disabled={uploadingProfile}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void uploadProfilePhoto(file);
+                }}
+              />
+            </label>
           </div>
           <p className="text-xs text-zinc-400 mt-1">JPG or PNG, max 5MB</p>
         </div>
@@ -566,11 +649,10 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
               </div>
             ))}
             {form.galleryUrls.length < 5 && (
-              <button
-                type="button"
-                onClick={() => galleryInputRef.current?.click()}
-                disabled={uploadingGallery}
-                className="w-20 h-20 rounded-lg border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 hover:border-zinc-400 disabled:opacity-40 transition-colors"
+              <label
+                className={`w-20 h-20 rounded-lg border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400 hover:border-zinc-400 transition-colors cursor-pointer ${
+                  uploadingGallery ? "pointer-events-none opacity-40" : ""
+                }`}
               >
                 {uploadingGallery ? (
                   <Spinner />
@@ -582,20 +664,28 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                     <span className="text-xs mt-1">Add</span>
                   </>
                 )}
-              </button>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                  multiple
+                  className="sr-only"
+                  disabled={uploadingGallery}
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    e.target.value = "";
+                    if (files?.length) void uploadGalleryPhotos(files);
+                  }}
+                />
+              </label>
             )}
           </div>
-          <input
-            ref={galleryInputRef}
-            type="file"
-            accept="image/jpeg,image/png"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadGalleryPhoto(file);
-            }}
-          />
         </div>
+
+        {photoError && (
+          <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {photoError}
+          </p>
+        )}
       </section>
 
       {error && (
@@ -624,11 +714,13 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
 function Field({
   label,
   required,
+  error,
   className,
   children,
 }: {
   label: string;
   required?: boolean;
+  error?: string;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -639,6 +731,7 @@ function Field({
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
+      {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

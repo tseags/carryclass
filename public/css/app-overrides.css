@@ -36,6 +36,14 @@ button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
   transform: translateY(-1px) !important;
 }
 
+/* Claim verify buttons sit side-by-side — kill Webflow scale so they don't collide */
+.claim-listing-flow .btn-primary:hover:not(:disabled),
+.claim-listing-flow .btn-primary:focus-visible:not(:disabled),
+.claim-listing-flow .btn-secondary:hover:not(:disabled),
+.claim-listing-flow .btn-secondary:focus-visible:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Webflow grid fix — `.grid-2-columns.title-and-btn-grid.mg-bottom-24px`     */
 /* ships with `grid-template-columns: 578px auto` from the export. That       */
@@ -1069,6 +1077,21 @@ a.btn-primary,
 button.btn-primary {
   background-color: #141413 !important;
   color: #ffffff !important;
+}
+
+/* Webflow .w-button is display:inline-block, which stacks Tailwind's block SVGs
+   (spinners) above the label. Keep CTAs as a single centered flex row. */
+.btn-primary.w-button,
+a.btn-primary.w-button,
+button.btn-primary.w-button,
+.btn-secondary.w-button,
+a.btn-secondary.w-button,
+button.btn-secondary.w-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 /* -------------------------------------------------------------------------- */

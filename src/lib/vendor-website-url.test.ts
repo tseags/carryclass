@@ -1,5 +1,66 @@
 import { describe, expect, it } from "vitest";
-import { buildVendorWebsiteUrl } from "./vendor-website-url";
+import {
+  WEBSITE_INPUT_ERROR,
+  buildVendorWebsiteUrl,
+  parseWebsiteInput,
+} from "./vendor-website-url";
+
+describe("parseWebsiteInput", () => {
+  it("treats empty / whitespace as optional null", () => {
+    expect(parseWebsiteInput("")).toEqual({ ok: true, value: null });
+    expect(parseWebsiteInput("   ")).toEqual({ ok: true, value: null });
+    expect(parseWebsiteInput(null)).toEqual({ ok: true, value: null });
+    expect(parseWebsiteInput(undefined)).toEqual({ ok: true, value: null });
+  });
+
+  it("accepts bare domains and prepends https://", () => {
+    expect(parseWebsiteInput("mysite.com")).toEqual({
+      ok: true,
+      value: "https://mysite.com",
+    });
+    expect(parseWebsiteInput("www.example.com")).toEqual({
+      ok: true,
+      value: "https://www.example.com",
+    });
+  });
+
+  it("accepts http(s) URLs as-is (normalized)", () => {
+    expect(parseWebsiteInput("https://mysite.com")).toEqual({
+      ok: true,
+      value: "https://mysite.com",
+    });
+    expect(parseWebsiteInput("http://mysite.com/path")).toEqual({
+      ok: true,
+      value: "http://mysite.com/path",
+    });
+  });
+
+  it("rejects spaces and non-http schemes", () => {
+    expect(parseWebsiteInput("not a valid url")).toEqual({
+      ok: false,
+      error: WEBSITE_INPUT_ERROR,
+    });
+    expect(parseWebsiteInput("ftp://example.com")).toEqual({
+      ok: false,
+      error: WEBSITE_INPUT_ERROR,
+    });
+    expect(parseWebsiteInput("javascript:alert(1)")).toEqual({
+      ok: false,
+      error: WEBSITE_INPUT_ERROR,
+    });
+  });
+
+  it("rejects hostnames without a TLD-looking domain", () => {
+    expect(parseWebsiteInput("mysite")).toEqual({
+      ok: false,
+      error: WEBSITE_INPUT_ERROR,
+    });
+    expect(parseWebsiteInput("https://")).toEqual({
+      ok: false,
+      error: WEBSITE_INPUT_ERROR,
+    });
+  });
+});
 
 describe("buildVendorWebsiteUrl", () => {
   it("appends UTM params to an absolute URL", () => {

@@ -1542,7 +1542,7 @@ h1.claim-page-title {
 
 /* Claim listing flow — form spacing (.input resets margin-bottom to 0) */
 .claim-listing-flow .buttons-row {
-  gap: 8px;
+  gap: 12px;
 }
 .claim-listing-flow form .buttons-row {
   margin-top: 16px;

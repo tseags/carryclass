@@ -328,7 +328,7 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           }
-          title="iCal / Calendly"
+          title="iCal"
           description="Paste a .ics feed URL"
         />
 
@@ -397,7 +397,7 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
               type="url"
               value={icalFeedUrl}
               onChange={(e) => setIcalFeedUrl(e.target.value)}
-              placeholder="https://calendly.com/.../ics or webcal://..."
+              placeholder="webcal://... or https://.../.ics"
               className="input-field flex-1"
             />
             <button
@@ -410,7 +410,7 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
             </button>
           </div>
           <p className="text-xs text-zinc-400 mt-2">
-            In Calendly: Integrations → Calendar → copy feed link. In Google Calendar: Settings → your calendar → Secret address in iCal. In Apple Calendar: right-click your calendar → Share Calendar.
+            In Google Calendar: Settings → your calendar → Secret address in iCal. In Apple Calendar: right-click your calendar → Share Calendar.
           </p>
 
           {fetchingEvents && <LoadingEvents />}

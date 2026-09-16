@@ -352,6 +352,16 @@ export function ClaimListingFlow() {
             </p>
           ) : null}
           {error ? <ClaimFlowError message={error} /> : null}
+          <p className="mb-4 text-sm text-zinc-600">
+            Having trouble verifying? Email{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Help claiming my listing")}`}
+              className="font-medium text-[#141413] underline underline-offset-2"
+            >
+              {CONTACT_EMAIL}
+            </a>{" "}
+            and we&apos;ll help you claim manually.
+          </p>
           <button
             type="button"
             className="text-decoration-none paragraph-small"

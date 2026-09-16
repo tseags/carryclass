@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile, updateVendorProfile, advanceOnboardingStep } from "@/lib/onboarding-db";
 import { normalizeCountiesServed } from "@/data/counties";
+import { parseWebsiteInput } from "@/lib/vendor-website-url";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -12,12 +13,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  const websiteResult = parseWebsiteInput(body.website);
+  if (!websiteResult.ok) {
+    return NextResponse.json({ error: websiteResult.error }, { status: 400 });
+  }
+
   await updateVendorProfile(vendor.id, {
     name: body.name ?? null,
     canonical_name: body.name ?? vendor.canonical_name,
     phone: body.phone ?? null,
     email: body.email ?? null,
-    website: body.website ?? null,
+    website: websiteResult.value,
     address: body.address ?? null,
     county: body.county ?? null,
     counties_served: normalizeCountiesServed(body.countiesServed),
