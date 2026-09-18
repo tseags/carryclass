@@ -7,15 +7,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
+  ).replace(/\/$/, "");
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    return NextResponse.json(
-      { error: "Google Calendar not configured" },
-      { status: 500 }
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    // Browser navigates here via <a href>; send users back to onboarding
+    // instead of dumping a raw JSON 500 in the address bar.
+    return NextResponse.redirect(
+      `${baseUrl}/onboard/step/3?error=google_not_configured`
     );
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
   const redirectUri = `${baseUrl}/api/calendar/google-callback`;
 
   const params = new URLSearchParams({

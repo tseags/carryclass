@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
+  ).replace(/\/$/, "");
 
   if (error) {
     return NextResponse.redirect(
@@ -37,8 +39,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/onboard/step/3?error=invalid_state`);
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID!;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return NextResponse.redirect(
+      `${baseUrl}/onboard/step/3?error=google_not_configured`
+    );
+  }
   const redirectUri = `${baseUrl}/api/calendar/google-callback`;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {

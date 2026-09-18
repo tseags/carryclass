@@ -14,11 +14,14 @@ export async function POST(req: NextRequest) {
   const vendor = await getVendorProfile(userId);
   if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
 
-  const { calendarType, icalFeedUrl, classes } = await req.json();
+  const { calendarType, icalFeedUrl, googleCalendarId, classes } = await req.json();
 
   await updateVendorProfile(vendor.id, {
     calendar_type: calendarType ?? null,
     ical_feed_url: icalFeedUrl ?? null,
+    ...(typeof googleCalendarId === "string" && googleCalendarId.trim()
+      ? { google_calendar_id: googleCalendarId.trim() }
+      : {}),
   });
 
   if (classes?.length) {

@@ -28,6 +28,7 @@ export default async function Step3Page() {
           <Step3Schedule
             classTypes={classTypes}
             googleConnected={googleConnected}
+            googleCalendarId={vendor.google_calendar_id}
             icalUrl={vendor.ical_feed_url}
             calendarType={vendor.calendar_type}
           />

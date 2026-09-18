@@ -16,7 +16,24 @@ interface FetchedEvent {
   class_type: string;
   price: string;
   include: boolean;
+  all_day?: boolean;
 }
+
+interface GoogleCalendarOption {
+  id: string;
+  name: string;
+  primary: boolean;
+}
+
+type DaysWindow = 30 | 60 | 90 | 180;
+
+const DAYS_WINDOW_OPTIONS: { value: DaysWindow; label: string }[] = [
+  { value: 30, label: "Next 30 days" },
+  { value: 60, label: "Next 60 days" },
+  { value: 90, label: "Next 90 days" },
+  { value: 180, label: "Next 180 days" },
+];
+
 
 type Recurrence = "one-time" | "weekly" | "biweekly" | "monthly";
 
@@ -104,6 +121,7 @@ function describeRecurrence(slot: ManualSlot): string {
 interface Props {
   classTypes: VendorClassType[];
   googleConnected: boolean;
+  googleCalendarId?: string | null;
   icalUrl?: string | null;
   calendarType?: string | null;
 }
@@ -114,7 +132,27 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add-A-Gun",
 };
 
-export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarType }: Props) {
+const CALENDAR_ERROR_MESSAGES: Record<string, string> = {
+  google_not_configured:
+    "Google Calendar isn’t set up on this server yet. Try again later, or use iCal / add classes manually.",
+  invalid_state: "Google connection failed (session mismatch). Please try again.",
+  token_exchange: "Google didn’t accept the connection. Please try again.",
+  no_vendor: "We couldn’t find your instructor profile. Refresh and try again.",
+  access_denied: "Google Calendar access was denied. You can try again or use another option.",
+};
+
+function calendarErrorMessage(code: string | null): string {
+  if (!code) return "";
+  return CALENDAR_ERROR_MESSAGES[code] ?? `Connection error: ${code}`;
+}
+
+export function Step3Schedule({
+  classTypes,
+  googleConnected,
+  googleCalendarId,
+  icalUrl,
+  calendarType,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const googleJustConnected = searchParams.get("google_connected") === "1";
@@ -124,11 +162,18 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
     calendarType === "google" ? "google" : calendarType === "ical" ? "ical" : null
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(calError ? `Connection error: ${calError}` : "");
+  const [error, setError] = useState(calendarErrorMessage(calError));
   const [icalFeedUrl, setIcalFeedUrl] = useState(icalUrl ?? "");
   const [fetchingEvents, setFetchingEvents] = useState(false);
+  const [loadingCalendars, setLoadingCalendars] = useState(false);
   const [events, setEvents] = useState<FetchedEvent[]>([]);
   const [eventsFetched, setEventsFetched] = useState(false);
+  const [googleCalendars, setGoogleCalendars] = useState<GoogleCalendarOption[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState(googleCalendarId ?? "");
+  const [daysWindow, setDaysWindow] = useState<DaysWindow>(90);
+  const [eventSearch, setEventSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [hideAllDay, setHideAllDay] = useState(false);
   const [manualSlots, setManualSlots] = useState<ManualSlot[]>([]);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>({
@@ -144,13 +189,85 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
 
   const activeClassTypes = classTypes.filter((ct) => ct.is_active);
 
-  // Auto-fetch Google events after OAuth redirect
-  useEffect(() => {
-    if (googleJustConnected) {
-      setOption("google");
-      fetchGoogleEvents();
+  function mapFetchedEvents(raw: Omit<FetchedEvent, "class_type" | "price" | "include">[]) {
+    return raw.map((e) => ({
+      ...e,
+      class_type: activeClassTypes[0]?.class_type ?? "initial",
+      price: String(activeClassTypes[0]?.price ?? ""),
+      include: false,
+    }));
+  }
+
+  async function loadGoogleCalendars(): Promise<string | null> {
+    setLoadingCalendars(true);
+    setError("");
+    try {
+      const res = await fetch("/api/calendar/google-calendars");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to list calendars");
+      const calendars = (data.calendars as GoogleCalendarOption[]) ?? [];
+      setGoogleCalendars(calendars);
+      const preferred =
+        (data.selectedCalendarId as string | null) ||
+        googleCalendarId ||
+        calendars.find((c) => c.primary)?.id ||
+        calendars[0]?.id ||
+        "";
+      setSelectedCalendarId(preferred);
+      return preferred || null;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load Google calendars.");
+      return null;
+    } finally {
+      setLoadingCalendars(false);
     }
+  }
+
+  async function fetchGoogleEvents(calendarId: string, days: DaysWindow = daysWindow) {
+    if (!calendarId) return;
+    setFetchingEvents(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        calendarId,
+        days: String(days),
+      });
+      const res = await fetch(`/api/calendar/google-events?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to fetch Google events");
+      setEvents(mapFetchedEvents(data.events ?? []));
+      setEventsFetched(true);
+      setEventSearch("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load Google Calendar events.");
+    } finally {
+      setFetchingEvents(false);
+    }
+  }
+
+  // After OAuth, land on Google option
+  useEffect(() => {
+    if (googleJustConnected) setOption("google");
   }, [googleJustConnected]);
+
+  // After OAuth (or when returning with Google already connected), load calendars + events
+  useEffect(() => {
+    if (option !== "google") return;
+    if (!(googleConnected || googleJustConnected)) return;
+
+    let cancelled = false;
+    (async () => {
+      const calendarId = await loadGoogleCalendars();
+      if (cancelled || !calendarId) return;
+      await fetchGoogleEvents(calendarId, daysWindow);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally run when entering the Google option / after connect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [option, googleConnected, googleJustConnected]);
 
   async function fetchIcalEvents() {
     if (!icalFeedUrl.trim()) {
@@ -167,15 +284,9 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
-      setEvents(
-        (data.events as FetchedEvent[]).map((e) => ({
-          ...e,
-          class_type: activeClassTypes[0]?.class_type ?? "initial",
-          price: String(activeClassTypes[0]?.price ?? ""),
-          include: true,
-        }))
-      );
+      setEvents(mapFetchedEvents(data.events ?? []));
       setEventsFetched(true);
+      setEventSearch("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load calendar.");
     } finally {
@@ -183,35 +294,32 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
     }
   }
 
-  async function fetchGoogleEvents() {
-    setFetchingEvents(true);
-    setError("");
-    try {
-      const res = await fetch("/api/calendar/google-events");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to fetch Google events");
-      setEvents(
-        (data.events as FetchedEvent[]).map((e) => ({
-          ...e,
-          class_type: activeClassTypes[0]?.class_type ?? "initial",
-          price: String(activeClassTypes[0]?.price ?? ""),
-          include: true,
-        }))
-      );
-      setEventsFetched(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load Google Calendar events.");
-    } finally {
-      setFetchingEvents(false);
+  function toggleAllEvents(checked: boolean, ids?: string[]) {
+    setEvents((ev) =>
+      ev.map((e) =>
+        !ids || ids.includes(e.external_event_id) ? { ...e, include: checked } : e
+      )
+    );
+  }
+
+  function updateEvent(id: string, fields: Partial<FetchedEvent>) {
+    setEvents((ev) =>
+      ev.map((e) => (e.external_event_id === id ? { ...e, ...fields } : e))
+    );
+  }
+
+  async function handleCalendarChange(calendarId: string) {
+    setSelectedCalendarId(calendarId);
+    setEvents([]);
+    setEventsFetched(false);
+    await fetchGoogleEvents(calendarId, daysWindow);
+  }
+
+  async function handleDaysWindowChange(days: DaysWindow) {
+    setDaysWindow(days);
+    if (selectedCalendarId) {
+      await fetchGoogleEvents(selectedCalendarId, days);
     }
-  }
-
-  function toggleAllEvents(checked: boolean) {
-    setEvents((ev) => ev.map((e) => ({ ...e, include: checked })));
-  }
-
-  function updateEvent(idx: number, fields: Partial<FetchedEvent>) {
-    setEvents((ev) => ev.map((e, i) => (i === idx ? { ...e, ...fields } : e)));
   }
 
   function addManualSlot() {
@@ -286,6 +394,8 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
         body: JSON.stringify({
           calendarType,
           icalFeedUrl: option === "ical" ? icalFeedUrl : null,
+          googleCalendarId:
+            option === "google" && selectedCalendarId ? selectedCalendarId : undefined,
           classes: classesToSave,
         }),
       });
@@ -298,8 +408,26 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
     }
   }
 
-  const allChecked = events.every((e) => e.include);
-  const noneChecked = events.every((e) => !e.include);
+  const searchLower = eventSearch.trim().toLowerCase();
+  const filteredEvents = events.filter((e) => {
+    if (hideAllDay && e.all_day) return false;
+    if (searchLower && !e.title.toLowerCase().includes(searchLower)) return false;
+    return true;
+  });
+  const titleSuggestions = Array.from(
+    new Set(
+      events
+        .map((e) => e.title)
+        .filter((t) => t && (!searchLower || t.toLowerCase().includes(searchLower)))
+    )
+  )
+    .sort((a, b) => a.localeCompare(b))
+    .slice(0, 8);
+
+  const visibleIds = filteredEvents.map((e) => e.external_event_id);
+  const allChecked =
+    filteredEvents.length > 0 && filteredEvents.every((e) => e.include);
+  const noneChecked = filteredEvents.every((e) => !e.include);
 
   return (
     <div className="space-y-6">
@@ -369,19 +497,119 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
               </a>
             </div>
           )}
-          {fetchingEvents && <LoadingEvents />}
-          {eventsFetched && events.length > 0 && (
+
+          {(googleConnected || googleJustConnected) && (
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
+                  Calendar
+                </label>
+                <select
+                  value={selectedCalendarId}
+                  onChange={(e) => void handleCalendarChange(e.target.value)}
+                  disabled={loadingCalendars || fetchingEvents || googleCalendars.length === 0}
+                  className="input-field w-full text-sm"
+                >
+                  {googleCalendars.length === 0 && (
+                    <option value="">{loadingCalendars ? "Loading calendars…" : "No calendars"}</option>
+                  )}
+                  {googleCalendars.map((cal) => (
+                    <option key={cal.id} value={cal.id}>
+                      {cal.name}
+                      {cal.primary ? " (Primary)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
+                  Time window
+                </label>
+                <select
+                  value={daysWindow}
+                  onChange={(e) =>
+                    void handleDaysWindowChange(Number(e.target.value) as DaysWindow)
+                  }
+                  disabled={fetchingEvents || !selectedCalendarId}
+                  className="input-field w-full text-sm"
+                >
+                  {DAYS_WINDOW_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative sm:col-span-2">
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
+                  Search event names
+                </label>
+                <input
+                  type="search"
+                  value={eventSearch}
+                  onChange={(e) => setEventSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => {
+                    // Delay so suggestion click registers
+                    window.setTimeout(() => setSearchFocused(false), 150);
+                  }}
+                  placeholder="Start typing to filter (e.g. CCW, Renewal)"
+                  className="input-field w-full text-sm"
+                  disabled={!eventsFetched}
+                />
+                {searchFocused && eventSearch.trim() && titleSuggestions.length > 0 && (
+                  <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-sm">
+                    {titleSuggestions.map((title) => (
+                      <li key={title}>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setEventSearch(title);
+                            setSearchFocused(false);
+                          }}
+                        >
+                          {title}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-zinc-600 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={hideAllDay}
+                  onChange={(e) => setHideAllDay(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-300"
+                />
+                Hide all-day events
+              </label>
+            </div>
+          )}
+
+          {(fetchingEvents || loadingCalendars) && <LoadingEvents />}
+          {eventsFetched && !fetchingEvents && filteredEvents.length > 0 && (
             <EventReviewTable
-              events={events}
+              events={filteredEvents}
+              totalCount={events.length}
               classTypes={classTypes}
               allChecked={allChecked}
               noneChecked={noneChecked}
-              onToggleAll={toggleAllEvents}
+              onToggleAll={(checked) => toggleAllEvents(checked, visibleIds)}
               onUpdateEvent={updateEvent}
             />
           )}
-          {eventsFetched && events.length === 0 && (
-            <p className="text-sm text-zinc-500">No upcoming events found in the next 90 days.</p>
+          {eventsFetched && !fetchingEvents && events.length > 0 && filteredEvents.length === 0 && (
+            <p className="text-sm text-zinc-500">
+              No events match your filters. Try a different search or time window.
+            </p>
+          )}
+          {eventsFetched && !fetchingEvents && events.length === 0 && (
+            <p className="text-sm text-zinc-500">
+              No upcoming events found in the selected calendar for this time window.
+            </p>
           )}
         </div>
       )}
@@ -418,10 +646,11 @@ export function Step3Schedule({ classTypes, googleConnected, icalUrl, calendarTy
             <div className="mt-4">
               <EventReviewTable
                 events={events}
+                totalCount={events.length}
                 classTypes={classTypes}
-                allChecked={allChecked}
-                noneChecked={noneChecked}
-                onToggleAll={toggleAllEvents}
+                allChecked={events.length > 0 && events.every((e) => e.include)}
+                noneChecked={events.every((e) => !e.include)}
+                onToggleAll={(checked) => toggleAllEvents(checked)}
                 onUpdateEvent={updateEvent}
               />
             </div>
@@ -686,6 +915,7 @@ function OptionCard({
 
 function EventReviewTable({
   events,
+  totalCount,
   classTypes,
   allChecked,
   noneChecked,
@@ -693,25 +923,29 @@ function EventReviewTable({
   onUpdateEvent,
 }: {
   events: FetchedEvent[];
+  totalCount: number;
   classTypes: VendorClassType[];
   allChecked: boolean;
   noneChecked: boolean;
   onToggleAll: (checked: boolean) => void;
-  onUpdateEvent: (idx: number, fields: Partial<FetchedEvent>) => void;
+  onUpdateEvent: (id: string, fields: Partial<FetchedEvent>) => void;
 }) {
   const activeTypes = classTypes.filter((ct) => ct.is_active);
+  const filteredNote =
+    totalCount !== events.length
+      ? `${events.length} of ${totalCount} events shown`
+      : `${events.length} events found`;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-zinc-700">
-          {events.length} events found
-        </p>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <p className="text-sm font-medium text-zinc-700">{filteredNote}</p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => onToggleAll(true)}
-            className="text-xs text-zinc-600 hover:text-zinc-900 underline"
+            disabled={allChecked || events.length === 0}
+            className="text-xs text-zinc-600 hover:text-zinc-900 underline disabled:opacity-40 disabled:no-underline"
           >
             Select all
           </button>
@@ -719,12 +953,16 @@ function EventReviewTable({
           <button
             type="button"
             onClick={() => onToggleAll(false)}
-            className="text-xs text-zinc-600 hover:text-zinc-900 underline"
+            disabled={noneChecked || events.length === 0}
+            className="text-xs text-zinc-600 hover:text-zinc-900 underline disabled:opacity-40 disabled:no-underline"
           >
             Deselect all
           </button>
         </div>
       </div>
+      <p className="text-xs text-zinc-500 mb-2">
+        Nothing is selected by default — check the classes you want to import.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -737,15 +975,20 @@ function EventReviewTable({
             </tr>
           </thead>
           <tbody>
-            {events.map((event, idx) => (
+            {events.map((event) => (
               <tr key={event.external_event_id} className="border-b border-zinc-50">
                 <td className="py-2 pr-4 whitespace-nowrap text-zinc-600 text-xs">
-                  {new Date(event.start_time).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                  {event.all_day
+                    ? new Date(event.start_time).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      }) + " (all day)"
+                    : new Date(event.start_time).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
                 </td>
                 <td className="py-2 pr-4 text-zinc-700 max-w-[160px] truncate">
                   {event.title}
@@ -756,7 +999,7 @@ function EventReviewTable({
                     onChange={(e) => {
                       const val = e.target.value;
                       const price = classTypes.find((ct) => ct.class_type === val)?.price;
-                      onUpdateEvent(idx, {
+                      onUpdateEvent(event.external_event_id, {
                         class_type: val,
                         price: price ? String(price) : event.price,
                       });
@@ -781,7 +1024,9 @@ function EventReviewTable({
                     min="0"
                     step="0.01"
                     value={event.price}
-                    onChange={(e) => onUpdateEvent(idx, { price: e.target.value })}
+                    onChange={(e) =>
+                      onUpdateEvent(event.external_event_id, { price: e.target.value })
+                    }
                     className="w-20 text-xs border border-zinc-200 rounded px-2 py-1"
                   />
                 </td>
@@ -789,7 +1034,9 @@ function EventReviewTable({
                   <input
                     type="checkbox"
                     checked={event.include}
-                    onChange={(e) => onUpdateEvent(idx, { include: e.target.checked })}
+                    onChange={(e) =>
+                      onUpdateEvent(event.external_event_id, { include: e.target.checked })
+                    }
                     className="w-4 h-4 rounded border-zinc-300"
                   />
                 </td>

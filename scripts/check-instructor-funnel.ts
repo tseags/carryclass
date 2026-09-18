@@ -427,6 +427,27 @@ function checkEnv(): void {
     );
   }
 
+  const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (googleClientId && googleClientSecret) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+    record(
+      "ok",
+      "env google calendar oauth",
+      `Configured. Ensure Google Cloud redirect URI includes ${appUrl || "(NEXT_PUBLIC_APP_URL)"}/api/calendar/google-callback`
+    );
+  } else {
+    const missing = [
+      !googleClientId ? "GOOGLE_CLIENT_ID" : null,
+      !googleClientSecret ? "GOOGLE_CLIENT_SECRET" : null,
+    ].filter(Boolean);
+    record(
+      "warn",
+      "env google calendar oauth",
+      `Missing ${missing.join(" + ")} — Step 3 "Connect Google Calendar" will fail; iCal/manual still work.`
+    );
+  }
+
   if (!process.env.CLAIM_CODE_PEPPER?.trim()) {
     const fallback = process.env.CRON_SECRET?.trim()
       ? "CRON_SECRET"
