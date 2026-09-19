@@ -677,7 +677,7 @@ export function Step3Schedule({
               {fetchingEvents ? "Fetching..." : "Fetch events"}
             </button>
           </div>
-          <p className="text-xs text-zinc-400 mt-2">
+          <p className="text-xs text-zinc-400 mt-4">
             In Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL.
             Outlook: calendar settings → Shared calendars → publish and paste the ICS link here.
           </p>
@@ -941,19 +941,20 @@ export function Step3Schedule({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setShowAddSlot(true)}
-              className="btn-secondary small w-button"
-            >
-              + Add class
-            </button>
-          )}
-
-          {manualSlots.length === 0 && !showAddSlot && (
-            <p className="text-sm text-zinc-400">
-              You can always add more slots from your dashboard after publishing.
-            </p>
+            <div className="space-y-6">
+              <button
+                type="button"
+                onClick={() => setShowAddSlot(true)}
+                className="btn-secondary small w-button"
+              >
+                + Add class
+              </button>
+              {manualSlots.length === 0 && (
+                <p className="text-sm text-zinc-400">
+                  You can always add more slots from your dashboard after publishing.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
