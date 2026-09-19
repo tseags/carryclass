@@ -133,6 +133,35 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add-A-Gun",
 };
 
+/** Parse "HH:MM" (24h) into 12-hour parts for the time selects. */
+function parseTimeParts(value: string): {
+  hour12: number;
+  minute: number;
+  period: "AM" | "PM";
+} {
+  if (!value) return { hour12: 9, minute: 0, period: "AM" };
+  const [hStr, mStr = "0"] = value.split(":");
+  const h24 = Number(hStr);
+  const minute = Number(mStr.slice(0, 2));
+  if (Number.isNaN(h24) || Number.isNaN(minute)) {
+    return { hour12: 9, minute: 0, period: "AM" };
+  }
+  const period: "AM" | "PM" = h24 >= 12 ? "PM" : "AM";
+  const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const snapped = Math.min(55, Math.round(minute / 5) * 5);
+  return { hour12, minute: snapped, period };
+}
+
+/** Build "HH:MM" (24h) from 12-hour select parts. */
+function toTimeValue(hour12: number, minute: number, period: "AM" | "PM"): string {
+  let h24 = hour12 % 12;
+  if (period === "PM") h24 += 12;
+  return `${String(h24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+const HOUR_OPTIONS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => i * 5);
+
 const CALENDAR_ERROR_MESSAGES: Record<string, string> = {
   google_not_configured:
     "Google Calendar isn’t set up on this server yet. Try again later, or use iCal / add classes manually.",
@@ -180,7 +209,7 @@ export function Step3Schedule({
   const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>({
     title: CLASS_TYPE_LABELS[classTypes[0]?.class_type ?? "initial"] ?? "CCW Initial",
     date: "",
-    startTime: "",
+    startTime: "09:00",
     duration: 480,
     classType: classTypes[0]?.class_type ?? "initial",
     maxStudents: "",
@@ -330,13 +359,22 @@ export function Step3Schedule({
       return;
     }
     setManualSlots((prev) => [...prev, { ...newSlot, id: Date.now().toString() }]);
-    setNewSlot((s) => ({ ...s, date: "", startTime: "", endDate: "" }));
+    setNewSlot((s) => ({ ...s, date: "", startTime: "09:00", endDate: "" }));
     setShowAddSlot(false);
     setError("");
   }
 
   function removeSlot(id: string) {
     setManualSlots((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  function selectOption(next: CalendarOption) {
+    if (next === option) return;
+    setOption(next);
+    setEvents([]);
+    setEventsFetched(false);
+    setEventSearch("");
+    setError("");
   }
 
   function priceForType(typeKey: string): string {
@@ -438,7 +476,7 @@ export function Step3Schedule({
         {/* Google Calendar */}
         <OptionCard
           selected={option === "google"}
-          onClick={() => setOption("google")}
+          onClick={() => selectOption("google")}
           icon={
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
               <rect width="24" height="24" rx="4" fill="#4285F4" />
@@ -452,7 +490,7 @@ export function Step3Schedule({
         {/* iCal */}
         <OptionCard
           selected={option === "ical"}
-          onClick={() => setOption("ical")}
+          onClick={() => selectOption("ical")}
           icon={
             <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -465,7 +503,7 @@ export function Step3Schedule({
         {/* Manual */}
         <OptionCard
           selected={option === "manual"}
-          onClick={() => setOption("manual")}
+          onClick={() => selectOption("manual")}
           icon={
             <svg className="w-6 h-6 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -640,7 +678,8 @@ export function Step3Schedule({
             </button>
           </div>
           <p className="text-xs text-zinc-400 mt-2">
-            In Google Calendar: Settings → your calendar → Secret address in iCal. In Apple Calendar: right-click your calendar → Share Calendar.
+            In Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL.
+            Outlook: calendar settings → Shared calendars → publish and paste the ICS link here.
           </p>
 
           {fetchingEvents && <LoadingEvents />}
@@ -765,13 +804,58 @@ export function Step3Schedule({
                 )}
                 <div>
                   <label className="block text-xs text-zinc-600 mb-1">Start time</label>
-                  <input
-                    type="time"
-                    step={60}
-                    value={newSlot.startTime}
-                    onChange={(e) => setNewSlot((s) => ({ ...s, startTime: e.target.value }))}
-                    className="input-field w-full"
-                  />
+                  {(() => {
+                    const parts = parseTimeParts(newSlot.startTime);
+                    const setParts = (
+                      next: Partial<{ hour12: number; minute: number; period: "AM" | "PM" }>
+                    ) => {
+                      const merged = { ...parts, ...next };
+                      setNewSlot((s) => ({
+                        ...s,
+                        startTime: toTimeValue(merged.hour12, merged.minute, merged.period),
+                      }));
+                    };
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={parts.hour12}
+                          onChange={(e) => setParts({ hour12: Number(e.target.value) })}
+                          className="input-field min-w-0 flex-1"
+                          aria-label="Hour"
+                        >
+                          {HOUR_OPTIONS.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-sm text-zinc-500">:</span>
+                        <select
+                          value={parts.minute}
+                          onChange={(e) => setParts({ minute: Number(e.target.value) })}
+                          className="input-field min-w-0 flex-1"
+                          aria-label="Minute"
+                        >
+                          {MINUTE_OPTIONS.map((m) => (
+                            <option key={m} value={m}>
+                              {String(m).padStart(2, "0")}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={parts.period}
+                          onChange={(e) =>
+                            setParts({ period: e.target.value as "AM" | "PM" })
+                          }
+                          className="input-field min-w-0 flex-1"
+                          aria-label="AM or PM"
+                        >
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-xs text-zinc-600 mb-1">Duration</label>
