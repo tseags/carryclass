@@ -210,6 +210,49 @@ async function checkListingSource(): Promise<void> {
   }
 }
 
+/** Prisma booking models used by publish → live (`syncPublishedVendorToLive`). */
+const BOOKING_PUBLISH_TABLES = ["Vendor", "ClassSession", "Booking"] as const;
+
+async function checkBookingPublishTables(): Promise<void> {
+  if (!process.env.DATABASE_URL?.trim()) return;
+
+  const missing: string[] = [];
+  for (const table of BOOKING_PUBLISH_TABLES) {
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{ exists: boolean }>>(
+        `SELECT EXISTS (
+           SELECT 1 FROM information_schema.tables
+           WHERE table_schema = 'public' AND table_name = $1
+         ) AS exists`,
+        table
+      );
+      if (!rows[0]?.exists) missing.push(table);
+    } catch (error) {
+      record(
+        "fail",
+        "booking publish tables",
+        `Cannot probe "${table}": ${error instanceof Error ? error.message : String(error)}`
+      );
+      return;
+    }
+  }
+
+  if (missing.length) {
+    record(
+      "fail",
+      "booking publish tables",
+      `Missing ${missing.join(", ")} on DATABASE_URL — publish sync fails at prisma.vendor.upsert. Apply migrations/prisma-booking-tables.sql (npm run migrate:sql -- --file migrations/prisma-booking-tables.sql --target listings). Do not use prisma db push (drops legacy tables).`
+    );
+    return;
+  }
+
+  record(
+    "ok",
+    "booking publish tables",
+    "Vendor, ClassSession, and Booking exist on DATABASE_URL."
+  );
+}
+
 // ── Onboarding profile: Supabase REST ───────────────────────────────────────
 
 function restHeaders(): Record<string, string> | null {
@@ -511,6 +554,7 @@ async function main(): Promise<void> {
   checkPrismaCliEnv();
   await checkClaimSchema();
   await checkListingSource();
+  await checkBookingPublishTables();
   await checkOnboardingSchema();
   await checkStorageBucket();
 

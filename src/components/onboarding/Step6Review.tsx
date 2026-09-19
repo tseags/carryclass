@@ -53,10 +53,18 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publish: true }),
       });
-      if (!res.ok) throw new Error("Failed to publish");
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error?.trim() || "Failed to publish");
+      }
       router.push("/dashboard/vendor");
-    } catch {
-      setError("Failed to publish. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message.trim() : "";
+      setError(
+        message && message !== "Failed to publish"
+          ? message
+          : "Failed to publish. Please try again."
+      );
       setPublishing(false);
     }
   }

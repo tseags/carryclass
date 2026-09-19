@@ -367,7 +367,13 @@ export function VendorDashboard(props: Props) {
                 metrics={props.emailMetrics}
               />
             ))}
-          {tab === "payments" && <PaymentsPanel vendor={vendor} payout={props.payout} heading />}
+          {tab === "payments" && (
+            <PaymentsTab
+              vendor={vendor}
+              payout={props.payout}
+              onVendorChange={setVendor}
+            />
+          )}
           {tab === "settings" && <SettingsTab vendor={vendor} />}
         </div>
       </main>
@@ -393,7 +399,6 @@ export function VendorDashboard(props: Props) {
 
 function OverviewTab({
   vendor,
-  firstName,
   classes,
   registrations,
   templates,
@@ -420,7 +425,7 @@ function OverviewTab({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Hi {firstName}, here&apos;s your dashboard
+            {vendor.name ?? vendor.canonical_name}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage your listing, classes, and student communications.
@@ -455,6 +460,34 @@ function OverviewTab({
       <RecentRegistrationsPanel registrations={registrationsForDisplay(registrations)} />
       <EmailTemplatesPanel templates={templates} onEdit={onEditTemplate} onToggle={onToggleTemplate} />
       <PaymentsPanel vendor={vendor} payout={payout} />
+    </div>
+  );
+}
+
+function PaymentsTab({
+  vendor,
+  payout,
+  onVendorChange,
+}: {
+  vendor: VendorProfile;
+  payout: DashboardPayout;
+  onVendorChange: (vendor: VendorProfile) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Manage your Stripe connection and view payouts from CarryClass bookings.
+        </p>
+      </div>
+      <PaymentsPanel
+        vendor={vendor}
+        payout={payout}
+        onVendorChange={onVendorChange}
+        showConnectionControls
+        heading
+      />
     </div>
   );
 }
@@ -908,22 +941,65 @@ function PaymentsPanel({
   vendor,
   payout,
   heading,
+  showConnectionControls,
+  onVendorChange,
 }: {
   vendor: VendorProfile;
   payout: DashboardPayout;
   heading?: boolean;
+  /** Full Stripe manage / switch / disconnect controls (Payments tab). */
+  showConnectionControls?: boolean;
+  onVendorChange?: (vendor: VendorProfile) => void;
 }) {
-  const connected = Boolean(vendor.stripe_account_id) || payout.connected;
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
+  // Onboarding stripe_account_id is source of truth (not payout API stale props).
+  const connected = Boolean(vendor.stripe_account_id);
+
+  async function handleDisconnect() {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Disconnect Stripe? Students will no longer be able to book and pay online until you connect again. Your listing stays live."
+      )
+    ) {
+      return;
+    }
+
+    setDisconnecting(true);
+    setDisconnectError(null);
+    try {
+      const res = await fetch("/api/stripe-connect/disconnect", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setDisconnectError(data.error ?? "Could not disconnect Stripe. Please try again.");
+        return;
+      }
+      onVendorChange?.({ ...vendor, stripe_account_id: null });
+    } catch {
+      setDisconnectError("Could not disconnect Stripe. Please try again.");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  const sectionTitle = showConnectionControls ? "Stripe & payouts" : "Payments";
+
   return (
     <section className="rounded-lg border border-gray-200 bg-gray-50 p-5">
       <h2 className={heading ? "mb-4 text-lg font-semibold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
-        Payments
+        {sectionTitle}
       </h2>
       {connected ? (
         <div className="space-y-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-            Stripe connected ✓
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+              Stripe connected ✓
+            </span>
+            {vendor.stripe_account_id && showConnectionControls && (
+              <span className="text-xs text-gray-500">Account {vendor.stripe_account_id}</span>
+            )}
+          </div>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs text-gray-400">Last payout</p>
@@ -935,6 +1011,45 @@ function PaymentsPanel({
               View payout history →
             </Link>
           </div>
+
+          {showConnectionControls && (
+            <div className="space-y-3 border-t border-gray-200 pt-4">
+              <p className="text-sm font-medium text-gray-900">Stripe connection</p>
+              <p className="text-sm text-gray-600">
+                Update bank details in Stripe, switch to a different Stripe account, or disconnect
+                to turn off online bookings.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="https://dashboard.stripe.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Manage in Stripe
+                </a>
+                <a
+                  href={STRIPE_CONNECT_HREF}
+                  className="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Switch Stripe account
+                </a>
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  className="inline-flex rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  {disconnecting ? "Disconnecting…" : "Disconnect Stripe"}
+                </button>
+              </div>
+              {disconnectError && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {disconnectError}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
