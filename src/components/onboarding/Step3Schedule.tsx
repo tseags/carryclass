@@ -660,27 +660,29 @@ export function Step3Schedule({
           <label className="block text-sm font-medium text-zinc-700 mb-2">
             Paste your calendar feed URL (.ics)
           </label>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={icalFeedUrl}
-              onChange={(e) => setIcalFeedUrl(e.target.value)}
-              placeholder="webcal://... or https://.../.ics"
-              className="input-field flex-1"
-            />
-            <button
-              type="button"
-              onClick={fetchIcalEvents}
-              disabled={fetchingEvents || !icalFeedUrl.trim()}
-              className="btn-primary small w-button whitespace-nowrap disabled:opacity-50"
-            >
-              {fetchingEvents ? "Fetching..." : "Fetch events"}
-            </button>
+          <div className="flex flex-col gap-5">
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={icalFeedUrl}
+                onChange={(e) => setIcalFeedUrl(e.target.value)}
+                placeholder="webcal://... or https://.../.ics"
+                className="input-field flex-1"
+              />
+              <button
+                type="button"
+                onClick={fetchIcalEvents}
+                disabled={fetchingEvents || !icalFeedUrl.trim()}
+                className="btn-primary small w-button whitespace-nowrap disabled:opacity-50"
+              >
+                {fetchingEvents ? "Fetching..." : "Fetch events"}
+              </button>
+            </div>
+            <p className="text-xs text-zinc-400">
+              In Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL.
+              Outlook: calendar settings → Shared calendars → publish and paste the ICS link here.
+            </p>
           </div>
-          <p className="text-xs text-zinc-400 mt-4">
-            In Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL.
-            Outlook: calendar settings → Shared calendars → publish and paste the ICS link here.
-          </p>
 
           {fetchingEvents && <LoadingEvents />}
           {eventsFetched && events.length > 0 && (
@@ -941,7 +943,7 @@ export function Step3Schedule({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               <button
                 type="button"
                 onClick={() => setShowAddSlot(true)}
