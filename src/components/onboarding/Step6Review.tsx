@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { VendorProfile, VendorClassType, VendorCalendarClass } from "@/lib/onboarding-db";
 
 const CLASS_TYPE_LABELS: Record<string, string> = {
-  initial: "CCW Initial License",
+  initial: "CCW Initial",
   renewal: "CCW Renewal",
   add_a_gun: "Add-A-Gun",
 };

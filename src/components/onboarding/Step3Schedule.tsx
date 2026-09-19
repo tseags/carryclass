@@ -39,6 +39,7 @@ type Recurrence = "one-time" | "weekly" | "biweekly" | "monthly";
 
 interface ManualSlot {
   id: string;
+  title: string;
   date: string;
   startTime: string;
   duration: number;
@@ -127,7 +128,7 @@ interface Props {
 }
 
 const CLASS_TYPE_LABELS: Record<string, string> = {
-  initial: "CCW Initial License",
+  initial: "CCW Initial",
   renewal: "CCW Renewal",
   add_a_gun: "Add-A-Gun",
 };
@@ -177,9 +178,10 @@ export function Step3Schedule({
   const [manualSlots, setManualSlots] = useState<ManualSlot[]>([]);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>({
+    title: CLASS_TYPE_LABELS[classTypes[0]?.class_type ?? "initial"] ?? "CCW Initial",
     date: "",
     startTime: "",
-    duration: 60,
+    duration: 480,
     classType: classTypes[0]?.class_type ?? "initial",
     maxStudents: "",
     price: classTypes[0] ? String(classTypes[0].price) : "",
@@ -364,7 +366,7 @@ export function Step3Schedule({
           );
           return {
             class_type: slot.classType,
-            title: CLASS_TYPE_LABELS[slot.classType] ?? slot.classType,
+            title: slot.title.trim() || (CLASS_TYPE_LABELS[slot.classType] ?? slot.classType),
             start_time: startDt.toISOString(),
             end_time: endDt.toISOString(),
             max_students: slot.maxStudents ? parseInt(slot.maxStudents) : null,
@@ -674,7 +676,7 @@ export function Step3Schedule({
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-zinc-800">
-                        {CLASS_TYPE_LABELS[slot.classType] ?? slot.classType}
+                        {slot.title.trim() || (CLASS_TYPE_LABELS[slot.classType] ?? slot.classType)}
                       </p>
                       {slot.recurrence !== "one-time" && (
                         <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
@@ -703,6 +705,15 @@ export function Step3Schedule({
           {showAddSlot ? (
             <div className="space-y-3 border border-zinc-100 rounded-lg p-4 bg-zinc-50">
               <h3 className="text-sm font-medium text-zinc-700">Add a class slot</h3>
+              <div>
+                <label className="block text-xs text-zinc-600 mb-1">Event name</label>
+                <input
+                  type="text"
+                  value={newSlot.title}
+                  onChange={(e) => setNewSlot((s) => ({ ...s, title: e.target.value }))}
+                  className="input-field w-full"
+                />
+              </div>
               <div>
                 <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
                 <select
@@ -756,13 +767,14 @@ export function Step3Schedule({
                   <label className="block text-xs text-zinc-600 mb-1">Start time</label>
                   <input
                     type="time"
+                    step={60}
                     value={newSlot.startTime}
                     onChange={(e) => setNewSlot((s) => ({ ...s, startTime: e.target.value }))}
                     className="input-field w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Duration (minutes)</label>
+                  <label className="block text-xs text-zinc-600 mb-1">Duration</label>
                   <select
                     value={newSlot.duration}
                     onChange={(e) => setNewSlot((s) => ({ ...s, duration: Number(e.target.value) }))}
@@ -781,11 +793,18 @@ export function Step3Schedule({
                     value={newSlot.classType}
                     onChange={(e) => {
                       const val = e.target.value;
-                      setNewSlot((s) => ({
-                        ...s,
-                        classType: val,
-                        price: priceForType(val),
-                      }));
+                      const nextLabel = CLASS_TYPE_LABELS[val] ?? val;
+                      setNewSlot((s) => {
+                        const prevLabel = CLASS_TYPE_LABELS[s.classType] ?? s.classType;
+                        const titleStillDefault =
+                          !s.title.trim() || s.title.trim() === prevLabel;
+                        return {
+                          ...s,
+                          classType: val,
+                          price: priceForType(val),
+                          title: titleStillDefault ? nextLabel : s.title,
+                        };
+                      });
                     }}
                     className="input-field w-full"
                   >

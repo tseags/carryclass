@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { VendorClassType } from "@/lib/onboarding-db";
 
 const CLASS_TYPES = [
-  { key: "initial", label: "CCW Initial License", description: "16-hour course for first-time applicants" },
+  { key: "initial", label: "CCW Initial", description: "16-hour course for first-time applicants" },
   { key: "renewal", label: "CCW Renewal", description: "8-hour renewal course" },
   { key: "add_a_gun", label: "Add-A-Gun", description: "Add a new firearm to your permit" },
 ];
