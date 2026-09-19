@@ -862,7 +862,7 @@ export function Step3Schedule({
               onClick={() => setShowAddSlot(true)}
               className="btn-secondary small w-button"
             >
-              + Add class slot
+              + Add class
             </button>
           )}
 
