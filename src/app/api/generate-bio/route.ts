@@ -56,15 +56,23 @@ export async function POST(req: NextRequest) {
     userMessage = parts.join("\n") || "Write a generic professional CCW instructor bio.";
   }
 
-  const message = await getAnthropicClient().messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 400,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  try {
+    const message = await getAnthropicClient().messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+    const text =
+      message.content[0].type === "text" ? message.content[0].text : "";
 
-  return NextResponse.json({ bio: text });
+    return NextResponse.json({ bio: text });
+  } catch (err) {
+    console.error("generate-bio failed:", err);
+    return NextResponse.json(
+      { error: "Unable to generate description. Please try again." },
+      { status: 502 }
+    );
+  }
 }

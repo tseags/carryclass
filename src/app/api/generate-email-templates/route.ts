@@ -33,25 +33,33 @@ export async function POST(req: NextRequest) {
       : "Class types: CCW Initial License, CCW Renewal",
   ].join("\n");
 
-  const message = await getAnthropicClient().messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "{}";
-
-  let templates: Record<string, string>;
   try {
-    templates = JSON.parse(text);
-  } catch {
+    const message = await getAnthropicClient().messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+
+    const text =
+      message.content[0].type === "text" ? message.content[0].text : "{}";
+
+    let templates: Record<string, string>;
+    try {
+      templates = JSON.parse(text);
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse AI response" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(templates);
+  } catch (err) {
+    console.error("generate-email-templates failed:", err);
     return NextResponse.json(
-      { error: "Failed to parse AI response" },
-      { status: 500 }
+      { error: "Unable to generate email templates. Please try again." },
+      { status: 502 }
     );
   }
-
-  return NextResponse.json(templates);
 }

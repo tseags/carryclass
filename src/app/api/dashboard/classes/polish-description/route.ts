@@ -35,15 +35,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const message = await getAnthropicClient().messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 400,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content }],
-  });
+  try {
+    const message = await getAnthropicClient().messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content }],
+    });
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+    const text =
+      message.content[0].type === "text" ? message.content[0].text : "";
 
-  return NextResponse.json({ description: text });
+    return NextResponse.json({ description: text });
+  } catch (err) {
+    console.error("polish-description failed:", err);
+    return NextResponse.json(
+      { error: "Unable to polish description. Please try again." },
+      { status: 502 }
+    );
+  }
 }

@@ -48,6 +48,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [bioLoading, setBioLoading] = useState<"polish" | "scratch" | null>(null);
+  const [bioError, setBioError] = useState("");
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState("");
@@ -125,23 +126,35 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   }
 
   async function handlePolish() {
-    if (!form.bio.trim()) return;
+    if (!form.bio.trim() || bioLoading) return;
     setBioLoading("polish");
+    setBioError("");
     try {
       const res = await fetch("/api/generate-bio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: "polish", content: form.bio }),
       });
-      const data = await res.json();
-      if (data.bio) setForm((f) => ({ ...f, bio: data.bio }));
+      const data = (await res.json().catch(() => null)) as
+        | { bio?: string; error?: string }
+        | null;
+      if (!res.ok) {
+        setBioError(data?.error ?? "Unable to polish description.");
+        return;
+      }
+      if (data?.bio) setForm((f) => ({ ...f, bio: data.bio! }));
+      else setBioError("Unable to polish description.");
+    } catch {
+      setBioError("Unable to polish description.");
     } finally {
       setBioLoading(null);
     }
   }
 
   async function handleScratch() {
+    if (bioLoading) return;
     setBioLoading("scratch");
+    setBioError("");
     try {
       const res = await fetch("/api/generate-bio", {
         method: "POST",
@@ -158,8 +171,17 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           },
         }),
       });
-      const data = await res.json();
-      if (data.bio) setForm((f) => ({ ...f, bio: data.bio }));
+      const data = (await res.json().catch(() => null)) as
+        | { bio?: string; error?: string }
+        | null;
+      if (!res.ok) {
+        setBioError(data?.error ?? "Unable to generate description.");
+        return;
+      }
+      if (data?.bio) setForm((f) => ({ ...f, bio: data.bio! }));
+      else setBioError("Unable to generate description.");
+    } catch {
+      setBioError("Unable to generate description.");
     } finally {
       setBioLoading(null);
     }
@@ -542,6 +564,9 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
             Start from scratch
           </button>
         </div>
+        {bioError && (
+          <p className="mt-2 text-sm text-red-600">{bioError}</p>
+        )}
       </section>
 
       {/* Badge tags */}
