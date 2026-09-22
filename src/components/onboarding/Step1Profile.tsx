@@ -47,7 +47,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const isDashboard = mode === "dashboard";
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [bioLoading, setBioLoading] = useState<"polish" | "scratch" | null>(null);
+  const [bioLoading, setBioLoading] = useState(false);
   const [bioError, setBioError] = useState("");
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -127,7 +127,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
 
   async function handlePolish() {
     if (!form.bio.trim() || bioLoading) return;
-    setBioLoading("polish");
+    setBioLoading(true);
     setBioError("");
     try {
       const res = await fetch("/api/generate-bio", {
@@ -147,43 +147,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     } catch {
       setBioError("Unable to polish description.");
     } finally {
-      setBioLoading(null);
-    }
-  }
-
-  async function handleScratch() {
-    if (bioLoading) return;
-    setBioLoading("scratch");
-    setBioError("");
-    try {
-      const res = await fetch("/api/generate-bio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "scratch",
-          name: form.name,
-          county: form.county,
-          badgeTags: form.badgeTags,
-          profileData: {
-            phone: form.phone,
-            website: form.website,
-            address: form.address,
-          },
-        }),
-      });
-      const data = (await res.json().catch(() => null)) as
-        | { bio?: string; error?: string }
-        | null;
-      if (!res.ok) {
-        setBioError(data?.error ?? "Unable to generate description.");
-        return;
-      }
-      if (data?.bio) setForm((f) => ({ ...f, bio: data.bio! }));
-      else setBioError("Unable to generate description.");
-    } catch {
-      setBioError("Unable to generate description.");
-    } finally {
-      setBioLoading(null);
+      setBioLoading(false);
     }
   }
 
@@ -532,14 +496,14 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           className="input-field w-full resize-none"
           placeholder="Tell students about your experience, certifications, and teaching style..."
         />
-        <div className="flex gap-2 mt-2">
+        <div className="mt-2">
           <button
             type="button"
             onClick={handlePolish}
-            disabled={!form.bio.trim() || bioLoading !== null}
+            disabled={!form.bio.trim() || bioLoading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {bioLoading === "polish" ? (
+            {bioLoading ? (
               <Spinner />
             ) : (
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -547,21 +511,6 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
               </svg>
             )}
             Polish
-          </button>
-          <button
-            type="button"
-            onClick={handleScratch}
-            disabled={bioLoading !== null}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {bioLoading === "scratch" ? (
-              <Spinner />
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            )}
-            Start from scratch
           </button>
         </div>
         {bioError && (
