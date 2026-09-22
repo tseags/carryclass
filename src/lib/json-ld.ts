@@ -13,6 +13,7 @@ export function organizationJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "CarryClass",
+    legalName: "CarryClass LLC",
     url: SITE_URL,
     description: DEFAULT_SITE_DESCRIPTION,
   };

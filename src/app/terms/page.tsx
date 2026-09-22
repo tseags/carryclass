@@ -7,9 +7,11 @@ import { CONTACT_EMAIL, SITE_URL } from "@/lib/site-url";
 export const metadata = pageMetadata({
   title: "Terms of Service",
   description:
-    "Terms of Service for CarryClass — California's CCW classes directory, including SMS messaging terms.",
+    "Terms of Service for CarryClass (CarryClass LLC) — California's CCW classes directory, including SMS messaging terms.",
   path: "/terms",
 });
+
+const SITE_HOST = SITE_URL.replace("https://", "");
 
 export default function TermsPage() {
   return (
@@ -17,16 +19,28 @@ export default function TermsPage() {
       <Header />
       <main className="mx-auto max-w-3xl px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
         <h1 className="text-3xl font-bold text-zinc-900">Terms of Service</h1>
-        <p className="mt-2 text-sm text-zinc-500">Effective date: August 30, 2026</p>
+        <p className="mt-2 text-sm text-zinc-500">
+          Effective date: September 22, 2026 · Last updated: September 22, 2026
+        </p>
 
         <section className="mt-8 space-y-3 text-zinc-700">
           <h2 className="text-xl font-semibold text-zinc-900">Agreement</h2>
           <p>
             These Terms of Service (&quot;Terms&quot;) govern your use of{" "}
-            {SITE_URL.replace("https://", "")} (the &quot;Site&quot;) operated by
-            CarryClass (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By
-            accessing or using the Site, you agree to these Terms and our{" "}
-            <Link href="/privacy" className="font-medium text-zinc-900 underline underline-offset-2">
+            <a
+              href={SITE_URL}
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
+              {SITE_HOST}
+            </a>{" "}
+            (the &quot;Site&quot; or &quot;App&quot;) operated by{" "}
+            <strong>CarryClass LLC</strong> (&quot;CarryClass,&quot;
+            &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By accessing or
+            using the Site, you agree to these Terms and our{" "}
+            <Link
+              href="/privacy"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
               Privacy Policy
             </Link>
             .
@@ -44,12 +58,37 @@ export default function TermsPage() {
 
         <section className="mt-8 space-y-3 text-zinc-700">
           <h2 className="text-xl font-semibold text-zinc-900">
+            Google Calendar Connection
+          </h2>
+          <p>
+            Instructors may optionally connect a Google account so CarryClass can
+            read calendar information and sync class availability. By connecting
+            Google, you authorize CarryClass LLC to access Google Calendar data as
+            described in our{" "}
+            <Link
+              href="/privacy"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
+              Privacy Policy
+            </Link>
+            , solely to provide and improve scheduling and booking features. You may
+            disconnect Google at any time by choosing a different calendar option,
+            revoking access in your Google Account settings, or contacting us to
+            request removal of stored Google credentials.
+          </p>
+        </section>
+
+        <section className="mt-8 space-y-3 text-zinc-700">
+          <h2 className="text-xl font-semibold text-zinc-900">
             SMS and Text Messaging Terms
           </h2>
           <p>
             By choosing to receive text messages from CarryClass — for example, by
             selecting phone verification when claiming a listing at{" "}
-            <Link href="/instructors/claim" className="font-medium text-zinc-900 underline underline-offset-2">
+            <Link
+              href="/instructors/claim"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
               /instructors/claim
             </Link>{" "}
             — you agree to receive SMS messages at the mobile number on file for your
@@ -101,7 +140,7 @@ export default function TermsPage() {
           </h2>
           <p>
             When booking or paying for a class through the Site, you enter into a
-            transaction with the applicable instructor or provider. CarryClass may
+            transaction with the applicable instructor or provider. CarryClass LLC may
             facilitate scheduling and payment processing but is not the training
             provider unless stated otherwise.
           </p>
@@ -112,10 +151,11 @@ export default function TermsPage() {
             Limitation of Liability
           </h2>
           <p>
-            To the maximum extent allowed by law, CarryClass is not liable for any
+            To the maximum extent allowed by law, CarryClass LLC is not liable for any
             indirect, incidental, special, consequential, or punitive damages, or for
             losses arising from your use of the Site, reliance on directory listings,
-            or SMS delivery failures beyond our reasonable control.
+            calendar sync issues, or SMS delivery failures beyond our reasonable
+            control.
           </p>
         </section>
 
@@ -123,14 +163,23 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold text-zinc-900">Changes</h2>
           <p>
             We may update these Terms from time to time. Continued use of the Site
-            after updates means you accept the revised Terms.
+            after updates means you accept the revised Terms. The current Terms are
+            always available at{" "}
+            <Link
+              href="/terms"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
+              {SITE_HOST}/terms
+            </Link>
+            .
           </p>
         </section>
 
         <section className="mt-8 space-y-3 text-zinc-700">
           <h2 className="text-xl font-semibold text-zinc-900">Contact</h2>
           <p>
-            Questions about these Terms can be sent to{" "}
+            CarryClass is operated by <strong>CarryClass LLC</strong>. Questions about
+            these Terms can be sent to{" "}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
               className="font-medium text-zinc-900 underline underline-offset-2"
