@@ -645,9 +645,10 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                   className="sr-only"
                   disabled={uploadingGallery}
                   onChange={(e) => {
-                    const files = e.target.files;
+                    // Copy before clearing — FileList is live and empties with value="".
+                    const files = Array.from(e.target.files ?? []);
                     e.target.value = "";
-                    if (files?.length) void uploadGalleryPhotos(files);
+                    if (files.length) void uploadGalleryPhotos(files);
                   }}
                 />
               </label>
