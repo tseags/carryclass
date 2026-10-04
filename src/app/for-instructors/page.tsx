@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { AnimatedStatsGrid, type AnimatedStat } from "@/components/AnimatedStatsGrid";
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site-url";
+import { PLATFORM_SERVICE_FEE_PERCENT_LABEL } from "@/lib/booking-constants";
 
 export const metadata = pageMetadata({
   title: "For CCW Instructors",
@@ -16,7 +17,7 @@ const BENEFITS = [
   {
     title: "Accept bookings online (optional)",
     description:
-      "Claiming and updating your listing is free and never requires Stripe. Connect Stripe Connect when you want students to book and pay from your profile — then they pay a separate 5% platform fee at checkout on top of your class price, so you keep 100% of what you charge.",
+      `Claiming and updating your listing is free and never requires Stripe. Connect Stripe Connect when you want students to book and pay from your profile — then they pay a separate ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform fee at checkout on top of your class price, so you keep 100% of what you charge.`,
     icon: "booking",
   },
   {
@@ -58,7 +59,7 @@ const FAQS = [
   {
     question: "Is it free to list my classes?",
     answer:
-      "Listing in the CarryClass directory is free, and so is claiming and updating your page. The 5% platform service fee only applies to online bookings: once you enable them through Stripe Connect, students pay that fee at checkout on top of your class price — so you keep 100% of what you charge.",
+      `Listing in the CarryClass directory is free, and so is claiming and updating your page. The ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform service fee only applies to online bookings: once you enable them through Stripe Connect, students pay that fee at checkout on top of your class price — so you keep 100% of what you charge.`,
   },
   {
     question: "Why should I claim my profile?",
@@ -84,7 +85,7 @@ const FAQS = [
 
 const STATS: AnimatedStat[] = [
   { number: "100%", label: "Of your class fee you keep" },
-  { number: "5%", label: "Platform fee paid by students" },
+  { number: PLATFORM_SERVICE_FEE_PERCENT_LABEL, label: "Platform fee paid by students" },
   { number: "$0", label: "Cost to list your classes" },
   { number: "5 minutes", label: "To claim and publish your listing" },
 ];

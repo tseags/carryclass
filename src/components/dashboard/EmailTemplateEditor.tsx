@@ -2,16 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { VendorEmailTemplate } from "@/lib/onboarding-db";
-
-const MERGE_TAGS = [
-  "{student_name}",
-  "{class_type}",
-  "{class_date}",
-  "{class_time}",
-  "{instructor_name}",
-  "{location}",
-  "{rebooking_link}",
-];
+import { MERGE_TAGS } from "@/lib/email-templates-defaults";
 
 const TIMING_OPTIONS = {
   reminder: [

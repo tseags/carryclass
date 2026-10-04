@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
+import { sendBookingConfirmationEmail } from "@/lib/booking-confirmation-email";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
             stripePaymentIntentId: paymentIntentId,
             customerEmail: md.customerEmail ?? session.customer_email ?? "",
             customerName: md.customerName ?? "",
+            customerPhone: md.customerPhone || null,
             clerkUserId: md.clerkUserId || null,
             classAmountCents,
             serviceFeeCents,
@@ -79,6 +81,23 @@ export async function POST(req: Request) {
           data: { enrolled: { increment: 1 } },
         });
       });
+
+      // Best-effort: booking is already paid/enrolled — don't fail the webhook
+      // (and trigger Stripe retries) if Resend is down.
+      try {
+        await sendBookingConfirmationEmail({
+          prismaVendorId: md.vendorId,
+          classSessionId: md.classSessionId,
+          customerName: md.customerName ?? "",
+          customerFirstName: md.customerFirstName ?? "",
+          customerEmail: md.customerEmail ?? session.customer_email ?? "",
+        });
+      } catch (emailErr) {
+        console.error(
+          "[webhooks/stripe] booking confirmation email failed",
+          emailErr
+        );
+      }
     } catch (e: unknown) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
         return NextResponse.json({ received: true, duplicate: true });

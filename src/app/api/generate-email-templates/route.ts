@@ -14,8 +14,14 @@ function getAnthropicClient(): Anthropic {
 
 const SYSTEM_PROMPT = `You are writing transactional email templates for a California CCW firearms instructor 
 using CarryClass, a booking marketplace. Write professional, warm, and concise emails. 
-Use these merge tags where appropriate: {student_name}, {class_type}, {class_date}, 
-{class_time}, {instructor_name}, {location}, {rebooking_link}.
+Use these merge tags where appropriate: {first_name}, {student_name}, {class_type}, {class_date}, 
+{class_time}, {company_name}, {instructor_name}, {instructor_email}, {location}, {what_to_bring_link}, {rebooking_link}.
+Greet the student with {first_name}. Use {company_name} for the business in the opening,
+and {instructor_name} for the sign-off.
+For confirmation emails, bold the class-details heading with **Here are your class details:**,
+link the word "here" to the packing list as [here]({what_to_bring_link}), remind students to
+keep firearms unloaded and leave ammunition in the vehicle, and invite questions by saying
+they can respond directly to the email.
 Return valid JSON only with exactly these keys: confirmation_subject, confirmation_body, 
 reminder_subject, reminder_body, followup_subject, followup_body. 
 No preamble, no markdown formatting, no backticks.`;

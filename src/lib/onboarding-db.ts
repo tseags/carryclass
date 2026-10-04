@@ -296,6 +296,20 @@ export async function getVendorProfile(
   return (data as VendorProfile | null) ?? null;
 }
 
+/** Fetch onboarding vendor profile by claimed listing slug. */
+export async function getVendorProfileBySlug(
+  slug: string
+): Promise<VendorProfile | null> {
+  const trimmed = slug.trim();
+  if (!trimmed) return null;
+  const { data } = await supabaseAdmin()
+    .from("vendors")
+    .select("*")
+    .eq("slug", trimmed)
+    .maybeSingle();
+  return (data as VendorProfile | null) ?? null;
+}
+
 /** Patch the vendor profile. */
 export async function updateVendorProfile(
   vendorId: string,

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import type { VendorEmailTemplate } from "@/lib/onboarding-db";
 import {
+  applyMergeTags,
   DEFAULT_EMAIL_TEMPLATES,
+  emailBodyToHtml,
   MERGE_TAGS,
   resolveTemplateContent,
   type EmailTemplateType,
@@ -61,6 +63,12 @@ interface Props {
   vendorId: string;
   /** Instructor profile email — default "send from" address. */
   vendorEmail?: string | null;
+  /** Listing / company name used in the preview. */
+  vendorName?: string | null;
+  /** Account first name, used as the preview sign-off. */
+  instructorName?: string | null;
+  /** Instructor What to Bring tab, used for the preview link. */
+  whatToBringUrl?: string | null;
 }
 
 /**
@@ -74,6 +82,9 @@ export function EmailEditorPanel({
   onSaved,
   vendorId,
   vendorEmail,
+  vendorName,
+  instructorName,
+  whatToBringUrl,
 }: Props) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -175,6 +186,29 @@ export function EmailEditorPanel({
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
+
+  const companyName = vendorName?.trim() || "Your company";
+  const signOff =
+    instructorName?.trim() && instructorName.trim().toLowerCase() !== "there"
+      ? instructorName.trim()
+      : companyName;
+  const previewValues: Record<string, string> = {
+    first_name: "Jordan",
+    student_name: "Jordan Sample",
+    class_type: "CCW Initial: Day 1",
+    class_date: "Saturday, October 10, 2026",
+    class_time: "9:00 AM PDT",
+    company_name: companyName,
+    instructor_name: signOff,
+    instructor_email: vendorEmail || "instructor@example.com",
+    location: "3274 San Tomas Dr. 92056, Oceanside, CA",
+    what_to_bring_link:
+      whatToBringUrl ||
+      "https://www.getcarryclass.com/instructors/your-listing?tab=what-to-bring",
+    rebooking_link: "https://www.getcarryclass.com",
+  };
+  const previewSubject = applyMergeTags(subject, previewValues);
+  const previewHtml = emailBodyToHtml(applyMergeTags(body, previewValues));
 
   return (
     <div className="space-y-6">
@@ -385,18 +419,23 @@ export function EmailEditorPanel({
                 <p className="text-sm text-gray-700">{resolvedFrom}</p>
                 <p className="mt-2 text-xs text-gray-400">Subject</p>
                 <p className="text-base font-semibold text-gray-900">
-                  {subject || <span className="text-gray-300">(no subject)</span>}
+                  {previewSubject || <span className="text-gray-300">(no subject)</span>}
                 </p>
               </div>
-              <div className="whitespace-pre-wrap pt-4 text-sm leading-relaxed text-gray-700">
-                {body || <span className="text-gray-300">(empty body)</span>}
-              </div>
+              {body ? (
+                <div
+                  className="pt-4 text-sm leading-relaxed text-gray-700 [&_a]:text-[#C1440E] [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-gray-900"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              ) : (
+                <p className="pt-4 text-sm text-gray-300">(empty body)</p>
+              )}
             </div>
           </div>
 
           <p className="!mt-6 !mb-0 text-xs text-gray-400">
-            Merge tags like <span className="font-mono">{"{student_name}"}</span> are shown
-            literally here and filled with real booking details when the email is sent.
+            Preview uses sample student details. Bold text and the What to Bring link
+            appear the same way in the email a student receives.
           </p>
 
           {testMessage && (

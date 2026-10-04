@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { VendorProfile, VendorClassType, VendorCalendarClass } from "@/lib/onboarding-db";
+import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
 
 const CLASS_TYPE_LABELS: Record<string, string> = {
   initial: "CCW Initial",
@@ -16,18 +17,7 @@ function policyLabel(
   hours: number | null,
   refundPercent: number | null
 ): string {
-  switch (policy) {
-    case "none":
-      return "No refunds — all sales are final";
-    case "anytime":
-      return "Full refund anytime before class";
-    case "full_hours_before":
-      return `Full refund up to ${hours} hours before class`;
-    case "partial_hours_before":
-      return `${refundPercent}% refund up to ${hours} hours before class`;
-    default:
-      return "Not set";
-  }
+  return cancellationPolicyLabel(policy, hours, refundPercent) ?? "Not set";
 }
 
 interface Props {

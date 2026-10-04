@@ -3,6 +3,11 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import { getVendorProfile, recordEmailEvent } from "@/lib/onboarding-db";
 import { resolveFromAddress } from "@/lib/email-from";
+import {
+  applyMergeTags,
+  emailBodyToHtml,
+  emailBodyToPlainText,
+} from "@/lib/email-templates-defaults";
 
 export const runtime = "nodejs";
 
@@ -12,14 +17,6 @@ function getResend(): Resend {
     throw new Error("RESEND_API_KEY is not set");
   }
   return new Resend(apiKey);
-}
-
-/** Fill merge tags with representative sample data for the preview send. */
-function applySampleMergeTags(
-  text: string,
-  values: Record<string, string>
-): string {
-  return text.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
 }
 
 export async function POST(req: NextRequest) {
@@ -60,18 +57,31 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const companyName = vendor.name ?? "Your company";
+  const personName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || companyName;
+  const listingSlug = vendor.slug?.trim();
+  const profileUrl = listingSlug
+    ? `https://www.getcarryclass.com/instructors/${listingSlug}`
+    : "https://www.getcarryclass.com";
   const sample: Record<string, string> = {
+    first_name: "Jordan",
     student_name: "Jordan Sample",
-    class_type: "16-Hour Initial CCW",
-    class_date: "Saturday, July 12",
-    class_time: "9:00 AM",
-    instructor_name: vendor.name ?? user?.firstName ?? "Your Instructor",
+    class_type: "CCW Initial: Day 1",
+    class_date: "Saturday, October 10, 2026",
+    class_time: "9:00 AM PDT",
+    company_name: companyName,
+    instructor_name: personName,
+    instructor_email: vendor.email ?? clerkEmail ?? "instructor@example.com",
     location: vendor.address ?? "Your range",
-    rebooking_link: "https://getcarryclass.com",
+    what_to_bring_link: `${profileUrl}?tab=what-to-bring`,
+    rebooking_link: listingSlug ? `${profileUrl}/book` : profileUrl,
   };
 
-  const filledSubject = applySampleMergeTags(subject, sample);
-  const filledBody = applySampleMergeTags(body, sample);
+  const filledSubject = applyMergeTags(subject, sample);
+  const filledBody = applyMergeTags(body, sample);
+  const text = emailBodyToPlainText(filledBody);
+  const html = emailBodyToHtml(filledBody);
 
   // Resolve a deliverable sender: use the chosen/profile address only if it's on
   // our verified domain, otherwise fall back to the default and set reply-to.
@@ -87,7 +97,8 @@ export async function POST(req: NextRequest) {
       to: recipient,
       replyTo: replyTo,
       subject: `[Test] ${filledSubject}`,
-      text: filledBody,
+      text,
+      html,
     });
     resendId = data?.id ?? null;
   } catch (error) {

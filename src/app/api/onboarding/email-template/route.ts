@@ -24,6 +24,11 @@ export async function POST(req: NextRequest) {
   if (scheduled_at !== undefined) fields.scheduled_at = scheduled_at;
   if (from_email !== undefined) fields.from_email = from_email;
 
+  // Booking confirmation is always on — editable content, not optional delivery.
+  if (type === "confirmation") {
+    fields.is_active = true;
+  }
+
   await upsertEmailTemplate(vendor.id, type, fields);
 
   return NextResponse.json({ ok: true });

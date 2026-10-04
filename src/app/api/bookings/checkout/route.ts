@@ -2,16 +2,29 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
-import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
+import {
+  calculatePlatformServiceFeeCents,
+  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
+} from "@/lib/booking-constants";
+import { normalizeListingPhone } from "@/lib/claim-contacts";
 
 export const runtime = "nodejs";
 
 type Body = {
   classSessionId?: string;
+  firstName?: string;
+  lastName?: string;
   customerName?: string;
   customerEmail?: string;
+  customerPhone?: string;
   vendorSlug?: string;
 };
+
+function formatUsPhone(raw: string): string | null {
+  const ten = normalizeListingPhone(raw);
+  if (ten.length !== 10) return null;
+  return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}`;
+}
 
 export async function POST(req: Request) {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -29,13 +42,15 @@ export async function POST(req: Request) {
   }
 
   const classSessionId = body.classSessionId?.trim();
-  const customerName = body.customerName?.trim();
+  const firstName = body.firstName?.trim();
+  const lastName = body.lastName?.trim();
   const customerEmail = body.customerEmail?.trim()?.toLowerCase();
+  const customerPhone = formatUsPhone(body.customerPhone ?? "");
   const vendorSlug = body.vendorSlug?.trim();
 
-  if (!classSessionId || !customerName || !customerEmail || !vendorSlug) {
+  if (!classSessionId || !firstName || !lastName || !customerEmail || !vendorSlug) {
     return NextResponse.json(
-      { error: "Missing classSessionId, customerName, customerEmail, or vendorSlug." },
+      { error: "Missing class, first name, last name, email, or instructor." },
       { status: 400 }
     );
   }
@@ -44,6 +59,11 @@ export async function POST(req: Request) {
   if (!emailOk) {
     return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
   }
+  if (!customerPhone) {
+    return NextResponse.json({ error: "Enter a 10-digit phone number." }, { status: 400 });
+  }
+
+  const customerName = `${firstName} ${lastName}`;
 
   const { userId } = await auth();
 
@@ -113,7 +133,7 @@ export async function POST(req: Request) {
           currency: "usd",
           product_data: {
             name: "CCW Directory booking service fee",
-            description: "Non-refundable 5% platform service fee",
+            description: `Non-refundable ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform service fee`,
           },
           unit_amount: serviceFeeCents,
         },
@@ -132,7 +152,9 @@ export async function POST(req: Request) {
       classSessionId: classSession.id,
       vendorId: classSession.vendorId,
       customerName,
+      customerFirstName: firstName,
       customerEmail,
+      customerPhone,
       clerkUserId: userId ?? "",
       classAmountCents: String(classAmountCents),
       serviceFeeCents: String(serviceFeeCents),

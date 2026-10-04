@@ -22,9 +22,64 @@ type Props = {
   vendorSlug: string;
   vendorName: string;
   sessions: SerializableSession[];
+  refundPolicy: string | null;
 };
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const CARD_CLASS =
+  "rounded-[14px] border border-[rgba(17,24,39,0.12)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.05)] sm:px-6 sm:py-6";
+
+const FIELD_CLASS =
+  "mt-1.5 w-full rounded-lg border border-[rgba(17,24,39,0.15)] bg-white px-2.5 py-2 text-xs text-[#141413] placeholder:text-zinc-400 focus:border-[#141413] focus:outline-none focus:ring-[3px] focus:ring-[rgba(24,24,27,0.08)] disabled:cursor-not-allowed disabled:bg-[#fafafa]";
+
+type CardIconType = "classType" | "calendar" | "user" | "cart";
+
+function CardIcon({ type }: { type: CardIconType }) {
+  const strokeProps = {
+    stroke: "#c96442",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  } as const;
+
+  return (
+    <span
+      aria-hidden
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(201,100,66,0.1)]"
+    >
+      <svg width={22} height={22} viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {type === "classType" && (
+          <>
+            <rect x="3.5" y="3.5" width="15" height="15" rx="2.5" {...strokeProps} />
+            <path d="M7.5 8h7M7.5 11h7M7.5 14h4" {...strokeProps} />
+          </>
+        )}
+        {type === "calendar" && (
+          <>
+            <rect x="3.5" y="5" width="15" height="13" rx="2.5" {...strokeProps} />
+            <path d="M3.5 9.5h15" {...strokeProps} />
+            <path d="M7.5 3.5v3M14.5 3.5v3" {...strokeProps} />
+            <path d="M8 13.5l2 2 4-4" {...strokeProps} />
+          </>
+        )}
+        {type === "user" && (
+          <>
+            <circle cx="11" cy="7.5" r="3.5" {...strokeProps} />
+            <path d="M4.5 18.5c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5" {...strokeProps} />
+          </>
+        )}
+        {type === "cart" && (
+          <>
+            <path d="M2.5 3.5h2.2l2 10h9.8l1.8-7H6" {...strokeProps} />
+            <circle cx="8.5" cy="17.5" r="1.3" {...strokeProps} />
+            <circle cx="15.5" cy="17.5" r="1.3" {...strokeProps} />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
 
 /** Matches `ClassSession.classType` in the database */
 type ClassFilterKey = "__all__" | "initial" | "renewal" | "add_a_gun";
@@ -115,7 +170,7 @@ function applyClassFilter(
   return allSessions.filter((s) => s.classType === key);
 }
 
-export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
+export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy }: Props) {
   const [classTypeStepComplete, setClassTypeStepComplete] = useState(false);
   const [selectedClassFilter, setSelectedClassFilter] = useState<ClassFilterKey | null>(null);
 
@@ -145,10 +200,13 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [selectedDateKey, setSelectedDateKey] = useState(firstAvailableDateKey);
   const [classSessionId, setClassSessionId] = useState("");
-  const [customerName, setCustomerName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [refundPolicyOpen, setRefundPolicyOpen] = useState(false);
 
   const sessionsForDate = useMemo(
     () =>
@@ -196,6 +254,15 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
       setError("Choose a class session.");
       return;
     }
+    const phoneDigits = customerPhone.replace(/\D/g, "");
+    const ten =
+      phoneDigits.length === 11 && phoneDigits.startsWith("1")
+        ? phoneDigits.slice(1)
+        : phoneDigits;
+    if (ten.length !== 10) {
+      setError("Enter a 10-digit phone number.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/bookings/checkout", {
@@ -204,8 +271,10 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
         body: JSON.stringify({
           vendorSlug,
           classSessionId,
-          customerName: customerName.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim(),
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -227,14 +296,14 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
 
   if (sessions.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center">
+      <div className="rounded-2xl border border-[#e2ddd1] bg-[#fefcf9] p-8 text-center">
         <p className="text-sm text-zinc-800">
           No upcoming classes with open seats right now. Check back soon or contact{" "}
           <span className="font-semibold">{vendorName}</span> directly.
         </p>
         <Link
           href={`/instructors/${vendorSlug}`}
-          className="mt-6 inline-block text-sm font-semibold text-[var(--navy)] underline-offset-2 hover:underline"
+          className="mt-6 inline-block text-sm font-semibold text-[#C1440E] underline-offset-2 hover:underline"
         >
           ← Back to profile
         </Link>
@@ -252,16 +321,14 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
     >
       <div className="space-y-4">
         {/* Step 1 — class type */}
-        <section
-          className={`rounded-xl border border-zinc-200 bg-white shadow-sm ${
-            step1Expanded ? "p-4 sm:p-5" : "p-4 sm:p-5"
-          }`}
-          aria-labelledby="book-step-1-title"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <h2 id="book-step-1-title" className="text-xs font-semibold text-zinc-900">
-              Choose class type
-            </h2>
+        <section className={`${CARD_CLASS} bg-white`} aria-labelledby="book-step-1-title">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <CardIcon type="classType" />
+              <h2 id="book-step-1-title" className="!mb-0 text-xs font-semibold text-zinc-900">
+                Choose class type
+              </h2>
+            </div>
             {!step1Expanded && selectedClassFilter !== null && (
               <button
                 type="button"
@@ -283,14 +350,14 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                 role="radiogroup"
                 aria-label="Class type"
               >
-                <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
+                <div className="divide-y divide-[#edeae3] rounded-lg border border-[#e2ddd1] bg-white">
                   {CLASS_FILTER_OPTIONS.map(({ key, label }) => {
                     const id = `class-type-${key}`;
                     const isSelected = selectedClassFilter === key;
                     return (
                       <div
                         key={key}
-                        className="relative flex w-full items-stretch hover:bg-zinc-50/90 focus-within:bg-zinc-50/90"
+                        className="relative flex w-full items-stretch hover:bg-[#fefcf9] focus-within:bg-[#fefcf9]"
                       >
                         <input
                           id={id}
@@ -311,11 +378,11 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                           <span
                             aria-hidden
                             className={`relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 bg-white transition-colors ${
-                              isSelected ? "border-zinc-900" : "border-zinc-300"
+                              isSelected ? "border-[#C1440E]" : "border-[#cfc7b8]"
                             }`}
                           >
                             <span
-                              className={`h-2.5 w-2.5 rounded-full bg-zinc-900 transition-opacity ${
+                              className={`h-2.5 w-2.5 rounded-full bg-[#C1440E] transition-opacity ${
                                 isSelected ? "opacity-100" : "opacity-0"
                               }`}
                             />
@@ -339,17 +406,18 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
 
         {/* Step 2 — date & session (locked until step 1) */}
         <section
-          className={`rounded-xl border border-zinc-200 bg-white shadow-sm ${
-            step2Active ? "p-4 sm:p-5" : "p-4 sm:p-5 opacity-90"
-          }`}
+          className={`${CARD_CLASS} bg-white ${step2Active ? "" : "opacity-90"}`}
           aria-labelledby="book-step-2-title"
         >
-          <h2
-            id="book-step-2-title"
-            className={`text-xs font-semibold ${step2Active ? "text-zinc-900" : "text-zinc-400"}`}
-          >
-            Pick a date &amp; session
-          </h2>
+          <div className="flex items-center gap-3">
+            <CardIcon type="calendar" />
+            <h2
+              id="book-step-2-title"
+              className={`!mb-0 text-xs font-semibold ${step2Active ? "text-zinc-900" : "text-zinc-400"}`}
+            >
+              Pick a date &amp; session
+            </h2>
+          </div>
 
           {!step2Active && (
             <p className="mt-2 text-sm leading-snug text-zinc-500">
@@ -363,7 +431,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                 <div className="mb-3 flex items-center justify-between">
                   <button
                     type="button"
-                    className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50"
+                    className="rounded-md border border-[#cfc7b8] px-2 py-1 text-xs text-zinc-700 hover:bg-[#f2efe8]"
                     onClick={() =>
                       setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))
                     }
@@ -373,7 +441,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                   <p className="text-xs font-semibold text-zinc-800">{monthTitle(currentMonth)}</p>
                   <button
                     type="button"
-                    className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50"
+                    className="rounded-md border border-[#cfc7b8] px-2 py-1 text-xs text-zinc-700 hover:bg-[#f2efe8]"
                     onClick={() =>
                       setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))
                     }
@@ -405,19 +473,19 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                           setClassSessionId("");
                           setError(null);
                         }}
-                        className={`h-9 rounded-md border text-xs ${
+                        className={`group h-9 rounded-md border text-xs transition-colors ${
                           isSelected
-                            ? "border-[var(--navy)] bg-[var(--navy)] text-white"
+                            ? "border-[#C1440E] bg-[#C1440E] font-semibold !text-white"
                             : hasSessions
-                              ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50"
-                              : "border-zinc-200 bg-zinc-50 text-zinc-400"
+                              ? "border-[#cfc7b8] bg-white !text-[#141413] hover:border-[#C1440E] hover:bg-[#C1440E] hover:!text-white"
+                              : "border-[#edeae3] bg-[#fefcf9] !text-zinc-400"
                         }`}
                       >
                         <span>{cell.date.getDate()}</span>
                         {hasSessions && (
                           <span
                             className={`mx-auto mt-0.5 block h-1.5 w-1.5 rounded-full ${
-                              isSelected ? "bg-white" : "bg-emerald-500"
+                              isSelected ? "bg-white" : "bg-emerald-500 group-hover:bg-white"
                             }`}
                           />
                         )}
@@ -457,10 +525,10 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                             setClassSessionId(s.id);
                             setError(null);
                           }}
-                          className={`w-full rounded-lg border p-2.5 text-left text-sm shadow-sm ${
+                          className={`w-full rounded-lg border p-2.5 text-left text-sm shadow-sm transition-colors ${
                             checked
-                              ? "border-[var(--navy)] bg-blue-50"
-                              : "border-zinc-200 bg-white hover:border-zinc-300"
+                              ? "border-[#cfc7b8] bg-[#f2efe8]/60"
+                              : "border-[#e2ddd1] bg-white hover:border-[#cfc7b8] hover:bg-[#fefcf9]"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -488,36 +556,50 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
 
       {/* Right: guest details + summary + CTA (sticky on lg) */}
       <div className="space-y-6 lg:sticky lg:top-[calc(var(--header-offset)+1rem)]">
-        <div
-          className="rounded-xl border border-white/15 p-4 shadow-md sm:p-5"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 70% at 50% 45%, #323d52 0%, #272f42 35%, #1e2536 70%, #1a2130 100%)",
-          }}
-        >
-          <h2 className="text-xs font-semibold !text-white">Your details</h2>
-          <p className="mt-1.5 text-sm leading-snug !text-white">
+        <div className={`${CARD_CLASS} bg-white`}>
+          <div className="flex items-center gap-3">
+            <CardIcon type="user" />
+            <h2 className="!mb-0 text-xs font-semibold text-[#141413]">Your details</h2>
+          </div>
+          <p className="mt-3 text-sm leading-snug text-[#5e5d59]">
             Guest checkout — we&apos;ll email your confirmation. If you&apos;re signed in, we&apos;ll
             attach the booking to your profile when possible.
           </p>
           <div className="mt-3 space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-xs font-medium !text-white">
-                Full name
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                autoComplete="name"
-                value={customerName}
-                disabled={!classSessionId}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-zinc-400 bg-white px-2.5 py-2 text-xs text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 disabled:cursor-not-allowed disabled:bg-zinc-200"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="first-name" className="block text-xs font-medium text-[#141413]">
+                  First name
+                </label>
+                <input
+                  id="first-name"
+                  type="text"
+                  required
+                  autoComplete="given-name"
+                  value={firstName}
+                  disabled={!classSessionId}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={FIELD_CLASS}
+                />
+              </div>
+              <div>
+                <label htmlFor="last-name" className="block text-xs font-medium text-[#141413]">
+                  Last name
+                </label>
+                <input
+                  id="last-name"
+                  type="text"
+                  required
+                  autoComplete="family-name"
+                  value={lastName}
+                  disabled={!classSessionId}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={FIELD_CLASS}
+                />
+              </div>
             </div>
             <div>
-              <label htmlFor="email" className="block text-xs font-medium !text-white">
+              <label htmlFor="email" className="block text-xs font-medium text-[#141413]">
                 Email
               </label>
               <input
@@ -528,20 +610,40 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                 value={customerEmail}
                 disabled={!classSessionId}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-zinc-400 bg-white px-2.5 py-2 text-xs text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 disabled:cursor-not-allowed disabled:bg-zinc-200"
+                className={FIELD_CLASS}
+              />
+            </div>
+            <div>
+              <label htmlFor="phone" className="block text-xs font-medium text-[#141413]">
+                Phone number
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                required
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="(555) 555-5555"
+                value={customerPhone}
+                disabled={!classSessionId}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className={FIELD_CLASS}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-300 bg-zinc-200/70 p-4 text-sm shadow-sm sm:p-5">
-          <h2 className="text-xs font-semibold text-zinc-900">Order summary</h2>
+        <div className={`${CARD_CLASS} bg-white text-sm`}>
+          <div className="flex items-center gap-3">
+            <CardIcon type="cart" />
+            <h2 className="!mb-0 text-xs font-semibold text-zinc-900">Order summary</h2>
+          </div>
           <ul
-            className="mt-2 space-y-1.5 text-zinc-700"
-            style={{ listStyle: "none", margin: 0, padding: 0 }}
+            className="space-y-1.5 text-zinc-700"
+            style={{ listStyle: "none", margin: "1.25rem 0 0", padding: 0 }}
           >
             <li className="flex justify-between gap-4">
-              <span className="text-zinc-600">Class tuition</span>
+              <span className="text-zinc-600">Class price</span>
               <span className="tabular-nums font-medium text-zinc-900">
                 ${(classCents / 100).toFixed(2)}
               </span>
@@ -554,15 +656,41 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
                 ${(feeCents / 100).toFixed(2)}
               </span>
             </li>
-            <li className="flex justify-between gap-4 border-t border-zinc-400/60 pt-2.5 pb-1 text-sm font-semibold text-zinc-900">
+            <li className="flex justify-between gap-4 border-t border-[rgba(17,24,39,0.12)] pt-2.5 pb-1 text-sm font-semibold text-zinc-900">
               <span>Total</span>
               <span className="tabular-nums">${(totalCents / 100).toFixed(2)}</span>
             </li>
           </ul>
-          <p className="mt-4 text-sm italic leading-snug text-zinc-600">
-            Refunds apply to the class portion only; the {PLATFORM_SERVICE_FEE_PERCENT_LABEL}{" "}
-            platform service fee is non-refundable per our policy.
-          </p>
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setRefundPolicyOpen((open) => !open)}
+              aria-expanded={refundPolicyOpen}
+              aria-controls="refund-policy-panel"
+              className="inline-flex items-center gap-1.5 text-xs font-medium !text-[#5e5d59] underline-offset-2 hover:!text-[#141413] hover:underline"
+            >
+              <svg width={14} height={14} viewBox="0 0 20 20" fill="none" aria-hidden>
+                <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.6" />
+                <path d="M10 9v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                <circle cx="10" cy="6.4" r="0.9" fill="currentColor" />
+              </svg>
+              Refund policy
+            </button>
+            {refundPolicyOpen && (
+              <div
+                id="refund-policy-panel"
+                className="mt-2 rounded-lg border border-[rgba(17,24,39,0.12)] bg-[#fafafa] px-3 py-2.5 text-xs leading-relaxed text-[#5e5d59]"
+              >
+                <p className="!mb-1 font-medium text-[#141413]">
+                  {refundPolicy ?? `Contact ${vendorName} for their refund policy.`}
+                </p>
+                <p className="!mb-0">
+                  Set by the instructor and applies to the class price. The{" "}
+                  {PLATFORM_SERVICE_FEE_PERCENT_LABEL} booking service fee is non-refundable.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -574,7 +702,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions }: Props) {
         <button
           type="submit"
           disabled={submitting || !classSessionId}
-          className="btn-primary bg-secondary-2 small w-button w-full disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-primary bg-secondary-2 small w-button w-full disabled:cursor-not-allowed"
         >
           {submitting ? "Redirecting to secure checkout…" : "Continue to payment"}
         </button>

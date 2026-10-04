@@ -170,6 +170,7 @@ model Booking {
 
   customerEmail String
   customerName  String
+  customerPhone String?
   clerkUserId   String?
 
   classAmountCents   Int

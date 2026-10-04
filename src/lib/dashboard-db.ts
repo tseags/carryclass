@@ -29,6 +29,7 @@ export interface DashboardRegistration {
   id: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string | null;
   classTitle: string | null;
   classType: string | null;
   classDate: string | null;
@@ -146,6 +147,7 @@ export async function getDashboardRegistrations(
         id: true,
         customerName: true,
         customerEmail: true,
+        customerPhone: true,
         status: true,
         paidAt: true,
         createdAt: true,
@@ -158,6 +160,7 @@ export async function getDashboardRegistrations(
       id: row.id,
       customerName: row.customerName,
       customerEmail: row.customerEmail,
+      customerPhone: row.customerPhone,
       classTitle: row.classSession?.title ?? null,
       classType: row.classSession?.classType ?? null,
       classDate: row.classSession?.startsAt?.toISOString() ?? null,

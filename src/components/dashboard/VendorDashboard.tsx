@@ -215,6 +215,7 @@ export function VendorDashboard(props: Props) {
   }
 
   async function toggleTemplate(type: EmailTemplateType, next: boolean) {
+    if (type === "confirmation") return; // always on — content is editable, delivery is not
     setTemplates((prev) => ({ ...prev, [type]: { ...prev[type], type, is_active: next } }));
     await fetch("/api/onboarding/email-template", {
       method: "POST",
@@ -357,6 +358,13 @@ export function VendorDashboard(props: Props) {
                 onSaved={handleTemplateSaved}
                 vendorId={vendor.id}
                 vendorEmail={vendor.email}
+                vendorName={vendor.name}
+                instructorName={
+                  [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || firstName
+                }
+                whatToBringUrl={
+                  publicProfileUrl ? `${publicProfileUrl}?tab=what-to-bring` : null
+                }
               />
             ) : (
               <EmailTemplatesPanel
@@ -775,6 +783,9 @@ function RegistrationsTable({ registrations }: { registrations: DashboardRegistr
               <td className="!py-5 !pr-6 align-top">
                 <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
                 <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-2">{r.customerEmail}</p>
+                {r.customerPhone && (
+                  <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerPhone}</p>
+                )}
               </td>
               <td className="!py-5 !pr-6 align-top text-gray-600">
                 <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>

@@ -69,7 +69,7 @@ function applyFilters(regs: DashboardRegistration[], f: Filters): DashboardRegis
   const now = Date.now();
   return regs.filter((r) => {
     if (q) {
-      const hay = `${r.customerName} ${r.customerEmail}`.toLowerCase();
+      const hay = `${r.customerName} ${r.customerEmail} ${r.customerPhone ?? ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (f.classType && r.classType !== f.classType) return false;
@@ -583,6 +583,9 @@ function RegistrationsTable({
               <td className="!py-5 !pr-4 align-top">
                 <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
                 <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerEmail}</p>
+                {r.customerPhone && (
+                  <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerPhone}</p>
+                )}
               </td>
               <td className="!py-5 !pr-4 align-top text-gray-600">
                 <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>
@@ -631,6 +634,16 @@ function StudentDrawer({
               </a>
             </dd>
           </div>
+          {r.customerPhone && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Phone</dt>
+              <dd className="mt-1">
+                <a href={`tel:${r.customerPhone}`} className="text-[#C1440E] hover:underline">
+                  {r.customerPhone}
+                </a>
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Class</dt>
             <dd className="mt-1 text-gray-900">{classTypeLabel(r.classType)}</dd>

@@ -4,6 +4,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getVendorBySlug } from "@/lib/vendors-db";
 import { getUpcomingSessionsForVendorSlug } from "@/lib/bookings-db";
+import { getVendorProfileBySlug } from "@/lib/onboarding-db";
+import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
 import { VendorBookForm, type SerializableSession } from "./VendorBookForm";
 
 interface PageProps {
@@ -25,7 +27,17 @@ export default async function VendorBookPage({ params }: PageProps) {
     permanentRedirect(`/instructors/${vendor.slug}/book`);
   }
 
-  const bookingData = await getUpcomingSessionsForVendorSlug(vendor.slug);
+  const [bookingData, profile] = await Promise.all([
+    getUpcomingSessionsForVendorSlug(vendor.slug),
+    getVendorProfileBySlug(vendor.slug).catch(() => null),
+  ]);
+  const refundPolicy = profile
+    ? cancellationPolicyLabel(
+        profile.cancellation_policy,
+        profile.cancellation_hours,
+        profile.cancellation_refund_percent
+      )
+    : null;
   const sessions: SerializableSession[] =
     bookingData?.sessions?.map((s) => ({
       id: s.id,
@@ -56,7 +68,12 @@ export default async function VendorBookPage({ params }: PageProps) {
         <p className="mt-2 text-zinc-600">{vendor.name}</p>
 
         <div className="mt-8">
-          <VendorBookForm vendorSlug={slug} vendorName={vendor.name} sessions={sessions} />
+          <VendorBookForm
+            vendorSlug={slug}
+            vendorName={vendor.name}
+            sessions={sessions}
+            refundPolicy={refundPolicy}
+          />
         </div>
       </main>
       <Footer />
