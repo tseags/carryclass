@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { prisma } from "@/lib/db";
 import { getVendorBySlug } from "@/lib/vendors-db";
 import { getUpcomingSessionsForVendorSlug } from "@/lib/bookings-db";
 import { getVendorProfileBySlug } from "@/lib/onboarding-db";
@@ -12,9 +13,57 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+/**
+ * Directory slug can drift after publish (merge regroups on website/email).
+ * Booking inventory lives on the Prisma vendor keyed by the claimed slug — use
+ * that as a fallback so students can still book when the listing lookup misses.
+ */
+async function resolveBookableVendor(slug: string) {
+  const listing = await getVendorBySlug(slug);
+  if (listing) return listing;
+
+  try {
+    const bookingVendor = await prisma.vendor.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        type: true,
+        city: true,
+        county: true,
+        state: true,
+        countiesServed: true,
+        classTypes: true,
+        formats: true,
+        acceptsBookings: true,
+        createdAt: true,
+      },
+    });
+    if (!bookingVendor?.acceptsBookings) return null;
+    return {
+      id: bookingVendor.id,
+      slug: bookingVendor.slug,
+      name: bookingVendor.name,
+      type: bookingVendor.type === "company" ? ("company" as const) : ("instructor" as const),
+      city: bookingVendor.city,
+      county: bookingVendor.county,
+      state: bookingVendor.state,
+      countiesServed: bookingVendor.countiesServed,
+      classTypes: bookingVendor.classTypes as Array<"initial" | "renewal" | "both">,
+      formats: bookingVendor.formats as Array<"in-person" | "online" | "hybrid">,
+      acceptsBookings: true,
+      createdAt: bookingVendor.createdAt.toISOString().slice(0, 10),
+    };
+  } catch (error) {
+    console.error("[book] prisma vendor fallback failed", error);
+    return null;
+  }
+}
+
 export default async function VendorBookPage({ params }: PageProps) {
   const { slug } = await params;
-  const vendor = await getVendorBySlug(slug);
+  const vendor = await resolveBookableVendor(slug);
   if (!vendor) {
     notFound();
   }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { VendorProfile, VendorClassType, VendorCalendarClass } from "@/lib/onboarding-db";
 import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
+import { clearVendorSignupIntentCookie } from "@/lib/auth/signup-intent";
 
 const CLASS_TYPE_LABELS: Record<string, string> = {
   initial: "CCW Initial",
@@ -47,7 +48,10 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error?.trim() || "Failed to publish");
       }
-      router.push("/dashboard/vendor");
+      // Full navigation avoids soft-route + leftover signup-intent cookie sending
+      // instructors back to /instructors/claim after publish.
+      clearVendorSignupIntentCookie();
+      window.location.assign("/dashboard/vendor");
     } catch (err) {
       const message = err instanceof Error ? err.message.trim() : "";
       setError(

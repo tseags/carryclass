@@ -77,6 +77,40 @@ function trimOrNull(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/**
+ * Hosts that must never be written onto a directory listing `website_url`.
+ * Merge groups by website host first — publishing the platform URL would collapse
+ * unrelated instructors into one canonical slug and break claim/book links.
+ */
+const LISTING_WEBSITE_HOST_BLOCKLIST = new Set([
+  "getcarryclass.com",
+  "www.getcarryclass.com",
+  "localhost",
+  "127.0.0.1",
+]);
+
+/** Return a listing website, or null when missing / blocked platform host. */
+export function listingWebsiteOrNull(
+  value: string | null | undefined
+): string | null {
+  const trimmed = trimOrNull(value);
+  if (!trimmed) return null;
+  const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const host = new URL(withProto).hostname.toLowerCase().replace(/^www\./, "");
+    if (
+      LISTING_WEBSITE_HOST_BLOCKLIST.has(host) ||
+      host === "getcarryclass.com" ||
+      host.endsWith(".getcarryclass.com")
+    ) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  return trimmed;
+}
+
 function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
 }
@@ -181,7 +215,7 @@ export function buildListingPatch(
     vendor_description: trimOrNull(profile.bio),
     phone: trimOrNull(profile.phone),
     email: trimOrNull(profile.email),
-    website_url: trimOrNull(profile.website),
+    website_url: listingWebsiteOrNull(profile.website),
     address: trimOrNull(profile.address),
     price_16hr_full: pricing.price_16hr_full,
     price_8hr_renewal: pricing.price_8hr_renewal,

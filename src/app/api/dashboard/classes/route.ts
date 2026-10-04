@@ -7,6 +7,7 @@ import {
   getClassTypes,
   normalizeGunPricing,
 } from "@/lib/onboarding-db";
+import { syncLiveScheduleForPublishedVendor } from "@/lib/publish-vendor-live";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,15 @@ export async function POST(req: NextRequest) {
     }
 
     const classTypes = await getClassTypes(vendor.id);
+
+    try {
+      await syncLiveScheduleForPublishedVendor(vendor);
+    } catch (syncError) {
+      console.error(
+        "[api/dashboard/classes] live schedule sync failed after create:",
+        syncError
+      );
+    }
 
     return NextResponse.json({ class: created, classTypes }, { status: 201 });
   } catch (err) {

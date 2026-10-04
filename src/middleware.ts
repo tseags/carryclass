@@ -5,9 +5,15 @@ import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
 /** `/onboard` and subpaths only — must not match `/onboarding` */
 const isOnboardRoute = createRouteMatcher(["/onboard", "/onboard/(.*)"]);
-/** Clerk fallback after sign-up can land here instead of /instructors/claim */
+/**
+ * Clerk fallback after vendor sign-up can land on the generic dashboard/student
+ * onboarding routers instead of /instructors/claim. Do NOT match
+ * /dashboard/vendor — that is the real post-publish destination and must not
+ * bounce instructors back to claim while the signup-intent cookie is still set.
+ */
 const isVendorSignupMisroute = createRouteMatcher([
-  "/dashboard(.*)",
+  "/dashboard",
+  "/dashboard/student",
   "/onboarding",
   "/onboarding/student",
 ]);
@@ -30,7 +36,11 @@ export default clerkMiddleware(async (auth, req) => {
     isVendorSignupMisroute(req)
   ) {
     const res = NextResponse.redirect(new URL("/instructors/claim", req.url));
-    res.cookies.set(VENDOR_SIGNUP_INTENT_COOKIE, "", { maxAge: 0, path: "/" });
+    res.cookies.set(VENDOR_SIGNUP_INTENT_COOKIE, "", {
+      maxAge: 0,
+      path: "/",
+      sameSite: "lax",
+    });
     return res;
   }
 

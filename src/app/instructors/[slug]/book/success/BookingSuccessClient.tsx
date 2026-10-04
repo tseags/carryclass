@@ -66,11 +66,13 @@ export function BookingSuccessClient({ slug, sessionId }: Props) {
   }).format(new Date(data.startsAt));
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-6">
+    <div className="mx-auto inline-block max-w-full space-y-6 text-left">
+      <div className="w-fit max-w-full rounded-2xl border border-emerald-200 bg-emerald-50/80 px-5 py-4">
         <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">You're booked</p>
-        <h2 className="mt-2 text-xl font-bold text-zinc-900">{data.vendorName}</h2>
-        <p className="mt-1 text-zinc-700">{data.classTitle ?? "CCW class"} - {when}</p>
+        <h2 className="mt-2 whitespace-nowrap text-xl font-bold text-zinc-900">{data.vendorName}</h2>
+        <p className="mt-1 whitespace-nowrap text-zinc-700">
+          {data.classTitle ?? "CCW class"} - {when}
+        </p>
       </div>
 
       <Link href={`/instructors/${slug}`} className="btn-primary bg-secondary-2 small w-button inline-block w-full text-center">

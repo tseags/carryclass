@@ -187,6 +187,14 @@ describe("buildListingPatch", () => {
     expect(patch.accepts_bookings).toBe(false);
     expect(patch.stripe_connect_account_id).toBeNull();
   });
+
+  it("does not write the CarryClass platform URL onto listing website_url", () => {
+    const patch = buildListingPatch(
+      profile({ website: "https://www.getcarryclass.com" }),
+      [classType({ class_type: "initial", price: 300 })]
+    );
+    expect(patch.website_url).toBeNull();
+  });
 });
 
 describe("buildPrismaVendorData", () => {

@@ -4,7 +4,10 @@ import { VENDOR_DATA_CACHE_TAG } from "@/lib/vendors-db";
 /** Bust every cached surface that renders a published instructor listing. */
 export function revalidatePublishedVendorPaths(slug: string | null | undefined): void {
   const trimmed = slug?.trim();
-  if (trimmed) revalidatePath(`/instructors/${trimmed}`);
+  if (trimmed) {
+    revalidatePath(`/instructors/${trimmed}`);
+    revalidatePath(`/instructors/${trimmed}/book`);
+  }
   revalidateTag(VENDOR_DATA_CACHE_TAG, "max");
   revalidatePath("/sitemap.xml");
   revalidatePath("/");

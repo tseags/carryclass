@@ -8,6 +8,7 @@ import {
   type ClaimChannel,
 } from "@/lib/claim-db";
 import { VENDOR_ROLE } from "@/lib/auth/roles";
+import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
 
 export const runtime = "nodejs";
 
@@ -71,9 +72,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     ok: true,
     slug: listing.slug,
     redirectTo: "/onboard",
   });
+  // Claim complete — stop middleware from treating later /dashboard hits as signup misroutes.
+  res.cookies.set(VENDOR_SIGNUP_INTENT_COOKIE, "", { maxAge: 0, path: "/" });
+  return res;
 }

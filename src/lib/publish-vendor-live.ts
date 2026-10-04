@@ -3,10 +3,12 @@
  * Listing writes always go through DATABASE_URL (see vendor-data rules).
  */
 import { prisma } from "@/lib/db";
-import type {
-  VendorCalendarClass,
-  VendorClassType,
-  VendorProfile,
+import {
+  getCalendarClasses,
+  getClassTypes,
+  type VendorCalendarClass,
+  type VendorClassType,
+  type VendorProfile,
 } from "@/lib/onboarding-db";
 import {
   buildListingPatch,
@@ -16,6 +18,7 @@ import {
   parsePublishLiveSlugAllowlist,
   type SessionScaffoldInput,
 } from "@/lib/publish-vendor-live-map";
+import { revalidatePublishedVendorPaths } from "@/lib/publish-vendor-revalidate";
 import {
   findCarryClassSourceRowIdsForSlug,
   getVendorBySlug,
@@ -29,6 +32,7 @@ export {
   calendarClassesToSessions,
   deriveClassPricing,
   isSlugAllowedForPublishLiveSync,
+  listingWebsiteOrNull,
   parsePublishLiveSlugAllowlist,
 } from "@/lib/publish-vendor-live-map";
 export type {
@@ -39,12 +43,21 @@ export type {
   SessionScaffoldInput,
 } from "@/lib/publish-vendor-live-map";
 
+function sessionMatchKey(startsAt: Date, classType: string): string {
+  return `${startsAt.getTime()}|${classType}`;
+}
+
 async function upsertClassSessionsForVendor(
   vendorId: string,
   sessions: SessionScaffoldInput[]
-): Promise<{ created: number; updated: number }> {
+): Promise<{ created: number; updated: number; removed: number }> {
   let created = 0;
   let updated = 0;
+  let removed = 0;
+
+  const keepKeys = new Set(
+    sessions.map((s) => sessionMatchKey(s.startsAt, s.classType))
+  );
 
   for (const session of sessions) {
     const existing = await prisma.classSession.findFirst({
@@ -86,7 +99,26 @@ async function upsertClassSessionsForVendor(
     }
   }
 
-  return { created, updated };
+  // Drop future sessions that left the active calendar and have no bookings.
+  const now = new Date();
+  const existingFuture = await prisma.classSession.findMany({
+    where: { vendorId, startsAt: { gt: now } },
+    select: {
+      id: true,
+      startsAt: true,
+      classType: true,
+      enrolled: true,
+      _count: { select: { bookings: true } },
+    },
+  });
+  for (const row of existingFuture) {
+    if (keepKeys.has(sessionMatchKey(row.startsAt, row.classType))) continue;
+    if (row.enrolled > 0 || row._count.bookings > 0) continue;
+    await prisma.classSession.delete({ where: { id: row.id } });
+    removed += 1;
+  }
+
+  return { created, updated, removed };
 }
 
 export type PublishLiveResult = {
@@ -97,6 +129,7 @@ export type PublishLiveResult = {
   prismaVendorId: string | null;
   sessionsCreated: number;
   sessionsUpdated: number;
+  sessionsRemoved: number;
 };
 
 /**
@@ -130,6 +163,7 @@ export async function syncPublishedVendorToLive(input: {
         prismaVendorId: null,
         sessionsCreated: 0,
         sessionsUpdated: 0,
+        sessionsRemoved: 0,
       };
     }
   }
@@ -198,7 +232,7 @@ export async function syncPublishedVendorToLive(input: {
   const sessions = vendorData.acceptsBookings
     ? calendarClassesToSessions(input.calendarClasses, input.classTypes)
     : [];
-  const { created, updated } = await upsertClassSessionsForVendor(
+  const { created, updated, removed } = await upsertClassSessionsForVendor(
     prismaVendor.id,
     sessions
   );
@@ -210,5 +244,28 @@ export async function syncPublishedVendorToLive(input: {
     prismaVendorId: prismaVendor.id,
     sessionsCreated: created,
     sessionsUpdated: updated,
+    sessionsRemoved: removed,
   };
+}
+
+/**
+ * After dashboard schedule edits, push active calendar classes into Prisma
+ * bookable sessions for already-published vendors. No-op when unpublished.
+ */
+export async function syncLiveScheduleForPublishedVendor(
+  profile: VendorProfile
+): Promise<PublishLiveResult | null> {
+  if (!profile.is_published || !profile.slug?.trim()) return null;
+
+  const [classTypes, calendarClasses] = await Promise.all([
+    getClassTypes(profile.id),
+    getCalendarClasses(profile.id),
+  ]);
+  const result = await syncPublishedVendorToLive({
+    profile,
+    classTypes,
+    calendarClasses,
+  });
+  revalidatePublishedVendorPaths(profile.slug);
+  return result;
 }

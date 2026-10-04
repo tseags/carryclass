@@ -34,8 +34,8 @@ export default async function BookingSuccessPage({ params, searchParams }: PageP
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <main className="mx-auto max-w-lg px-4 pb-16 pt-[calc(var(--header-offset)+1.5rem)] sm:px-6">
-        <h1 className="text-2xl font-bold text-zinc-900">Booking confirmed</h1>
+      <main className="mx-auto max-w-4xl px-4 pb-16 pt-[calc(var(--header-offset)+1.5rem)] text-center sm:px-6">
+        <h1 className="text-2xl font-bold text-zinc-900">Booking confirmed.</h1>
         <div className="mt-8">
           <BookingSuccessClient slug={slug} sessionId={sessionId} />
         </div>

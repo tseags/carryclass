@@ -7,8 +7,21 @@ import {
   normalizeGunPricing,
   type GunPricing,
 } from "@/lib/onboarding-db";
+import { syncLiveScheduleForPublishedVendor } from "@/lib/publish-vendor-live";
 
 export const runtime = "nodejs";
+
+async function syncScheduleAfterMutation(vendor: Awaited<ReturnType<typeof getVendorProfile>>) {
+  if (!vendor) return;
+  try {
+    await syncLiveScheduleForPublishedVendor(vendor);
+  } catch (syncError) {
+    console.error(
+      "[api/dashboard/classes/[id]] live schedule sync failed:",
+      syncError
+    );
+  }
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -64,6 +77,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
 
+  await syncScheduleAfterMutation(vendor);
+
   return NextResponse.json({ class: updated });
 }
 
@@ -83,6 +98,7 @@ export async function DELETE(
 
   const { id } = await params;
   await cancelCalendarClass(id, vendor.id);
+  await syncScheduleAfterMutation(vendor);
 
   return NextResponse.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
-import { VENDOR_ROLE } from "@/lib/auth/roles";
+import { ensureVendorRole } from "@/lib/auth/ensure-vendor-role";
 import {
   getVendorProfile,
   getCalendarClasses,
@@ -32,14 +32,17 @@ export default async function VendorDashboardPage({
   }
 
   const user = await currentUser();
-  if (!user || user.publicMetadata.role !== VENDOR_ROLE) {
-    redirect("/dashboard");
+  if (!user) {
+    redirect("/sign-in?intent=vendor");
   }
 
   const vendor = await getVendorProfile(userId);
   if (!vendor?.is_published) {
     redirect("/onboard");
   }
+
+  // Published listing is enough; heal stale Clerk role so we don't bounce to /dashboard.
+  await ensureVendorRole(userId, user);
 
   const now = new Date();
 
