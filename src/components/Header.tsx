@@ -25,9 +25,7 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/ca", label: "Counties" },
-    isInstructor
-      ? { href: "/dashboard/vendor", label: "Dashboard" }
-      : { href: "/for-instructors", label: "For Instructors" },
+    { href: "/for-instructors", label: "For Instructors" },
   ];
 
   return (
@@ -62,37 +60,29 @@ export function Header() {
               data-nav-menu-open={mobileMenuOpen ? "" : undefined}
             >
               <ul role="list" className="header-nav-menu-list">
-                {navLinks.map(({ href, label }) => {
-                  const isCurrent =
-                    href === "/"
-                      ? pathname === "/"
-                      : href === "/dashboard/vendor"
-                        ? onDashboard
-                        : pathname === href || pathname.startsWith(`${href}/`);
-                  return (
-                    <li key={href} className="header-nav-list-item">
-                      {href === "/" ? (
-                        <a
-                          href="/"
-                          aria-current={isCurrent ? "page" : undefined}
-                          className={`header-nav-link w-nav-link ${isCurrent ? "w--current" : ""}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {label}
-                        </a>
-                      ) : (
-                        <Link
-                          href={href}
-                          aria-current={isCurrent ? "page" : undefined}
-                          className={`header-nav-link w-nav-link ${isCurrent ? "w--current" : ""}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {label}
-                        </Link>
-                      )}
-                    </li>
-                  );
-                })}
+                {navLinks.map(({ href, label }) => (
+                  <li key={href} className="header-nav-list-item">
+                    {href === "/" ? (
+                      <a
+                        href="/"
+                        aria-current={pathname === "/" ? "page" : undefined}
+                        className={`header-nav-link w-nav-link ${pathname === "/" ? "w--current" : ""}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={href}
+                        aria-current={pathname === href ? "page" : undefined}
+                        className={`header-nav-link w-nav-link ${pathname === href ? "w--current" : ""}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
                 <li className="header-nav-list-item show-in-tablet">
                   <Link
                     href="/instructors"
@@ -101,6 +91,18 @@ export function Header() {
                     Find Classes
                   </Link>
                 </li>
+                {isInstructor ? (
+                  <li className="header-nav-list-item show-in-tablet">
+                    <Link
+                      href="/dashboard/vendor"
+                      aria-current={onDashboard ? "page" : undefined}
+                      className={`header-nav-link w-nav-link ${onDashboard ? "w--current" : ""}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                ) : null}
                 <li className="header-nav-list-item show-in-tablet">
                   {user ? (
                     <SignOutButton redirectUrl="/" signOutOptions={{}} >
