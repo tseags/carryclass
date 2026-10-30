@@ -175,6 +175,9 @@ model Booking {
 
   classAmountCents   Int
   serviceFeeCents    Int @default(700)
+  /** Instructor pass-through fees captured when checkout was created. */
+  passThroughFees    Json?
+  passThroughCents   Int @default(0)
   totalAmountCents   Int
 
   status BookingStatus @default(PENDING)
@@ -185,4 +188,14 @@ model Booking {
   @@index([vendorId])
   @@index([classSessionId])
   @@index([status])
+}
+
+/// Fees quoted for a Checkout Session, copied onto Booking when payment completes.
+model CheckoutFeeSnapshot {
+  id                String   @id @default(cuid())
+  classSessionId    String
+  classAmountCents  Int
+  serviceFeeCents   Int
+  passThroughFees   Json
+  createdAt         DateTime @default(now())
 }

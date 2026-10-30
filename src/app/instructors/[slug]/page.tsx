@@ -19,6 +19,9 @@ import { vendorLocalBusinessJsonLd } from "@/lib/json-ld";
 import { JsonLd } from "@/components/JsonLd";
 import { buildVendorWebsiteUrl } from "@/lib/vendor-website-url";
 import { VendorWebsiteLink } from "@/components/VendorWebsiteLink";
+import { AvailableClasses } from "@/components/instructors/AvailableClasses";
+import { directoryCcwCards } from "@/lib/instructor-catalog";
+import { getOnboardingPublicCatalog } from "@/lib/public-instructor-classes";
 
 /** Cache public profiles for 24h — crawlers and repeat visitors avoid repeated full DB reads. */
 export const revalidate = 86400;
@@ -41,12 +44,6 @@ const TAB_CONFIG = [
 ] as const;
 
 type VendorTab = (typeof TAB_CONFIG)[number]["id"];
-type AvailableCourse = {
-  key: string;
-  title: string;
-  subtitle: string;
-  price: string;
-};
 
 function getCountyPillClassName(name: string) {
   const len = name.length;
@@ -106,73 +103,9 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
   const heroButtonClassName =
     "vendor-profile-hero-cta btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block self-start text-center !bg-[#c96442] !text-white hover:!bg-[#d97757] focus-visible:!bg-[#d97757]";
-  const classTypes = vendor.classTypes ?? [];
-  const pricingCardsRaw = [
-    vendor.priceInitial || classTypes.includes("initial") || classTypes.includes("both")
-      ? {
-          key: "initial",
-          value: `$${vendor.priceInitial ?? vendor.priceMax ?? vendor.priceMin ?? "—"}`,
-          description: "16hr Initial",
-        }
-      : null,
-    vendor.priceRenewal || classTypes.includes("renewal") || classTypes.includes("both")
-      ? {
-          key: "renewal",
-          value: `$${vendor.priceRenewal ?? vendor.priceMin ?? vendor.priceMax ?? "—"}`,
-          description: "8hr Renewal",
-        }
-      : null,
-    vendor.priceAddGun
-      ? {
-          key: "add-gun",
-          value: `$${vendor.priceAddGun}`,
-          description: "Add a gun",
-        }
-      : null,
-  ].filter((card): card is { key: string; value: string; description: string } => card !== null);
-
-  const pricingCards =
-    pricingCardsRaw.length > 0
-      ? pricingCardsRaw
-      : [
-          {
-            key: "contact-pricing",
-            value: "Contact",
-            description: "Call or email for current rates",
-          },
-        ];
-  const availableCourses: AvailableCourse[] = pricingCards.map((card) => {
-    if (card.key === "initial") {
-      return {
-        key: card.key,
-        title: "16-Hour Initial CCW Class",
-        subtitle: "For first-time CCW applicants. Covers safety, laws, handling, and live-fire qualification.",
-        price: card.value,
-      };
-    }
-    if (card.key === "renewal") {
-      return {
-        key: card.key,
-        title: "8-Hour Renewal CCW Class",
-        subtitle: "For existing permit holders. State-required refresher with live-fire qualification.",
-        price: card.value,
-      };
-    }
-    if (card.key === "add-gun") {
-      return {
-        key: card.key,
-        title: "Add a Gun to Permit",
-        subtitle: "Add additional firearms to your existing CCW permit.",
-        price: card.value,
-      };
-    }
-    return {
-      key: card.key,
-      title: "CCW Class",
-      subtitle: card.description,
-      price: card.value,
-    };
-  });
+  const publishedCatalog = await getOnboardingPublicCatalog(vendor.slug);
+  const profileCcw = publishedCatalog ? publishedCatalog.ccw : directoryCcwCards(vendor);
+  const profileOther = publishedCatalog?.other ?? [];
   const tabHref = (tab: VendorTab) => `/instructors/${vendor.slug}?tab=${tab}`;
   const aboutIntro = vendor.description
     ? vendor.description
@@ -340,32 +273,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     )}
                   </div>
 
-                  <div>
-                    <h3 className="text-[22px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[40px]">Available Classes &amp; Prices</h3>
-                    <div className="mt-5 space-y-3">
-                      {availableCourses.map((course) => (
-                        <article
-                          key={course.key}
-                          className="group flex cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-4 py-3 shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:gap-4 sm:px-5 sm:py-3"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-[15px] font-semibold leading-[1.25] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[16px]">
-                              {course.title}
-                            </h4>
-                            {/* On phones the subtitle wraps to ≤2 lines so the
-                                full sentence is readable; from `sm:` it stays
-                                on a single ellipsised line for the desktop look. */}
-                            <p className="mt-0.5 text-[12px] leading-[1.35] text-[#77766f] line-clamp-2 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[13px]">
-                              {course.subtitle}
-                            </p>
-                          </div>
-                          <p className="shrink-0 text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[26px]">
-                            {course.price}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
+                  <AvailableClasses slug={vendor.slug} ccw={profileCcw} other={profileOther} />
                 </section>
               )}
 

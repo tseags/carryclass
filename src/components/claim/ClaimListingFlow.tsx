@@ -218,13 +218,13 @@ export function ClaimListingFlow() {
           }
         : step === "done"
           ? {
-              title: "Listing claimed",
+              title: "Profile Claimed.",
               subtitle: "Redirecting you to onboarding…",
             }
           : {
-              title: "Claim your CCW listing",
+              title: "Claim your instructor profile.",
               subtitle:
-                "Search for your sheriff-approved listing. We'll verify with the email or phone already on it.",
+                "We already have all sheriff-approved instructors listed but need you to verify ownership with the email or phone number on file.",
             };
 
   const showSmsNote =

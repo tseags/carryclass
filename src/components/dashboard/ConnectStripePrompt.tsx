@@ -23,7 +23,7 @@ export function ConnectStripeBanner({ error }: { error?: string | null }) {
         </div>
         <a
           href={STRIPE_CONNECT_HREF}
-          className="shrink-0 rounded-lg bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white hover:bg-[#a53a0c] transition-colors"
+          className="shrink-0 rounded-lg !bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white !no-underline hover:!bg-[#a53a0c] transition-colors"
         >
           Connect Stripe →
         </a>
@@ -60,7 +60,7 @@ export function ConnectStripeNotice({
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <a
           href={STRIPE_CONNECT_HREF}
-          className="rounded-lg bg-[#C1440E] px-3 py-1.5 text-sm font-medium !text-white hover:bg-[#a53a0c] transition-colors"
+          className="rounded-lg !bg-[#C1440E] px-3 py-1.5 text-sm font-medium !text-white !no-underline hover:!bg-[#a53a0c] transition-colors"
         >
           Connect Stripe
         </a>

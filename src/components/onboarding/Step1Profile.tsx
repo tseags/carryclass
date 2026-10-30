@@ -11,7 +11,6 @@ const BADGE_OPTIONS = [
   "NRA Certified",
   "USCCA Certified",
   "Veteran Instructor",
-  "Women-Friendly",
   "Spanish Speaking",
   "Law Enforcement Background",
 ];
@@ -496,22 +495,49 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           className="input-field w-full resize-none"
           placeholder="Tell students about your experience, certifications, and teaching style..."
         />
-        <div className="mt-2">
+        <div className="mt-2 flex items-center gap-1.5">
           <button
             type="button"
             onClick={handlePolish}
             disabled={!form.bio.trim() || bioLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md border border-zinc-300 bg-zinc-100 text-zinc-700 shadow-sm hover:bg-zinc-200/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {bioLoading ? (
               <Spinner />
             ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
+                />
               </svg>
             )}
-            Polish
+            Polish with AI
           </button>
+          <span className="relative inline-flex group">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full p-0.5 text-zinc-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+              aria-label="About Polish with AI"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 bottom-full z-10 mb-2 w-52 -translate-x-1/2 rounded-md bg-zinc-800 px-2.5 py-1.5 text-xs leading-snug text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+            >
+              Use AI to rewrite or optimize your writing.
+            </span>
+          </span>
         </div>
         {bioError && (
           <p className="mt-2 text-sm text-red-600">{bioError}</p>
@@ -564,6 +590,8 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, photoUrl: "" }))}
+                  aria-label="Remove profile photo"
+                  style={{ color: "#ffffff" }}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-zinc-700 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-500 transition-colors"
                 >
                   ×
@@ -616,6 +644,8 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                 <button
                   type="button"
                   onClick={() => removeGalleryPhoto(url)}
+                  aria-label="Remove gallery photo"
+                  style={{ color: "#ffffff" }}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-zinc-700 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-500 transition-colors"
                 >
                   ×

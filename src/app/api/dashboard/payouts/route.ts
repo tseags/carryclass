@@ -2,15 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile } from "@/lib/onboarding-db";
 import { getStripe } from "@/lib/stripe";
+import { buildSamplePayouts, paymentsSampleEnabled } from "@/lib/payments-sample";
 
 export const runtime = "nodejs";
 
-/**
- * Payout history for the connected Stripe account.
- *
- * TODO: this currently returns a single page (up to 20 payouts). Add cursor
- * pagination + a dedicated "payout history" screen before linking it publicly.
- */
+/** Most recent 20 payouts for the connected Stripe account (Payments tab). */
 export async function GET() {
   const { userId } = await auth();
   if (!userId) {
@@ -20,6 +16,10 @@ export async function GET() {
   const vendor = await getVendorProfile(userId);
   if (!vendor) {
     return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+  }
+
+  if (paymentsSampleEnabled()) {
+    return NextResponse.json({ connected: true, sample: true, payouts: buildSamplePayouts() });
   }
 
   if (!vendor.stripe_account_id) {

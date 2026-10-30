@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
+import { parsePassThroughSnapshot } from "@/lib/instructor-catalog";
 import { sendBookingConfirmationEmail } from "@/lib/booking-confirmation-email";
 import { getStripe } from "@/lib/stripe";
 
@@ -38,10 +39,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    const classAmountCents = parseInt(md.classAmountCents ?? "0", 10);
-    const serviceFeeCents = md.serviceFeeCents
-      ? parseInt(md.serviceFeeCents, 10)
-      : calculatePlatformServiceFeeCents(classAmountCents);
+    let classAmountCents = parseInt(md.classAmountCents ?? "0", 10);
+    let serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
+    let passThroughFees: Prisma.InputJsonValue | typeof Prisma.JsonNull = Prisma.JsonNull;
+    let passThroughCents = 0;
+    if (md.feeSnapshotId) {
+      const snap = await prisma.checkoutFeeSnapshot.findUnique({
+        where: { id: md.feeSnapshotId },
+      });
+      if (snap && snap.classSessionId === md.classSessionId) {
+        classAmountCents = snap.classAmountCents;
+        serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
+        const lines = parsePassThroughSnapshot(snap.passThroughFees);
+        if (lines.length) passThroughFees = lines as Prisma.InputJsonValue;
+        passThroughCents = lines.reduce((sum, line) => sum + line.amountCents, 0);
+      }
+    }
     const pi = session.payment_intent;
     const paymentIntentId =
       typeof pi === "string" ? pi : pi && "id" in pi ? pi.id : null;
@@ -70,7 +83,10 @@ export async function POST(req: Request) {
             clerkUserId: md.clerkUserId || null,
             classAmountCents,
             serviceFeeCents,
-            totalAmountCents: session.amount_total ?? classAmountCents + serviceFeeCents,
+            passThroughFees,
+            passThroughCents,
+            totalAmountCents:
+              session.amount_total ?? classAmountCents + passThroughCents + serviceFeeCents,
             status: "PAID",
             paidAt: new Date(),
           },

@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
+import { Prisma } from "@prisma/client";
 import {
-  calculatePlatformServiceFeeCents,
-  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
-} from "@/lib/booking-constants";
+  applicableFeeSnapshots,
+  buildCheckoutAmounts,
+  buildCheckoutLines,
+} from "@/lib/instructor-catalog";
+import { getOnboardingPublicCatalog } from "@/lib/public-instructor-classes";
 import { normalizeListingPhone } from "@/lib/claim-contacts";
 
 export const runtime = "nodejs";
@@ -100,8 +103,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This class has already started." }, { status: 400 });
   }
 
+  let catalog: Awaited<ReturnType<typeof getOnboardingPublicCatalog>> = null;
+  try {
+    catalog = await getOnboardingPublicCatalog(classSession.vendor.slug);
+  } catch (error) {
+    console.error("[bookings/checkout] class catalog failed", error);
+    return NextResponse.json(
+      { error: "Could not load this class. Try again." },
+      { status: 503 }
+    );
+  }
+  if (catalog) {
+    const offered = [...catalog.ccw, ...catalog.other];
+    if (offered.length > 0 && !offered.some((card) => card.key === classSession.classType)) {
+      return NextResponse.json({ error: "This class is not available." }, { status: 400 });
+    }
+  }
+
   const classAmountCents = classSession.priceCents;
-  const serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
+  const feeRules = catalog?.fees ?? [];
+  const passThrough = applicableFeeSnapshots(feeRules, classSession.classType);
+  const amounts = buildCheckoutAmounts(classAmountCents, passThrough);
+  const lines = buildCheckoutLines({
+    tuitionName: `${classSession.vendor.name} — ${
+      classSession.title ??
+      (classSession.classType === "initial"
+        ? "16hr Initial CCW"
+        : classSession.classType === "add_a_gun"
+          ? "Add a gun"
+          : classSession.classType === "renewal"
+            ? "8hr Renewal"
+            : "Class")
+    }`,
+    tuitionDescription: `Class date: ${classSession.startsAt.toISOString()}`,
+    feeNotes: feeRules.map((fee) => ({ id: fee.id, note: fee.note })),
+    amounts,
+  }).filter((line) => line.unitAmountCents > 0);
+
+  const snapshot = await prisma.checkoutFeeSnapshot.create({
+    data: {
+      classSessionId: classSession.id,
+      classAmountCents: amounts.classTuitionCents,
+      serviceFeeCents: amounts.platformFeeCents,
+      passThroughFees: amounts.passThrough as Prisma.InputJsonValue,
+    },
+  });
 
   const origin =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
@@ -109,39 +155,24 @@ export async function POST(req: Request) {
 
   const stripe = getStripe();
 
-  const sessionTitle =
-    classSession.title ??
-    (classSession.classType === "initial" ? "16hr Initial CCW" : "8hr Renewal");
-
-  const checkoutSession = await stripe.checkout.sessions.create({
+  let checkoutSession;
+  try {
+    checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
     customer_email: customerEmail,
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `${classSession.vendor.name} — ${sessionTitle}`,
-            description: `Class date: ${classSession.startsAt.toISOString()}`,
-          },
-          unit_amount: classAmountCents,
+    line_items: lines.map((line) => ({
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: line.name,
+          ...(line.description ? { description: line.description } : {}),
         },
-        quantity: 1,
+        unit_amount: line.unitAmountCents,
       },
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "CCW Directory booking service fee",
-            description: `Non-refundable ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform service fee`,
-          },
-          unit_amount: serviceFeeCents,
-        },
-        quantity: 1,
-      },
-    ],
+      quantity: 1,
+    })),
     payment_intent_data: {
-      application_fee_amount: serviceFeeCents,
+      application_fee_amount: amounts.platformFeeCents,
       transfer_data: {
         destination: classSession.vendor.stripeConnectAccountId,
       },
@@ -156,10 +187,17 @@ export async function POST(req: Request) {
       customerEmail,
       customerPhone,
       clerkUserId: userId ?? "",
-      classAmountCents: String(classAmountCents),
-      serviceFeeCents: String(serviceFeeCents),
+      classAmountCents: String(amounts.classTuitionCents),
+      serviceFeeCents: String(amounts.platformFeeCents),
+      passThroughCents: String(amounts.passThroughCents),
+      feeSnapshotId: snapshot.id,
     },
   });
+  } catch (error) {
+    await prisma.checkoutFeeSnapshot.delete({ where: { id: snapshot.id } }).catch(() => undefined);
+    console.error("[bookings/checkout] stripe session failed", error);
+    return NextResponse.json({ error: "Could not create checkout session." }, { status: 500 });
+  }
 
   if (!checkoutSession.url) {
     return NextResponse.json(

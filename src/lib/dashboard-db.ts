@@ -12,6 +12,7 @@
  */
 import { countySlugFromClassLocation } from "@/data/counties";
 import { prisma } from "@/lib/db";
+import { addDays, pacificDayKey, pacificHour } from "@/lib/payments-time";
 import { isPrismaConnectionError } from "@/lib/prisma-connection-error";
 import { getStripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -56,6 +57,40 @@ export interface DashboardPayout {
   connected: boolean;
   lastAmountCents: number | null;
   lastPayoutDate: string | null;
+}
+
+export type DashboardPaymentStatus = "PENDING" | "PAID" | "CANCELLED" | "REFUNDED";
+
+/** One booking as seen by the Payments tab. Money is class tuition only (no platform fee). */
+export interface DashboardPaymentRow {
+  id: string;
+  status: DashboardPaymentStatus;
+  createdAt: string;
+  paidAt: string | null;
+  classStartsAt: string | null;
+  classType: string | null;
+  classTitle: string | null;
+  studentName: string;
+  classAmountCents: number;
+  /** Refunded tuition, capped at `classAmountCents` (the service fee is non-refundable). */
+  refundedClassCents: number;
+  refundedAt: string | null;
+}
+
+export interface DashboardPayments {
+  connected: boolean;
+  fetchedAt: string;
+  today: { dayKey: string; tuitionCents: number; hourlyCents: number[] };
+  yesterday: { tuitionCents: number };
+  /** Null when Stripe is disconnected or the balance lookup failed. */
+  balance: { availableCents: number; pendingCents: number } | null;
+  /** True when at least one refund amount fell back to full tuition. */
+  refundsEstimated: boolean;
+  /** True when the row cap was hit and older history was dropped. */
+  truncated: boolean;
+  payments: DashboardPaymentRow[];
+  /** Local preview only. These rows are not real bookings. */
+  sample?: boolean;
 }
 
 /** Per-template-type send counts, keyed by template_type (e.g. "confirmation"). */
@@ -369,13 +404,7 @@ export async function getEmailMetrics(vendorId: string): Promise<DashboardEmailM
   }
 }
 
-/**
- * Last payout for the connected Stripe account.
- *
- * TODO: full payout history (with pagination) is not implemented yet — this
- * returns only the most recent payout for the Payments widget. Wire a paginated
- * `/api/dashboard/payouts` consumer when the "View payout history" screen ships.
- */
+/** Most recent payout for the connected Stripe account (Overview payments card). */
 export async function getDashboardPayout(
   stripeAccountId: string | null
 ): Promise<DashboardPayout> {
@@ -399,4 +428,201 @@ export async function getDashboardPayout(
     // Account is connected but payout lookup failed — still report connected.
     return { connected: true, lastAmountCents: null, lastPayoutDate: null };
   }
+}
+
+/** 24 months so the 12-month range can compare against the previous 12. */
+const PAYMENTS_HISTORY_DAYS = 731;
+const PAYMENTS_ROW_CAP = 5000;
+const REFUND_LOOKUP_CAP = 200;
+const REFUND_LOOKUP_CONCURRENCY = 8;
+
+const PAYMENT_STATUSES = new Set<DashboardPaymentStatus>(["PENDING", "PAID", "CANCELLED", "REFUNDED"]);
+
+/**
+ * Booking ledger + Stripe balance for the Payments tab.
+ *
+ * Checkout uses destination charges, so PaymentIntents and their refunds live on
+ * the platform account; only balance and payouts are read from the connected
+ * account. Stripe failures degrade to estimates instead of failing the page.
+ */
+export async function getDashboardPayments(
+  slug: string | null,
+  stripeAccountId: string | null
+): Promise<DashboardPayments> {
+  const now = new Date();
+  const connected = Boolean(stripeAccountId?.trim());
+  const [rows, balance] = await Promise.all([
+    loadPaymentRows(slug, now),
+    connected ? loadConnectedBalance(stripeAccountId!) : Promise.resolve(null),
+  ]);
+
+  const { payments, refundsEstimated } = await attachRefunds(rows.payments);
+
+  const todayKey = pacificDayKey(now);
+  const yesterdayKey = addDays(todayKey, -1);
+  const hourlyCents = Array.from({ length: 24 }, () => 0);
+  let todayCents = 0;
+  let yesterdayCents = 0;
+  for (const p of payments) {
+    if (!p.paidAt || p.status === "PENDING") continue;
+    const key = pacificDayKey(p.paidAt);
+    if (key === todayKey) {
+      todayCents += p.classAmountCents;
+      hourlyCents[pacificHour(p.paidAt)] += p.classAmountCents;
+    } else if (key === yesterdayKey) {
+      yesterdayCents += p.classAmountCents;
+    }
+  }
+
+  return {
+    connected,
+    fetchedAt: now.toISOString(),
+    today: { dayKey: todayKey, tuitionCents: todayCents, hourlyCents },
+    yesterday: { tuitionCents: yesterdayCents },
+    balance,
+    refundsEstimated,
+    truncated: rows.truncated,
+    payments,
+  };
+}
+
+async function loadPaymentRows(
+  slug: string | null,
+  now: Date
+): Promise<{ payments: RowWithIntent[]; truncated: boolean }> {
+  const vendorId = await resolvePrismaVendorId(slug);
+  if (!vendorId) return { payments: [], truncated: false };
+
+  const since = new Date(now.getTime() - PAYMENTS_HISTORY_DAYS * 86_400_000);
+  try {
+    const rows = await prisma.booking.findMany({
+      where: {
+        vendorId,
+        OR: [
+          { createdAt: { gte: since } },
+          { status: "PAID", classSession: { startsAt: { gt: now } } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: PAYMENTS_ROW_CAP + 1,
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        paidAt: true,
+        customerName: true,
+        classAmountCents: true,
+        stripePaymentIntentId: true,
+        classSession: { select: { startsAt: true, title: true, classType: true } },
+      },
+    });
+
+    const truncated = rows.length > PAYMENTS_ROW_CAP;
+    const payments = rows.slice(0, PAYMENTS_ROW_CAP).map((row): RowWithIntent => {
+      const status = PAYMENT_STATUSES.has(row.status as DashboardPaymentStatus)
+        ? (row.status as DashboardPaymentStatus)
+        : "PENDING";
+      return {
+        id: row.id,
+        status,
+        createdAt: row.createdAt.toISOString(),
+        paidAt: row.paidAt?.toISOString() ?? null,
+        classStartsAt: row.classSession?.startsAt?.toISOString() ?? null,
+        classType: row.classSession?.classType?.trim().toLowerCase() || null,
+        classTitle: row.classSession?.title ?? null,
+        studentName: row.customerName?.trim() || "Student",
+        classAmountCents: row.classAmountCents,
+        refundedClassCents: 0,
+        refundedAt: null,
+        paymentIntentId: row.stripePaymentIntentId,
+      };
+    });
+    return { payments, truncated };
+  } catch (error) {
+    if (isPrismaConnectionError(error)) return { payments: [], truncated: false };
+    console.error("[dashboard-db] loadPaymentRows", error);
+    return { payments: [], truncated: false };
+  }
+}
+
+async function loadConnectedBalance(
+  stripeAccountId: string
+): Promise<DashboardPayments["balance"]> {
+  try {
+    const balance = await getStripe().balance.retrieve({}, { stripeAccount: stripeAccountId });
+    const sumUsd = (entries: { amount: number; currency: string }[]) =>
+      entries.filter((e) => e.currency === "usd").reduce((sum, e) => sum + e.amount, 0);
+    return { availableCents: sumUsd(balance.available), pendingCents: sumUsd(balance.pending) };
+  } catch (error) {
+    console.error("[dashboard-db] loadConnectedBalance", error);
+    return null;
+  }
+}
+
+type RowWithIntent = DashboardPaymentRow & { paymentIntentId: string | null };
+
+async function attachRefunds(
+  rows: RowWithIntent[]
+): Promise<{ payments: DashboardPaymentRow[]; refundsEstimated: boolean }> {
+  let refundsEstimated = false;
+  const refunded = rows.filter((r) => r.status === "REFUNDED");
+  const lookups = refunded.filter((r) => r.paymentIntentId).slice(0, REFUND_LOOKUP_CAP);
+  const results = new Map<string, { cents: number; at: string | null }>();
+
+  let stripe: ReturnType<typeof getStripe> | null = null;
+  try {
+    if (lookups.length > 0) stripe = getStripe();
+  } catch (error) {
+    console.error("[dashboard-db] attachRefunds", error);
+  }
+
+  if (stripe) {
+    for (let i = 0; i < lookups.length; i += REFUND_LOOKUP_CONCURRENCY) {
+      const batch = lookups.slice(i, i + REFUND_LOOKUP_CONCURRENCY);
+      await Promise.all(
+        batch.map(async (row) => {
+          try {
+            const list = await stripe!.refunds.list({
+              payment_intent: row.paymentIntentId!,
+              limit: 20,
+            });
+            const counted = list.data.filter(
+              (r) => r.status === "succeeded" || r.status === "pending"
+            );
+            const cents = counted.reduce((sum, r) => sum + r.amount, 0);
+            const latest = counted.reduce((max, r) => Math.max(max, r.created), 0);
+            results.set(row.id, {
+              cents,
+              at: latest ? new Date(latest * 1000).toISOString() : null,
+            });
+          } catch (error) {
+            console.error("[dashboard-db] refunds.list", row.id, error);
+          }
+        })
+      );
+    }
+  }
+
+  const payments = rows.map((withIntent): DashboardPaymentRow => {
+    const { paymentIntentId, ...row } = withIntent;
+    if (row.status !== "REFUNDED" || !paymentIntentId) {
+      if (row.status === "REFUNDED") {
+        refundsEstimated = true;
+        return { ...row, refundedClassCents: row.classAmountCents };
+      }
+      return row;
+    }
+    const found = results.get(row.id);
+    if (!found || found.cents === 0) {
+      refundsEstimated = true;
+      return { ...row, refundedClassCents: row.classAmountCents };
+    }
+    return {
+      ...row,
+      refundedClassCents: Math.min(found.cents, row.classAmountCents),
+      refundedAt: found.at,
+    };
+  });
+
+  return { payments, refundsEstimated };
 }

@@ -16,6 +16,7 @@ import {
 import { filterVendors } from "@/lib/filter-vendors";
 import { applyListingSort } from "@/lib/vendor-listing-sort";
 import {
+  canonicalSlugBySourceRowId,
   findSourceRowIdsForCanonicalSlug,
   mergeCanonicalVendors,
 } from "@/lib/merge-canonical-vendors";
@@ -1380,6 +1381,13 @@ export async function findCarryClassSourceRowIdsForSlug(
   return findSourceRowIdsForCanonicalSlug(mapped, slug, {
     overrides: VENDOR_MERGE_OVERRIDES,
   });
+}
+
+/** Public `/instructors/[slug]` slug keyed by raw `carry_class_vendor_data.id`. */
+export async function getCarryClassDirectorySlugBySourceRowId(): Promise<Map<string, string>> {
+  const rows = await fetchRawVendorRowsViaDatabase();
+  const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
+  return canonicalSlugBySourceRowId(mapped, { overrides: VENDOR_MERGE_OVERRIDES });
 }
 
 /**

@@ -448,6 +448,20 @@ export function findSourceRowIdsForCanonicalSlug(
   return [];
 }
 
+/** Public directory slug for every source row id that survives the merge. */
+export function canonicalSlugBySourceRowId(
+  sourceVendors: Vendor[],
+  options: MergeCanonicalVendorsOptions = {}
+): Map<string, string> {
+  const overrides = options.overrides ?? {};
+  const result = new Map<string, string>();
+  for (const [key, group] of groupSourceVendors(sourceVendors, overrides).entries()) {
+    const { slug } = mergeGroup(key, group, overrides);
+    for (const v of group) if (v.id) result.set(v.id, slug);
+  }
+  return result;
+}
+
 /**
  * Human label for a deduped contact block, using the singular "County" word per
  * the design spec (e.g. "San Diego & Orange County", "San Diego, Orange & LA County").

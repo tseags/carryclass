@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isCustomClassKey } from "@/lib/instructor-catalog";
 import type { VendorCalendarClass, VendorClassType } from "@/lib/onboarding-db";
 import { Drawer } from "./Drawer";
 import { LocationInput } from "./LocationInput";
@@ -159,12 +160,18 @@ const labelClass = "mb-1.5 block text-xs font-medium text-gray-600";
 export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
   // Always offer the three canonical types; merge in the vendor's own rows for
   // price defaults, but never drop a type just because it isn't active yet.
-  const allClassTypes: VendorClassType[] = CANONICAL_CLASS_TYPES.map((key) => {
-    const existing = classTypes.find((ct) => ct.class_type === key);
-    return (
-      existing ?? { id: key, vendor_id: "", class_type: key, price: 0, is_active: true }
-    );
-  });
+  // Active custom classes are appended with their saved price as the default.
+  const allClassTypes: VendorClassType[] = [
+    ...CANONICAL_CLASS_TYPES.map((key) => {
+      const existing = classTypes.find((ct) => ct.class_type === key);
+      return (
+        existing ?? { id: key, vendor_id: "", class_type: key, price: 0, is_active: true }
+      );
+    }),
+    ...classTypes
+      .filter((ct) => ct.is_active && isCustomClassKey(ct.class_type))
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+  ];
 
   const [recurrence, setRecurrence] = useState<Recurrence>("one-time");
   const [date, setDate] = useState("");
@@ -245,6 +252,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
       const endDt = new Date(startDt.getTime() + duration * 60000);
       const recurrenceRule = buildRecurrenceRule(recurrence, date, endDate);
       const isAddAGun = classType === "add_a_gun";
+      const selectedType = allClassTypes.find((ct) => ct.class_type === classType);
       const classroom = location.trim();
       const range = sameLocation ? classroom : rangeLocation.trim();
 
@@ -253,7 +261,9 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           class_type: classType,
-          title: CLASS_TYPE_LABELS[classType] ?? classType,
+          title: isCustomClassKey(classType)
+            ? selectedType?.display_name?.trim() || "Class"
+            : CLASS_TYPE_LABELS[classType] ?? classType,
           description: description.trim(),
           location: classroom,
           range_location: range,
@@ -392,14 +402,13 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             onChange={(e) => {
               const val = e.target.value;
               setClassType(val);
-              const next = priceForType(val);
-              if (next) setPrice(next);
+              if (val !== "add_a_gun") setPrice(priceForType(val));
             }}
             className={inputClass}
           >
             {allClassTypes.map((ct) => (
               <option key={ct.class_type} value={ct.class_type}>
-                {CLASS_TYPE_LABELS[ct.class_type] ?? ct.class_type}
+                {CLASS_TYPE_LABELS[ct.class_type] ?? ct.display_name?.trim() ?? "Other class"}
               </option>
             ))}
           </select>

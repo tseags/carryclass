@@ -6,6 +6,7 @@ import {
   getVendorProfile,
   getCalendarClasses,
   getClassTypes,
+  getCheckoutFees,
   getEmailTemplates,
   type VendorEmailTemplate,
 } from "@/lib/onboarding-db";
@@ -46,10 +47,11 @@ export default async function VendorDashboardPage({
 
   const now = new Date();
 
-  const [allClasses, classTypes, templates, reviews, rawRegistrations, stats, payout, emailMetrics, registrationCounts] =
+  const [allClasses, classTypes, checkoutFees, templates, reviews, rawRegistrations, stats, payout, emailMetrics, registrationCounts] =
     await Promise.all([
       getCalendarClasses(vendor.id),
       getClassTypes(vendor.id),
+      getCheckoutFees(vendor.id).catch(() => []),
       getEmailTemplates(vendor.id),
       getDashboardReviews(vendor.slug),
       getDashboardRegistrations(vendor.slug),
@@ -83,6 +85,7 @@ export default async function VendorDashboardPage({
         firstName={firstName}
         classes={upcomingClasses}
         classTypes={classTypes}
+        checkoutFees={checkoutFees}
         registrations={registrations}
         reviews={reviews}
         templates={templateMap}

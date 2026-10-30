@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { VendorProfile, VendorClassType, VendorCalendarClass } from "@/lib/onboarding-db";
+import type { VendorProfile, VendorClassType, VendorCalendarClass, VendorCheckoutFee } from "@/lib/onboarding-db";
+import { isCanonicalClassType, isCustomClassKey } from "@/lib/instructor-catalog";
 import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
 import { clearVendorSignupIntentCookie } from "@/lib/auth/signup-intent";
 
@@ -25,14 +26,22 @@ interface Props {
   vendor: VendorProfile;
   classTypes: VendorClassType[];
   calendarClasses: VendorCalendarClass[];
+  checkoutFees?: VendorCheckoutFee[];
 }
 
-export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
+export function Step6Review({ vendor, classTypes, calendarClasses, checkoutFees = [] }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
 
-  const activeTypes = classTypes.filter((ct) => ct.is_active);
+  const activeTypes = classTypes.filter(
+    (ct) => ct.is_active && isCanonicalClassType(ct.class_type)
+  );
+  const otherClasses = classTypes
+    .filter((ct) => isCustomClassKey(ct.class_type))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const activeOther = otherClasses.filter((ct) => ct.is_active);
+  const activeFees = checkoutFees.filter((fee) => fee.is_active);
   const activeClasses = calendarClasses.filter((c) => c.is_active);
 
   async function handlePublish() {
@@ -119,6 +128,49 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
         ) : (
           <p className="text-sm text-zinc-400">No class types configured</p>
         )}
+        <p className="mt-3 text-sm text-zinc-600">
+          Every class includes the CarryClass 6% transaction fee on the class price.
+        </p>
+      </SummaryCard>
+
+      <SummaryCard title="Other classes" editHref="/onboard/step/2">
+        {activeOther.length > 0 ? (
+          <div className="space-y-1">
+            {activeOther.map((ct) => (
+              <div key={ct.id} className="flex justify-between items-center gap-3">
+                <span className="text-sm text-zinc-700">
+                  {ct.display_name?.trim() || "Other class"}
+                </span>
+                <span className="text-sm font-medium text-zinc-800">
+                  ${Number(ct.price).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">None added</p>
+        )}
+      </SummaryCard>
+
+      <SummaryCard title="Fees students also pay" editHref="/onboard/step/2">
+        {activeFees.length > 0 ? (
+          <div className="space-y-1">
+            {activeFees.map((fee) => (
+              <div key={fee.id} className="flex justify-between items-center gap-3">
+                <span className="text-sm text-zinc-700">{fee.name}</span>
+                <span className="text-sm font-medium text-zinc-800">
+                  ${Number(fee.amount).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">None added</p>
+        )}
+        <p className="mt-3 text-sm text-zinc-600">
+          These are added on top of the class price. The 6% CarryClass transaction fee still applies
+          to every class and is not taken out of these fees.
+        </p>
       </SummaryCard>
 
       {/* Schedule */}
@@ -202,7 +254,7 @@ export function Step6Review({ vendor, classTypes, calendarClasses }: Props) {
           {publishing && <Spinner />}
           {publishing ? "Publishing…" : "Publish My Listing"}
         </button>
-        <p className="text-xs text-center text-zinc-400 mt-3">
+        <p className="text-xs text-center text-zinc-400" style={{ marginTop: "1.5rem" }}>
           Your listing will be visible to students on CarryClass after publishing.
         </p>
       </div>

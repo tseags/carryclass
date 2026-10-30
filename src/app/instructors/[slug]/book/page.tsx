@@ -7,10 +7,13 @@ import { getVendorBySlug } from "@/lib/vendors-db";
 import { getUpcomingSessionsForVendorSlug } from "@/lib/bookings-db";
 import { getVendorProfileBySlug } from "@/lib/onboarding-db";
 import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
+import { bookChoiceLabel, directoryCcwCards } from "@/lib/instructor-catalog";
+import { getOnboardingPublicCatalog } from "@/lib/public-instructor-classes";
 import { VendorBookForm, type SerializableSession } from "./VendorBookForm";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ class?: string }>;
 }
 
 /**
@@ -61,8 +64,9 @@ async function resolveBookableVendor(slug: string) {
   }
 }
 
-export default async function VendorBookPage({ params }: PageProps) {
+export default async function VendorBookPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const requestedClass = (await searchParams)?.class?.trim() || null;
   const vendor = await resolveBookableVendor(slug);
   if (!vendor) {
     notFound();
@@ -73,13 +77,25 @@ export default async function VendorBookPage({ params }: PageProps) {
     redirect(`/instructors/${vendor.slug}`);
   }
   if (vendor.slug !== slug) {
-    permanentRedirect(`/instructors/${vendor.slug}/book`);
+    const classQuery = requestedClass ? `?class=${encodeURIComponent(requestedClass)}` : "";
+    permanentRedirect(`/instructors/${vendor.slug}/book${classQuery}`);
   }
 
-  const [bookingData, profile] = await Promise.all([
+  const [bookingData, profile, catalog] = await Promise.all([
     getUpcomingSessionsForVendorSlug(vendor.slug),
     getVendorProfileBySlug(vendor.slug).catch(() => null),
+    getOnboardingPublicCatalog(vendor.slug),
   ]);
+  const activeCards = catalog
+    ? [...catalog.ccw, ...catalog.other]
+    : directoryCcwCards(vendor);
+  if (requestedClass && !activeCards.some((card) => card.key === requestedClass)) {
+    redirect(`/instructors/${vendor.slug}/classes`);
+  }
+  const extraClassChoices = (catalog?.other ?? []).map((card) => ({
+    key: card.key,
+    label: bookChoiceLabel(card),
+  }));
   const refundPolicy = profile
     ? cancellationPolicyLabel(
         profile.cancellation_policy,
@@ -122,6 +138,9 @@ export default async function VendorBookPage({ params }: PageProps) {
             vendorName={vendor.name}
             sessions={sessions}
             refundPolicy={refundPolicy}
+            extraClassChoices={extraClassChoices}
+            initialClassKey={requestedClass}
+            checkoutFees={catalog?.fees ?? []}
           />
         </div>
       </main>

@@ -16,7 +16,7 @@ const SYSTEM_PROMPT = `You are writing transactional email templates for a Calif
 using CarryClass, a booking marketplace. Write professional, warm, and concise emails. 
 Use these merge tags where appropriate: {first_name}, {student_name}, {class_type}, {class_date}, 
 {class_time}, {company_name}, {instructor_name}, {instructor_email}, {location}, {what_to_bring_link}, {rebooking_link}.
-Greet the student with {first_name}. Use {company_name} for the business in the opening,
+Start every email body with exactly "Hi {first_name},". Use {company_name} for the business in the opening,
 and {instructor_name} for the sign-off.
 For confirmation emails, bold the class-details heading with **Here are your class details:**,
 link the word "here" to the packing list as [here]({what_to_bring_link}), remind students to

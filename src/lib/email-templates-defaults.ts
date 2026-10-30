@@ -52,7 +52,7 @@ Thank you,
   },
   reminder: {
     subject: "Reminder: your {class_type} is on {class_date}",
-    body: `Hi {student_name},
+    body: `Hi {first_name},
 
 This is a friendly reminder about your upcoming {class_type} with {instructor_name}.
 
@@ -67,7 +67,7 @@ Looking forward to seeing you,
   },
   followup: {
     subject: "Thanks for training with {instructor_name}",
-    body: `Hi {student_name},
+    body: `Hi {first_name},
 
 Thank you for attending the {class_type} on {class_date}. It was a pleasure having you in class.
 
@@ -100,6 +100,11 @@ Please arrive a few minutes early and bring a valid photo ID.
 If you have any questions before class, you can reach out to {instructor_name} here: {instructor_email}.`,
 };
 
+/** Every template opens with the student's first name, including older saved drafts. */
+function greetByFirstName(body: string): string {
+  return body.replace(/^Hi \{student_name\},/, "Hi {first_name},");
+}
+
 function savedOrDefault(
   saved: string | null | undefined,
   fallback: string,
@@ -120,7 +125,7 @@ export function resolveTemplateContent(
   const legacy = type === "confirmation" ? LEGACY_CONFIRMATION : undefined;
   return {
     subject: savedOrDefault(saved?.subject, def.subject, legacy?.subject),
-    body: savedOrDefault(saved?.body, def.body, legacy?.body),
+    body: greetByFirstName(savedOrDefault(saved?.body, def.body, legacy?.body)),
   };
 }
 
@@ -181,4 +186,46 @@ export function applyMergeTags(
   values: Record<string, string>
 ): string {
   return text.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
+}
+
+/** Instructor details used to fill sample merge tags in dashboard previews. */
+export interface EmailPreviewContext {
+  vendorName?: string | null;
+  vendorEmail?: string | null;
+  instructorName?: string | null;
+  whatToBringUrl?: string | null;
+}
+
+/** Turn a site path into an absolute URL so email previews can render it as a link. */
+function absolutePreviewUrl(url: string | null | undefined, fallback: string): string {
+  const trimmed = url?.trim();
+  if (!trimmed) return fallback;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://www.getcarryclass.com";
+  return `${base}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+}
+
+/** Sample student details so previews show a real email instead of raw merge tags. */
+export function emailPreviewMergeValues(input?: EmailPreviewContext): Record<string, string> {
+  const companyName = input?.vendorName?.trim() || "Your company";
+  const instructor = input?.instructorName?.trim();
+  const signOff =
+    instructor && instructor.toLowerCase() !== "there" ? instructor : companyName;
+  return {
+    first_name: "Jordan",
+    student_name: "Jordan Sample",
+    class_type: "CCW Initial: Day 1",
+    class_date: "Saturday, October 10, 2026",
+    class_time: "9:00 AM PDT",
+    company_name: companyName,
+    instructor_name: signOff,
+    instructor_email: input?.vendorEmail?.trim() || "instructor@example.com",
+    location: "3274 San Tomas Dr. 92056, Oceanside, CA",
+    what_to_bring_link: absolutePreviewUrl(
+      input?.whatToBringUrl,
+      "https://www.getcarryclass.com/instructors/your-listing?tab=what-to-bring"
+    ),
+    rebooking_link: "https://www.getcarryclass.com",
+  };
 }

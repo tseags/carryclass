@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import type { VendorProfile, VendorCalendarClass, VendorClassType, VendorEmailTemplate } from "@/lib/onboarding-db";
+import type { VendorProfile, VendorCalendarClass, VendorClassType, VendorCheckoutFee, VendorEmailTemplate } from "@/lib/onboarding-db";
 
 type DashboardClass = VendorCalendarClass & { registrationCount?: number };
 import type {
@@ -19,6 +19,9 @@ import { EmailEditorPanel, type EmailTemplateType } from "./EmailEditorDrawer";
 import { ClassEditorDrawer } from "./ClassEditorDrawer";
 import { AddClassDrawer } from "./AddClassDrawer";
 import { RegistrationsCrm, registrationsForDisplay } from "./RegistrationsCrm";
+import { isCustomClassKey } from "@/lib/instructor-catalog";
+import { CheckoutFeesForm } from "@/components/onboarding/CheckoutFeesEditor";
+import { PaymentsDashboard } from "./payments/PaymentsDashboard";
 import {
   ConnectStripeBanner,
   ConnectStripeNotice,
@@ -32,6 +35,13 @@ import {
   formatTime,
   formatCurrency,
 } from "./dashboard-format";
+import {
+  applyMergeTags,
+  emailBodyToHtml,
+  emailPreviewMergeValues,
+  resolveTemplateContent,
+  type EmailPreviewContext,
+} from "@/lib/email-templates-defaults";
 
 type TabId =
   | "overview"
@@ -59,6 +69,7 @@ const LISTING_SUBSECTIONS: { id: string; label: string }[] = [
   { id: "listing-certifications", label: "Certifications & specializations" },
   { id: "listing-photos", label: "Photos" },
   { id: "listing-class-types", label: "Class types & pricing" },
+  { id: "listing-fees", label: "Checkout fees" },
   { id: "listing-cancellation", label: "Cancellation policy" },
 ];
 
@@ -91,9 +102,26 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add a Gun",
 };
 
-function classTypeLabel(type: string | null | undefined): string {
+function classTypeLabel(
+  type: string | null | undefined,
+  classTypes?: VendorClassType[]
+): string {
   if (!type) return "—";
-  return CLASS_TYPE_LABELS[type] ?? "—";
+  if (CLASS_TYPE_LABELS[type]) return CLASS_TYPE_LABELS[type];
+  const named = classTypes?.find((ct) => ct.class_type === type)?.display_name?.trim();
+  return named || "Other class";
+}
+
+function feeClassOptions(classTypes: VendorClassType[]) {
+  return [
+    { key: "initial", label: "CCW Initial" },
+    { key: "renewal", label: "CCW Renewal" },
+    { key: "add_a_gun", label: "Add-A-Gun" },
+    ...classTypes
+      .filter((ct) => isCustomClassKey(ct.class_type))
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((ct) => ({ key: ct.class_type, label: ct.display_name?.trim() || "Other class" })),
+  ];
 }
 
 const TIMING_LABELS: Record<string, string> = {
@@ -110,6 +138,7 @@ interface Props {
   firstName: string;
   classes: DashboardClass[];
   classTypes: VendorClassType[];
+  checkoutFees: VendorCheckoutFee[];
   registrations: DashboardRegistration[];
   reviews: DashboardReview[];
   templates: Record<string, Partial<VendorEmailTemplate>>;
@@ -130,11 +159,22 @@ export function VendorDashboard(props: Props) {
   const [templates, setTemplates] = useState(props.templates);
   const [classes, setClasses] = useState(props.classes);
   const [classTypes, setClassTypes] = useState(props.classTypes);
+  const [checkoutFees, setCheckoutFees] = useState(props.checkoutFees);
+  const [pendingSection, setPendingSection] = useState<string | null>(null);
   const [vendor, setVendor] = useState(props.vendor);
   const [editingClass, setEditingClass] = useState<VendorCalendarClass | null>(null);
   const [addingClass, setAddingClass] = useState(false);
   const [activeSection, setActiveSection] = useState<string>(LISTING_SUBSECTIONS[0].id);
   const bookingsEnabled = Boolean(vendor.stripe_account_id);
+  const [focusPayouts, setFocusPayouts] = useState(false);
+  const emailPreview: EmailPreviewContext = {
+    vendorName: vendor.name ?? vendor.canonical_name,
+    vendorEmail: vendor.email,
+    instructorName:
+      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || firstName,
+    whatToBringUrl: publicProfileUrl ? `${publicProfileUrl}?tab=what-to-bring` : null,
+  };
+  const handlePayoutsFocused = useCallback(() => setFocusPayouts(false), []);
 
   // Scroll-spy: highlight the listing subsection currently in view.
   useEffect(() => {
@@ -159,6 +199,22 @@ export function VendorDashboard(props: Props) {
   function scrollToSection(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setActiveSection(id);
+  }
+
+  useEffect(() => {
+    if (tab !== "listing" || !pendingSection) return;
+    const id = pendingSection;
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveSection(id);
+      setPendingSection(null);
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [tab, pendingSection]);
+
+  function openCheckoutFees() {
+    setPendingSection("listing-fees");
+    setTab("listing");
   }
 
   function handleTemplateSaved(type: EmailTemplateType, fields: Partial<VendorEmailTemplate>) {
@@ -310,24 +366,32 @@ export function VendorDashboard(props: Props) {
               onOpenReviews={() => setReviewsOpen(true)}
               onEditTemplate={openEmailEditor}
               onToggleTemplate={toggleTemplate}
+              emailPreview={emailPreview}
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
               onAddClass={() => setAddingClass(true)}
+              onViewPayoutHistory={() => {
+                setFocusPayouts(true);
+                setTab("payments");
+              }}
             />
           )}
           {tab === "listing" && (
             <ListingTab
               vendor={vendor}
               classTypes={classTypes}
+              checkoutFees={checkoutFees}
               publicProfileUrl={publicProfileUrl}
               onProfileSaved={handleProfileSaved}
               onClassTypesSaved={handleClassTypesSaved}
+              onFeesSaved={setCheckoutFees}
               onCancellationSaved={handleCancellationSaved}
             />
           )}
           {tab === "classes" && (
             <ClassesPanel
               classes={classes}
+              classTypes={classTypes}
               heading
               bookingsEnabled={bookingsEnabled}
               onEditClass={setEditingClass}
@@ -357,14 +421,10 @@ export function VendorDashboard(props: Props) {
                 onClose={() => setEditorType(null)}
                 onSaved={handleTemplateSaved}
                 vendorId={vendor.id}
-                vendorEmail={vendor.email}
-                vendorName={vendor.name}
-                instructorName={
-                  [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || firstName
-                }
-                whatToBringUrl={
-                  publicProfileUrl ? `${publicProfileUrl}?tab=what-to-bring` : null
-                }
+                vendorEmail={emailPreview.vendorEmail}
+                vendorName={emailPreview.vendorName}
+                instructorName={emailPreview.instructorName}
+                whatToBringUrl={emailPreview.whatToBringUrl}
               />
             ) : (
               <EmailTemplatesPanel
@@ -373,13 +433,18 @@ export function VendorDashboard(props: Props) {
                 onToggle={toggleTemplate}
                 heading
                 metrics={props.emailMetrics}
+                preview={emailPreview}
               />
             ))}
           {tab === "payments" && (
             <PaymentsTab
               vendor={vendor}
               payout={props.payout}
+              checkoutFees={checkoutFees}
+              onEditFees={openCheckoutFees}
               onVendorChange={setVendor}
+              focusPayouts={focusPayouts}
+              onFocusHandled={handlePayoutsFocused}
             />
           )}
           {tab === "settings" && <SettingsTab vendor={vendor} />}
@@ -408,6 +473,7 @@ export function VendorDashboard(props: Props) {
 function OverviewTab({
   vendor,
   classes,
+  classTypes,
   registrations,
   templates,
   stats,
@@ -416,13 +482,17 @@ function OverviewTab({
   onOpenReviews,
   onEditTemplate,
   onToggleTemplate,
+  emailPreview,
   onEditClass,
   onCancelClass,
   onAddClass,
+  onViewPayoutHistory,
 }: Props & {
+  onViewPayoutHistory: () => void;
   onOpenReviews: () => void;
   onEditTemplate: (t: EmailTemplateType) => void;
   onToggleTemplate: (t: EmailTemplateType, next: boolean) => void;
+  emailPreview: EmailPreviewContext;
   onEditClass: (cls: VendorCalendarClass) => void;
   onCancelClass: (cls: VendorCalendarClass) => void;
   onAddClass: () => void;
@@ -460,14 +530,20 @@ function OverviewTab({
 
       <ClassesPanel
         classes={classes}
+        classTypes={classTypes}
         bookingsEnabled={Boolean(vendor.stripe_account_id)}
         onEditClass={onEditClass}
         onCancelClass={onCancelClass}
         onAddClass={onAddClass}
       />
       <RecentRegistrationsPanel registrations={registrationsForDisplay(registrations)} />
-      <EmailTemplatesPanel templates={templates} onEdit={onEditTemplate} onToggle={onToggleTemplate} />
-      <PaymentsPanel vendor={vendor} payout={payout} />
+      <EmailTemplatesPanel
+        templates={templates}
+        onEdit={onEditTemplate}
+        onToggle={onToggleTemplate}
+        preview={emailPreview}
+      />
+      <PaymentsPanel vendor={vendor} payout={payout} onViewPayoutHistory={onViewPayoutHistory} />
     </div>
   );
 }
@@ -475,28 +551,39 @@ function OverviewTab({
 function PaymentsTab({
   vendor,
   payout,
+  checkoutFees,
+  onEditFees,
   onVendorChange,
+  focusPayouts,
+  onFocusHandled,
 }: {
   vendor: VendorProfile;
   payout: DashboardPayout;
+  checkoutFees: VendorCheckoutFee[];
+  onEditFees: () => void;
   onVendorChange: (vendor: VendorProfile) => void;
+  focusPayouts: boolean;
+  onFocusHandled: () => void;
 }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Manage your Stripe connection and view payouts from CarryClass bookings.
-        </p>
-      </div>
-      <PaymentsPanel
-        vendor={vendor}
-        payout={payout}
-        onVendorChange={onVendorChange}
-        showConnectionControls
-        heading
-      />
-    </div>
+    <PaymentsDashboard
+      key={vendor.stripe_account_id ?? "disconnected"}
+      stripeAccountId={vendor.stripe_account_id}
+      fallbackPayout={payout}
+      checkoutFees={checkoutFees}
+      onEditFees={onEditFees}
+      focusPayouts={focusPayouts}
+      onFocusHandled={onFocusHandled}
+      connectionPanel={
+        <PaymentsPanel
+          vendor={vendor}
+          payout={payout}
+          onVendorChange={onVendorChange}
+          showConnectionControls
+          heading
+        />
+      }
+    />
   );
 }
 
@@ -545,6 +632,7 @@ function statusPill(active: boolean) {
 
 function ClassesPanel({
   classes,
+  classTypes = [],
   heading,
   bookingsEnabled,
   onEditClass,
@@ -552,6 +640,7 @@ function ClassesPanel({
   onAddClass,
 }: {
   classes: DashboardClass[];
+  classTypes?: VendorClassType[];
   heading?: boolean;
   bookingsEnabled: boolean;
   onEditClass: (cls: VendorCalendarClass) => void;
@@ -618,7 +707,7 @@ function ClassesPanel({
                     </span>
                   </td>
                   <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">
-                    {classTypeLabel(c.class_type)}
+                    {classTypeLabel(c.class_type, classTypes)}
                   </td>
                   <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.max_students ?? "—"}</td>
                   <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.registrationCount ?? 0}</td>
@@ -788,8 +877,8 @@ function RegistrationsTable({ registrations }: { registrations: DashboardRegistr
                 )}
               </td>
               <td className="!py-5 !pr-6 align-top text-gray-600">
-                <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>
-                  {classTypeLabel(r.classType)}
+                <span className="block leading-snug line-clamp-2" title={r.classType && CLASS_TYPE_LABELS[r.classType] ? CLASS_TYPE_LABELS[r.classType] : r.classTitle?.trim() || "Other class"}>
+                  {r.classType && CLASS_TYPE_LABELS[r.classType] ? CLASS_TYPE_LABELS[r.classType] : r.classTitle?.trim() || "Other class"}
                 </span>
               </td>
               <td className="!py-5 !pr-6 align-top font-medium leading-snug text-gray-900">
@@ -855,19 +944,71 @@ function EmailCardStat({ label, value, note }: { label: string; value: number | 
   );
 }
 
+/** Clipped sample of the email a student would receive, plus the action that opens it. */
+function EmailCardPreview({
+  name,
+  subject,
+  html,
+  muted,
+  onOpen,
+}: {
+  name: string;
+  subject: string;
+  html: string;
+  muted?: boolean;
+  onOpen: () => void;
+}) {
+  return (
+    <div className={`flex w-full shrink-0 flex-col items-stretch gap-2 lg:w-[380px] ${muted ? "opacity-60" : ""}`}>
+      <div className="relative h-[240px] rounded-lg border border-gray-200 bg-white text-left shadow-sm">
+        <div className="flex h-7 items-center border-b border-gray-100 bg-gray-50 px-3">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Preview</span>
+        </div>
+        <div className="pointer-events-none h-[212px] overflow-hidden px-3.5 pt-2.5">
+          <p className="!m-0 line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">
+            {subject || "(no subject)"}
+          </p>
+          <div
+            className="mt-2 text-xs leading-relaxed text-gray-600 [&_a]:!text-[#C1440E] [&_div]:!text-xs [&_div]:!leading-relaxed [&_p]:!mb-2.5 [&_p]:!mt-0 [&_p]:!text-xs [&_p]:!leading-relaxed [&_p]:!text-gray-600 [&_strong]:font-semibold [&_strong]:!text-gray-900"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Preview ${name}`}
+          className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E]"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="self-end rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+      >
+        View / Edit
+      </button>
+    </div>
+  );
+}
+
 function EmailTemplatesPanel({
   templates,
   onEdit,
   onToggle,
   heading,
   metrics,
+  preview,
 }: {
   templates: Record<string, Partial<VendorEmailTemplate>>;
   onEdit: (t: EmailTemplateType) => void;
   onToggle: (t: EmailTemplateType, next: boolean) => void;
   heading?: boolean;
   metrics?: DashboardEmailMetrics;
+  preview?: EmailPreviewContext;
 }) {
+  const previewValues = emailPreviewMergeValues(preview);
+
   return (
     <section>
       <h2 className={heading ? "mb-4 text-2xl font-bold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
@@ -885,10 +1026,13 @@ function EmailTemplatesPanel({
           // the prior aggregate logic — an active template with an explicit date+time.
           const scheduled =
             !isConfirmation && t?.send_mode === "scheduled" && t?.scheduled_at && active ? 1 : 0;
+          const content = resolveTemplateContent(type, t);
+          const previewSubject = applyMergeTags(content.subject, previewValues);
+          const previewHtml = emailBodyToHtml(applyMergeTags(content.body, previewValues));
           return (
             <div
               key={type}
-              className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-gray-50 p-5 lg:flex-row lg:items-center lg:justify-between"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -931,13 +1075,13 @@ function EmailTemplatesPanel({
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => onEdit(type)}
-                className="shrink-0 self-start rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors sm:self-center"
-              >
-                Edit
-              </button>
+              <EmailCardPreview
+                name={name}
+                subject={previewSubject}
+                html={previewHtml}
+                muted={!active}
+                onOpen={() => onEdit(type)}
+              />
             </div>
           );
         })}
@@ -954,6 +1098,7 @@ function PaymentsPanel({
   heading,
   showConnectionControls,
   onVendorChange,
+  onViewPayoutHistory,
 }: {
   vendor: VendorProfile;
   payout: DashboardPayout;
@@ -961,6 +1106,8 @@ function PaymentsPanel({
   /** Full Stripe manage / switch / disconnect controls (Payments tab). */
   showConnectionControls?: boolean;
   onVendorChange?: (vendor: VendorProfile) => void;
+  /** Overview card: jump to the Payments tab payout list. Defaults to scrolling in place. */
+  onViewPayoutHistory?: () => void;
 }) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
@@ -1017,10 +1164,17 @@ function PaymentsPanel({
               <p className="text-xl font-bold text-gray-900">{formatCurrency(payout.lastAmountCents)}</p>
               <p className="text-xs text-gray-500">{formatLongDate(payout.lastPayoutDate)}</p>
             </div>
-            {/* TODO: build a paginated payout history view consuming /api/dashboard/payouts. */}
-            <Link href="/dashboard/vendor#payouts" className="text-sm font-medium text-[#C1440E] hover:underline">
+            <button
+              type="button"
+              onClick={() =>
+                onViewPayoutHistory
+                  ? onViewPayoutHistory()
+                  : document.getElementById("payouts")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="!bg-transparent text-sm font-medium text-[#C1440E] hover:underline"
+            >
               View payout history →
-            </Link>
+            </button>
           </div>
 
           {showConnectionControls && (
@@ -1069,7 +1223,7 @@ function PaymentsPanel({
           </p>
           <a
             href={STRIPE_CONNECT_HREF}
-            className="inline-block rounded-lg bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white hover:bg-[#a53a0c] transition-colors"
+            className="inline-block rounded-lg !bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white !no-underline hover:!bg-[#a53a0c] transition-colors"
           >
             Connect Stripe →
           </a>
@@ -1084,16 +1238,20 @@ function PaymentsPanel({
 function ListingTab({
   vendor,
   classTypes,
+  checkoutFees,
   publicProfileUrl,
   onProfileSaved,
   onClassTypesSaved,
+  onFeesSaved,
   onCancellationSaved,
 }: {
   vendor: VendorProfile;
   classTypes: VendorClassType[];
+  checkoutFees: VendorCheckoutFee[];
   publicProfileUrl: string | null;
   onProfileSaved: (vendor: VendorProfile) => void;
   onClassTypesSaved: (classTypes: VendorClassType[]) => void;
+  onFeesSaved: (fees: VendorCheckoutFee[]) => void;
   onCancellationSaved: (fields: {
     cancellation_policy: string;
     cancellation_hours: number | null;
@@ -1125,7 +1283,25 @@ function ListingTab({
         title="Class types & pricing"
         description="The classes you offer and the per-student price for each."
       >
-        <Step2ClassTypes existingTypes={classTypes} mode="dashboard" onSaved={onClassTypesSaved} />
+        <Step2ClassTypes
+          existingTypes={classTypes}
+          mode="dashboard"
+          onSaved={onClassTypesSaved}
+          publicSlug={vendor.slug}
+          showCheckoutFees={false}
+        />
+      </ListingSection>
+
+      <ListingSection
+        id="listing-fees"
+        title="Checkout fees"
+        description="Flat fees students pay on top of the class price. You keep the full amount."
+      >
+        <CheckoutFeesForm
+          initialFees={checkoutFees}
+          classOptions={feeClassOptions(classTypes)}
+          onSaved={onFeesSaved}
+        />
       </ListingSection>
 
       <ListingSection

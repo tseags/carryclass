@@ -6,6 +6,7 @@ import {
   applyMergeTags,
   DEFAULT_EMAIL_TEMPLATES,
   emailBodyToHtml,
+  emailPreviewMergeValues,
   MERGE_TAGS,
   resolveTemplateContent,
   type EmailTemplateType,
@@ -187,26 +188,12 @@ export function EmailEditorPanel({
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
 
-  const companyName = vendorName?.trim() || "Your company";
-  const signOff =
-    instructorName?.trim() && instructorName.trim().toLowerCase() !== "there"
-      ? instructorName.trim()
-      : companyName;
-  const previewValues: Record<string, string> = {
-    first_name: "Jordan",
-    student_name: "Jordan Sample",
-    class_type: "CCW Initial: Day 1",
-    class_date: "Saturday, October 10, 2026",
-    class_time: "9:00 AM PDT",
-    company_name: companyName,
-    instructor_name: signOff,
-    instructor_email: vendorEmail || "instructor@example.com",
-    location: "3274 San Tomas Dr. 92056, Oceanside, CA",
-    what_to_bring_link:
-      whatToBringUrl ||
-      "https://www.getcarryclass.com/instructors/your-listing?tab=what-to-bring",
-    rebooking_link: "https://www.getcarryclass.com",
-  };
+  const previewValues = emailPreviewMergeValues({
+    vendorName,
+    vendorEmail,
+    instructorName,
+    whatToBringUrl,
+  });
   const previewSubject = applyMergeTags(subject, previewValues);
   const previewHtml = emailBodyToHtml(applyMergeTags(body, previewValues));
 

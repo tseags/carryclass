@@ -2,9 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { VendorClassType } from "@/lib/onboarding-db";
+import type { VendorCheckoutFee, VendorClassType } from "@/lib/onboarding-db";
+import {
+  classesIndexPath,
+  classPagePath,
+  isCustomClassKey,
+} from "@/lib/instructor-catalog";
+import { CopyClassLink } from "./CopyClassLink";
+import {
+  CheckoutFeesEditor,
+  feeDraftsFromRows,
+  feePayload,
+  type FeeDraft,
+} from "./CheckoutFeesEditor";
+import { OtherClassesEditor, type CustomClassDraft } from "./OtherClassesEditor";
 
-const CLASS_TYPES = [
+export const CLASS_TYPES = [
   { key: "initial", label: "CCW Initial", description: "16-hour course for first-time applicants" },
   { key: "renewal", label: "CCW Renewal", description: "8-hour renewal course" },
   { key: "add_a_gun", label: "Add-A-Gun", description: "Add a new firearm to your permit" },
@@ -12,13 +25,19 @@ const CLASS_TYPES = [
 
 interface Props {
   existingTypes: VendorClassType[];
+  existingFees?: VendorCheckoutFee[];
   /**
    * "onboarding" (default) navigates to the next step on save. "dashboard"
    * stays put, surfaces a saved state, and reports the persisted class types
    * via `onSaved` so the dashboard can refresh its local state in place.
+   * Dashboard saves do not advance onboarding_step.
    */
   mode?: "onboarding" | "dashboard";
   onSaved?: (classTypes: VendorClassType[]) => void;
+  /** Claimed listing slug. Enables copy-link controls in the dashboard. */
+  publicSlug?: string | null;
+  /** Onboarding collects fees on this step. The dashboard uses a sibling form. */
+  showCheckoutFees?: boolean;
 }
 
 interface TypeState {
@@ -26,13 +45,38 @@ interface TypeState {
   price: string;
 }
 
-export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }: Props) {
+function customDrafts(existingTypes: VendorClassType[]): CustomClassDraft[] {
+  return existingTypes
+    .filter((type) => isCustomClassKey(type.class_type))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((type) => ({
+      class_type: type.class_type,
+      name: type.display_name ?? "",
+      description: type.description ?? "",
+      price: type.price ? String(Number(type.price)) : "",
+      active: type.is_active,
+    }));
+}
+
+export function Step2ClassTypes({
+  existingTypes,
+  existingFees = [],
+  mode = "onboarding",
+  onSaved,
+  publicSlug = null,
+  showCheckoutFees,
+}: Props) {
   const router = useRouter();
   const isDashboard = mode === "dashboard";
+  const includeFees = showCheckoutFees ?? !isDashboard;
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const [customClasses, setCustomClasses] = useState<CustomClassDraft[]>(() =>
+    customDrafts(existingTypes)
+  );
+  const [fees, setFees] = useState<FeeDraft[]>(() => feeDraftsFromRows(existingFees));
 
   const [types, setTypes] = useState<Record<string, TypeState>>(() => {
     const state: Record<string, TypeState> = {};
@@ -40,13 +84,12 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
       const existing = existingTypes.find((t) => t.class_type === ct.key);
       state[ct.key] = {
         enabled: existing ? existing.is_active : false,
-        price: existing ? String(existing.price) : "",
+        price: existing ? String(Number(existing.price) || "") : "",
       };
     }
     return state;
   });
 
-  // Update indeterminate state on select-all checkbox
   const enabledCount = Object.values(types).filter((t) => t.enabled).length;
   useEffect(() => {
     if (!selectAllRef.current) return;
@@ -62,6 +105,14 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
     );
   }
 
+  const feeClassOptions = [
+    ...CLASS_TYPES.map((ct) => ({ key: ct.key, label: ct.label })),
+    ...customClasses.map((row) => ({
+      key: row.class_type,
+      label: row.name.trim() || "Other class",
+    })),
+  ];
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -69,7 +120,7 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
 
     const activeTypes = Object.entries(types).filter(([, v]) => v.enabled);
     if (!activeTypes.length) {
-      setError("Please select at least one class type.");
+      setError("Please select at least one CCW class type.");
       return;
     }
 
@@ -83,27 +134,41 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
 
     setSaving(true);
     try {
-      const classTypes = CLASS_TYPES.map((ct) => ({
-        class_type: ct.key,
-        price: Number(types[ct.key].price) || 0,
-        is_active: types[ct.key].enabled,
-      })).filter((ct) => ct.is_active || existingTypes.some((e) => e.class_type === ct.class_type));
+      const classTypes = [
+        ...CLASS_TYPES.map((ct) => ({
+          class_type: ct.key,
+          price: Number(types[ct.key].price) || 0,
+          is_active: types[ct.key].enabled,
+        })).filter((ct) => ct.is_active || existingTypes.some((row) => row.class_type === ct.class_type)),
+        ...customClasses.map((row) => ({
+          class_type: row.class_type,
+          display_name: row.name,
+          description: row.description,
+          price: row.price === "" ? 0 : Number(row.price),
+          is_active: row.active,
+        })),
+      ];
 
       const res = await fetch("/api/onboarding/step/2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ classTypes }),
+        body: JSON.stringify({
+          classTypes,
+          replaceCustom: true,
+          mode: isDashboard ? "dashboard" : "onboarding",
+          ...(includeFees ? { checkoutFees: feePayload(fees) } : {}),
+        }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Save failed");
       if (isDashboard) {
-        const data = await res.json().catch(() => ({}));
         onSaved?.((data.classTypes as VendorClassType[]) ?? []);
         setSaved(true);
       } else {
         router.push("/onboard/step/3");
       }
-    } catch {
-      setError("Failed to save. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -111,7 +176,12 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Select all */}
+      {isDashboard && publicSlug && (
+        <div className="flex justify-end">
+          <CopyClassLink path={classesIndexPath(publicSlug)} label="Copy link to all classes" />
+        </div>
+      )}
+
       <label className="flex items-center gap-3 cursor-pointer">
         <input
           ref={selectAllRef}
@@ -133,7 +203,6 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
               }`}
             >
               <label className="flex items-start gap-4 p-4 cursor-pointer">
-                {/* Toggle switch (state-driven so styling never depends on JIT peer) */}
                 <span className="relative mt-0.5 inline-block shrink-0">
                   <input
                     type="checkbox"
@@ -191,10 +260,28 @@ export function Step2ClassTypes({ existingTypes, mode = "onboarding", onSaved }:
                   </div>
                 </div>
               )}
+              {isDashboard && publicSlug && (
+                <div className="px-4 pb-4">
+                  <CopyClassLink path={classPagePath(publicSlug, ct.key)} />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      <OtherClassesEditor
+        classes={customClasses}
+        onChange={setCustomClasses}
+        publicSlug={isDashboard ? publicSlug : null}
+      />
+
+      {includeFees && (
+        <section className="space-y-3 border-t border-zinc-200 pt-6">
+          <h2 className="text-base font-semibold text-zinc-900">Fees students also pay</h2>
+          <CheckoutFeesEditor fees={fees} onChange={setFees} classOptions={feeClassOptions} />
+        </section>
+      )}
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">

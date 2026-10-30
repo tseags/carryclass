@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { currentUser } from "@clerk/nextjs/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnimatedStatsGrid, type AnimatedStat } from "@/components/AnimatedStatsGrid";
+import { BenefitsShowcase } from "@/components/for-instructors/BenefitsShowcase";
+import { VENDOR_ROLE } from "@/lib/auth/roles";
+import { getVendorProfile } from "@/lib/onboarding-db";
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site-url";
 import { PLATFORM_SERVICE_FEE_PERCENT_LABEL } from "@/lib/booking-constants";
@@ -15,9 +19,9 @@ export const metadata = pageMetadata({
 
 const BENEFITS = [
   {
-    title: "Accept bookings online (optional)",
+    title: "Accept bookings online",
     description:
-      `Claiming and updating your listing is free and never requires Stripe. Connect Stripe Connect when you want students to book and pay from your profile — then they pay a separate ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform fee at checkout on top of your class price, so you keep 100% of what you charge.`,
+      `Claiming and updating your profile is free, and connecting Stripe is optional. Connecting Stripe allows students to book and pay from your profile. They pay a separate ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform fee at checkout on top of your class price, so you keep 100% of what you charge.`,
     icon: "booking",
   },
   {
@@ -37,7 +41,7 @@ const BENEFITS = [
 const STEPS = [
   {
     step: "1",
-    title: "Claim your listing",
+    title: "Verify your profile",
     description:
       "Find your existing sheriff-approved page and verify with the email or phone already on that listing. We do not create duplicate listings.",
   },
@@ -49,7 +53,7 @@ const STEPS = [
   },
   {
     step: "3",
-    title: "Publish and manage from your dashboard",
+    title: "Publish and access your dashboard",
     description:
       "Publish your listing and schedule with or without Stripe. Connect Stripe whenever you are ready and online booking turns on from that point forward.",
   },
@@ -59,7 +63,7 @@ const FAQS = [
   {
     question: "Is it free to list my classes?",
     answer:
-      `Listing in the CarryClass directory is free, and so is claiming and updating your page. The ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} platform service fee only applies to online bookings: once you enable them through Stripe Connect, students pay that fee at checkout on top of your class price — so you keep 100% of what you charge.`,
+      `Yes, listing classes on CarryClass is free. The ${PLATFORM_SERVICE_FEE_PERCENT_LABEL} transaction fee applies to online bookings, paid by students at checkout on top of your class price. Instructors keep 100% of the class fee.`,
   },
   {
     question: "Why should I claim my profile?",
@@ -85,58 +89,22 @@ const FAQS = [
 
 const STATS: AnimatedStat[] = [
   { number: "100%", label: "Of your class fee you keep" },
-  { number: PLATFORM_SERVICE_FEE_PERCENT_LABEL, label: "Platform fee paid by students" },
+  { number: PLATFORM_SERVICE_FEE_PERCENT_LABEL, label: "Transaction fee paid by students" },
   { number: "$0", label: "Cost to list your classes" },
-  { number: "5 minutes", label: "To claim and publish your listing" },
+  { number: "5 minutes", label: "To verify and complete your profile" },
 ];
 
-function BenefitIcon({ type }: { type: (typeof BENEFITS)[number]["icon"] }) {
-  const strokeProps = {
-    stroke: "#c96442",
-    strokeWidth: 2,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  } as const;
+export default async function ForInstructorsPage() {
+  const user = await currentUser();
+  const isInstructor = user?.publicMetadata?.role === VENDOR_ROLE;
+  const vendor = isInstructor && user ? await getVendorProfile(user.id) : null;
+  const hasCompletedOnboarding = Boolean(vendor?.is_published && vendor.slug);
+  const primaryCtaHref =
+    hasCompletedOnboarding && vendor
+      ? `/instructors/${vendor.slug}`
+      : "/instructors/claim";
+  const primaryCtaLabel = hasCompletedOnboarding ? "View Profile" : "Create Profile";
 
-  const svgProps = {
-    width: 22,
-    height: 22,
-    viewBox: "0 0 22 22",
-    fill: "none",
-    xmlns: "http://www.w3.org/2000/svg",
-    "aria-hidden": true,
-  } as const;
-
-  if (type === "booking") {
-    return (
-      <svg {...svgProps}>
-        <rect x="3.5" y="5" width="15" height="13" rx="2.5" {...strokeProps} />
-        <path d="M3.5 9.5h15" {...strokeProps} />
-        <path d="M7.5 3.5v3M14.5 3.5v3" {...strokeProps} />
-        <path d="M8 13.5l2 2 4-4" {...strokeProps} />
-      </svg>
-    );
-  }
-
-  if (type === "dashboard") {
-    return (
-      <svg {...svgProps}>
-        <rect x="3.5" y="4" width="7" height="5.5" rx="1.5" {...strokeProps} />
-        <rect x="11.5" y="4" width="7" height="5.5" rx="1.5" {...strokeProps} />
-        <rect x="3.5" y="12.5" width="15" height="5.5" rx="1.5" {...strokeProps} />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...svgProps}>
-      <circle cx="9.5" cy="9.5" r="5.5" {...strokeProps} />
-      <path d="M13.5 13.5L18 18" {...strokeProps} />
-    </svg>
-  );
-}
-
-export default function ForInstructorsPage() {
   return (
     <>
       <Header />
@@ -158,16 +126,18 @@ export default function ForInstructorsPage() {
                   business, show up in county searches, and add online bookings when you want them.
                 </p>
                 <div className="buttons-row for-instructors-hero__buttons">
-                  <Link href="/instructors/claim" className="btn-primary w-button">
-                    Claim your listing
+                  <Link href={primaryCtaHref} className="btn-primary w-button">
+                    {primaryCtaLabel}
                   </Link>
                   <Link href="/instructors" className="btn-secondary w-button">
                     View all instructors
                   </Link>
                 </div>
-                <p className="for-instructors-hero__note">
-                  Free to list · Verified with the contact already on your listing
-                </p>
+                {!hasCompletedOnboarding ? (
+                  <p className="for-instructors-hero__note">
+                    Free to list. Verify and create your profile in under 5 minutes
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -191,26 +161,8 @@ export default function ForInstructorsPage() {
                   — built for CCW training, not a generic business listing.
                 </p>
               </div>
-              <div className="for-instructors-section-header__btn">
-                <Link
-                  href="/instructors"
-                  className="btn-secondary w-button popular-vendors-redesign__view-all"
-                >
-                  See example listings
-                </Link>
-              </div>
             </div>
-            <div className="for-instructors-card-grid">
-              {BENEFITS.map((benefit) => (
-                <article key={benefit.title} className="for-instructors-card">
-                  <div className="for-instructors-card__icon-wrap" aria-hidden="true">
-                    <BenefitIcon type={benefit.icon} />
-                  </div>
-                  <h3 className="for-instructors-card__title">{benefit.title}</h3>
-                  <p className="for-instructors-card__copy">{benefit.description}</p>
-                </article>
-              ))}
-            </div>
+            <BenefitsShowcase benefits={BENEFITS} />
           </div>
         </section>
 
@@ -224,22 +176,24 @@ export default function ForInstructorsPage() {
               <div className="for-instructors-section-header__copy">
                 <div className="for-instructors-eyebrow">How it works</div>
                 <h2 id="for-instructors-steps-heading" className="for-instructors-heading">
-                  <span className="for-instructors-heading__accent">Three steps</span> to a
-                  live listing
+                  <span className="for-instructors-heading__accent">Three steps</span> to list
+                  classes
                 </h2>
                 <p className="for-instructors-section-sub">
-                  Get listed in a few steps. Add booking and payments when you are ready to
-                  take enrollments online.
+                  Complete your profile in a few short steps. Connect your calendar and
+                  accounts to start accepting online bookings.
                 </p>
               </div>
             </div>
             <ol className="for-instructors-card-grid">
               {STEPS.map((item) => (
                 <li key={item.step} className="for-instructors-card for-instructors-step">
-                  <div className="for-instructors-step__number" aria-hidden="true">
-                    {item.step}
+                  <div className="for-instructors-step__head">
+                    <div className="for-instructors-step__number" aria-hidden="true">
+                      {item.step}
+                    </div>
+                    <h3 className="for-instructors-card__title">{item.title}</h3>
                   </div>
-                  <h3 className="for-instructors-card__title">{item.title}</h3>
                   <p className="for-instructors-card__copy">{item.description}</p>
                 </li>
               ))}
@@ -259,13 +213,13 @@ export default function ForInstructorsPage() {
                   searching your county.
                 </h2>
                 <p className="by-the-numbers__body">
-                  CarryClass indexes sheriff-approved CCW instructors statewide. Claiming
-                  your page puts you in front of students comparing classes right now.
+                  CarryClass indexes sheriff-approved CCW instructors statewide. Verifying
+                  your profile puts you in front of students comparing classes right now.
                 </p>
                 <ul className="by-the-numbers__bullets">
                   <li>
                     <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
-                    Free directory listing, no subscription
+                    Free profile with no subscription
                   </li>
                   <li>
                     <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
@@ -273,7 +227,7 @@ export default function ForInstructorsPage() {
                   </li>
                   <li>
                     <span className="by-the-numbers__bullet-dot" aria-hidden="true" />
-                    Online booking only when you want it
+                    Online booking fully automated
                   </li>
                 </ul>
               </div>

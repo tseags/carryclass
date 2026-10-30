@@ -44,11 +44,11 @@ export default async function ClaimVendorListingPage() {
                 <div className="rounded-2xl border border-neutral-300/70 bg-white p-6 shadow-sm sm:p-8">
                   <div className="mb-6 text-center">
                     <h1 className="onboard-step-title claim-page-title">
-                      Claim your CCW listing
+                      Claim your instructor profile.
                     </h1>
                     <p className="mt-2 text-sm text-zinc-500">
-                      Sign in, find your sheriff-approved page, and verify with the
-                      email or phone already on that listing.
+                      We already have all sheriff-approved instructors listed but need
+                      you to verify ownership with the email or phone number on file.
                     </p>
                   </div>
                   <div className="buttons-row center">

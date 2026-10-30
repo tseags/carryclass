@@ -47,4 +47,18 @@ If you have any questions before class, you can reach out to {instructor_name} h
     expect(resolved.body).toContain("[here]({what_to_bring_link})");
     expect(resolved.body).toContain("Hi {first_name},");
   });
+
+  it("greets with the student first name in every template", () => {
+    for (const type of ["confirmation", "reminder", "followup"] as const) {
+      expect(resolveTemplateContent(type, undefined).body.startsWith("Hi {first_name},")).toBe(
+        true
+      );
+    }
+
+    const savedReminder = resolveTemplateContent("reminder", {
+      body: "Hi {student_name},\n\nSee you soon.",
+    });
+    expect(savedReminder.body.startsWith("Hi {first_name},")).toBe(true);
+    expect(savedReminder.body).toContain("See you soon.");
+  });
 });

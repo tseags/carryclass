@@ -39,9 +39,13 @@ const EMPTY_FILTERS: Filters = {
   when: "all",
 };
 
-function classTypeLabel(type: string | null | undefined): string {
+function classTypeLabel(
+  type: string | null | undefined,
+  classTypes: { class_type: string; display_name?: string | null }[] = []
+): string {
   if (!type) return "—";
-  return CLASS_TYPE_LABELS[type] ?? "—";
+  if (CLASS_TYPE_LABELS[type]) return CLASS_TYPE_LABELS[type];
+  return classTypes.find((row) => row.class_type === type)?.display_name?.trim() || "Other class";
 }
 
 function sessionKey(r: DashboardRegistration): string {
@@ -263,7 +267,7 @@ export function RegistrationsCrm({
       const key = sessionKey(r);
       if (seen.has(key)) continue;
       const date = parseClassDate(r.classDate);
-      const label = `${classTypeLabel(r.classType)}${date ? ` · ${formatLongDate(r.classDate)} · ${formatTime(r.classDate)}` : ""}`;
+      const label = `${classTypeLabel(r.classType, classTypes)}${date ? ` · ${formatLongDate(r.classDate)} · ${formatTime(r.classDate)}` : ""}`;
       seen.set(key, { key, label, sort: date?.getTime() ?? 0 });
     }
     return [...seen.values()].sort((a, b) => a.sort - b.sort);
@@ -382,7 +386,7 @@ export function RegistrationsCrm({
             <option value="">All class types</option>
             {typeOptions.map((t) => (
               <option key={t} value={t}>
-                {classTypeLabel(t)}
+                {classTypeLabel(t, classTypes)}
               </option>
             ))}
           </select>
@@ -518,6 +522,7 @@ export function RegistrationsCrm({
         <>
           <RegistrationsTable
             registrations={visible}
+            classTypes={classTypes}
             showCounty={showCounty}
             onSelect={(id) => setSelectedId(id)}
             selectedId={selectedId}
@@ -536,18 +541,24 @@ export function RegistrationsCrm({
         </>
       )}
 
-      <StudentDrawer registration={selected} onClose={() => setSelectedId(null)} />
+      <StudentDrawer
+        registration={selected}
+        classTypes={classTypes}
+        onClose={() => setSelectedId(null)}
+      />
     </section>
   );
 }
 
 function RegistrationsTable({
   registrations,
+  classTypes,
   showCounty,
   onSelect,
   selectedId,
 }: {
   registrations: DashboardRegistration[];
+  classTypes: { class_type: string; display_name?: string | null }[];
   showCounty: boolean;
   onSelect: (id: string) => void;
   selectedId: string | null;
@@ -588,8 +599,8 @@ function RegistrationsTable({
                 )}
               </td>
               <td className="!py-5 !pr-4 align-top text-gray-600">
-                <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType)}>
-                  {classTypeLabel(r.classType)}
+                <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType, classTypes)}>
+                  {classTypeLabel(r.classType, classTypes)}
                 </span>
               </td>
               {showCounty && (
@@ -616,9 +627,11 @@ function RegistrationsTable({
 
 function StudentDrawer({
   registration,
+  classTypes,
   onClose,
 }: {
   registration: DashboardRegistration | null;
+  classTypes: { class_type: string; display_name?: string | null }[];
   onClose: () => void;
 }) {
   const r = registration;
@@ -646,7 +659,7 @@ function StudentDrawer({
           )}
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Class</dt>
-            <dd className="mt-1 text-gray-900">{classTypeLabel(r.classType)}</dd>
+            <dd className="mt-1 text-gray-900">{classTypeLabel(r.classType, classTypes)}</dd>
           </div>
           {r.countySlug && (
             <div>

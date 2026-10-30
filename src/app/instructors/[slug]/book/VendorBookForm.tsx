@@ -2,10 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { PLATFORM_SERVICE_FEE_PERCENT_LABEL } from "@/lib/booking-constants";
 import {
-  calculatePlatformServiceFeeCents,
-  PLATFORM_SERVICE_FEE_PERCENT_LABEL,
-} from "@/lib/booking-constants";
+  PLATFORM_FEE_LINE_LABEL,
+  applicableFeeSnapshots,
+  buildCheckoutAmounts,
+  formatCents,
+  type FeeRule,
+} from "@/lib/instructor-catalog";
 
 export type SerializableSession = {
   id: string;
@@ -23,6 +27,10 @@ type Props = {
   vendorName: string;
   sessions: SerializableSession[];
   refundPolicy: string | null;
+  /** Active classes besides the three CCW types. CCW choices stay in the list. */
+  extraClassChoices?: { key: string; label: string }[];
+  initialClassKey?: string | null;
+  checkoutFees?: FeeRule[];
 };
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -81,24 +89,21 @@ function CardIcon({ type }: { type: CardIconType }) {
   );
 }
 
-/** Matches `ClassSession.classType` in the database */
-type ClassFilterKey = "__all__" | "initial" | "renewal" | "add_a_gun";
-
-const CLASS_FILTER_OPTIONS: { key: ClassFilterKey; label: string }[] = [
-  { key: "__all__", label: "All" },
+const CCW_CLASS_CHOICES: { key: string; label: string }[] = [
   { key: "initial", label: "Initial" },
   { key: "renewal", label: "Renewal" },
   { key: "add_a_gun", label: "Add a gun" },
 ];
 
-function filterLabel(key: ClassFilterKey) {
-  return CLASS_FILTER_OPTIONS.find((o) => o.key === key)?.label ?? key;
+function filterLabel(key: string, options: { key: string; label: string }[]) {
+  return options.find((o) => o.key === key)?.label ?? key;
 }
 
 function defaultSessionTitle(classType: string) {
   if (classType === "initial") return "16hr Initial";
   if (classType === "add_a_gun") return "Add a gun";
-  return "8hr Renewal";
+  if (classType === "renewal") return "8hr Renewal";
+  return "Class";
 }
 
 function formatDateKeyInTz(date: Date, timezone: string) {
@@ -163,16 +168,29 @@ function buildCalendarDays(month: Date) {
 }
 
 function applyClassFilter(
-  key: ClassFilterKey,
+  key: string,
   allSessions: SerializableSession[]
 ): SerializableSession[] {
   if (key === "__all__") return allSessions;
   return allSessions.filter((s) => s.classType === key);
 }
 
-export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy }: Props) {
-  const [classTypeStepComplete, setClassTypeStepComplete] = useState(false);
-  const [selectedClassFilter, setSelectedClassFilter] = useState<ClassFilterKey | null>(null);
+export function VendorBookForm({
+  vendorSlug,
+  vendorName,
+  sessions,
+  refundPolicy,
+  extraClassChoices = [],
+  initialClassKey = null,
+  checkoutFees = [],
+}: Props) {
+  const filterOptions = [
+    { key: "__all__", label: "All" },
+    ...CCW_CLASS_CHOICES,
+    ...extraClassChoices.filter((choice) => !CCW_CLASS_CHOICES.some((ccw) => ccw.key === choice.key)),
+  ];
+  const [classTypeStepComplete, setClassTypeStepComplete] = useState(Boolean(initialClassKey));
+  const [selectedClassFilter, setSelectedClassFilter] = useState<string | null>(initialClassKey);
 
   const sessionsForType = useMemo(() => {
     if (!classTypeStepComplete || selectedClassFilter === null) return [];
@@ -219,10 +237,13 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy 
 
   const selected = sessions.find((s) => s.id === classSessionId);
   const classCents = selected?.priceCents ?? 0;
-  const feeCents = calculatePlatformServiceFeeCents(classCents);
-  const totalCents = classCents + feeCents;
+  const passThrough = selected
+    ? applicableFeeSnapshots(checkoutFees, selected.classType)
+    : [];
+  const amounts = buildCheckoutAmounts(classCents, passThrough);
+  const feeNotes = new Map(checkoutFees.map((fee) => [fee.id, fee.note]));
 
-  function selectClassType(key: ClassFilterKey) {
+  function selectClassType(key: string) {
     const nextSessions = applyClassFilter(key, sessions);
     const sorted = [...nextSessions].sort(
       (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
@@ -351,7 +372,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy 
                 aria-label="Class type"
               >
                 <div className="divide-y divide-[#edeae3] rounded-lg border border-[#e2ddd1] bg-white">
-                  {CLASS_FILTER_OPTIONS.map(({ key, label }) => {
+                  {filterOptions.map(({ key, label }) => {
                     const id = `class-type-${key}`;
                     const isSelected = selectedClassFilter === key;
                     return (
@@ -398,7 +419,7 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy 
             <p className="mt-2 text-sm leading-snug text-zinc-700">
               <span className="text-zinc-500">Selected:</span>{" "}
               <span className="font-medium text-zinc-900">
-                {selectedClassFilter !== null ? filterLabel(selectedClassFilter) : "—"}
+                {selectedClassFilter !== null ? filterLabel(selectedClassFilter, filterOptions) : "—"}
               </span>
             </p>
           )}
@@ -645,20 +666,31 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy 
             <li className="flex justify-between gap-4">
               <span className="text-zinc-600">Class price</span>
               <span className="tabular-nums font-medium text-zinc-900">
-                ${(classCents / 100).toFixed(2)}
+                {formatCents(amounts.classTuitionCents)}
               </span>
             </li>
+            {amounts.passThrough.map((fee) => (
+              <li key={fee.id} className="flex justify-between gap-4">
+                <span className="text-zinc-600">
+                  {fee.name}
+                  {feeNotes.get(fee.id) ? (
+                    <span className="mt-0.5 block text-xs text-zinc-500">{feeNotes.get(fee.id)}</span>
+                  ) : null}
+                </span>
+                <span className="tabular-nums font-medium text-zinc-900">
+                  {formatCents(fee.amountCents)}
+                </span>
+              </li>
+            ))}
             <li className="flex justify-between gap-4">
-              <span className="text-zinc-600">
-                Booking service fee ({PLATFORM_SERVICE_FEE_PERCENT_LABEL}, non-refundable)
-              </span>
+              <span className="text-zinc-600">{PLATFORM_FEE_LINE_LABEL}</span>
               <span className="tabular-nums font-medium text-zinc-900">
-                ${(feeCents / 100).toFixed(2)}
+                {formatCents(amounts.platformFeeCents)}
               </span>
             </li>
             <li className="flex justify-between gap-4 border-t border-[rgba(17,24,39,0.12)] pt-2.5 pb-1 text-sm font-semibold text-zinc-900">
               <span>Total</span>
-              <span className="tabular-nums">${(totalCents / 100).toFixed(2)}</span>
+              <span className="tabular-nums">{formatCents(amounts.totalCents)}</span>
             </li>
           </ul>
           <div className="mt-3">
@@ -685,8 +717,9 @@ export function VendorBookForm({ vendorSlug, vendorName, sessions, refundPolicy 
                   {refundPolicy ?? `Contact ${vendorName} for their refund policy.`}
                 </p>
                 <p className="!mb-0">
-                  Set by the instructor and applies to the class price. The{" "}
-                  {PLATFORM_SERVICE_FEE_PERCENT_LABEL} booking service fee is non-refundable.
+                  Set by the instructor and applies to the class price and fees they add, such as
+                  range or ammo. The CarryClass transaction fee ({PLATFORM_SERVICE_FEE_PERCENT_LABEL}) is
+                  non-refundable.
                 </p>
               </div>
             )}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { getOrCreateVendorProfile, getClassTypes } from "@/lib/onboarding-db";
+import { getOrCreateVendorProfile, getClassTypes, getCheckoutFees } from "@/lib/onboarding-db";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Step2ClassTypes } from "@/components/onboarding/Step2ClassTypes";
 
@@ -11,7 +11,10 @@ export default async function Step2Page() {
   const vendor = await getOrCreateVendorProfile(userId);
   if (vendor.is_published) redirect("/dashboard/vendor");
 
-  const classTypes = await getClassTypes(vendor.id);
+  const [classTypes, checkoutFees] = await Promise.all([
+    getClassTypes(vendor.id),
+    getCheckoutFees(vendor.id).catch(() => []),
+  ]);
 
   return (
     <div className="container-default w-container">
@@ -26,7 +29,7 @@ export default async function Step2Page() {
               Select the class types you teach and set your per-student price.
             </p>
           </div>
-          <Step2ClassTypes existingTypes={classTypes} />
+          <Step2ClassTypes existingTypes={classTypes} existingFees={checkoutFees} />
         </div>
       </div>
     </div>

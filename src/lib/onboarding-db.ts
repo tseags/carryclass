@@ -2,6 +2,8 @@
  * Server-only database helpers for the instructor onboarding flow.
  * All operations are authenticated via Clerk userId before reaching Supabase.
  */
+import type { NormalizedClassType, NormalizedFee } from "./instructor-catalog";
+import { isCustomClassKey } from "./instructor-catalog";
 import { supabaseAdmin } from "./supabase-admin";
 
 export interface VendorProfile {
@@ -41,6 +43,23 @@ export interface VendorClassType {
   class_type: string;
   price: number;
   is_active: boolean;
+  /** Instructor-facing name for classes other than CCW. Null on canonical types. */
+  display_name?: string | null;
+  /** Short student-facing description for other classes. */
+  description?: string | null;
+  sort_order?: number | null;
+}
+
+export interface VendorCheckoutFee {
+  id: string;
+  vendor_id: string;
+  name: string;
+  amount: number;
+  note: string | null;
+  applies_to_all: boolean;
+  class_types: string[];
+  is_active: boolean;
+  sort_order: number;
 }
 
 /** Per-gun pricing for "Add a Gun" classes. Stored as jsonb. */
@@ -344,12 +363,192 @@ export async function advanceOnboardingStep(
 
 // ── Class types ──────────────────────────────────────────────────────────────
 
+function mapClassType(row: Record<string, unknown>): VendorClassType {
+  return {
+    id: String(row.id),
+    vendor_id: String(row.vendor_id),
+    class_type: String(row.class_type),
+    price: Number(row.price),
+    is_active: Boolean(row.is_active),
+    display_name: row.display_name == null ? null : String(row.display_name),
+    description: row.description == null ? null : String(row.description),
+    sort_order: row.sort_order == null ? 0 : Number(row.sort_order),
+  };
+}
+
+function mapCheckoutFee(row: Record<string, unknown>): VendorCheckoutFee {
+  const classTypes = Array.isArray(row.class_types)
+    ? row.class_types.filter((key): key is string => typeof key === "string")
+    : [];
+  return {
+    id: String(row.id),
+    vendor_id: String(row.vendor_id),
+    name: String(row.name ?? ""),
+    amount: Number(row.amount),
+    note: row.note == null ? null : String(row.note),
+    applies_to_all: Boolean(row.applies_to_all),
+    class_types: classTypes,
+    is_active: row.is_active == null ? true : Boolean(row.is_active),
+    sort_order: row.sort_order == null ? 0 : Number(row.sort_order),
+  };
+}
+
 export async function getClassTypes(vendorId: string): Promise<VendorClassType[]> {
   const { data } = await supabaseAdmin()
     .from("vendor_class_types")
     .select("*")
-    .eq("vendor_id", vendorId);
-  return (data ?? []) as VendorClassType[];
+    .eq("vendor_id", vendorId)
+    .order("sort_order", { ascending: true });
+  return ((data ?? []) as Record<string, unknown>[]).map(mapClassType);
+}
+
+export async function getCheckoutFees(vendorId: string): Promise<VendorCheckoutFee[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("vendor_checkout_fees")
+    .select("*")
+    .eq("vendor_id", vendorId)
+    .order("sort_order", { ascending: true });
+  if (error) throw new Error(`Failed to load checkout fees: ${error.message}`);
+  return ((data ?? []) as Record<string, unknown>[]).map(mapCheckoutFee);
+}
+
+export class UpcomingSessionsBlockDeleteError extends Error {
+  classNames: string[];
+
+  constructor(classNames: string[]) {
+    const message =
+      classNames.length === 1
+        ? `${classNames[0]} has upcoming sessions. Turn the class off, or remove those sessions, before deleting it.`
+        : `These classes have upcoming sessions: ${classNames.join(", ")}. Turn them off, or remove those sessions, before deleting them.`;
+    super(message);
+    this.name = "UpcomingSessionsBlockDeleteError";
+    this.classNames = classNames;
+  }
+}
+
+/**
+ * Save the full class-type list. Canonical rows are updated in place.
+ * Custom rows missing from `types` are deleted when `replaceCustom` is set,
+ * unless they still have an upcoming active session.
+ */
+export async function saveClassTypes(
+  vendorId: string,
+  types: NormalizedClassType[],
+  replaceCustom: boolean
+): Promise<VendorClassType[]> {
+  const db = supabaseAdmin();
+  const existing = await getClassTypes(vendorId);
+  const nextKeys = new Set(types.map((type) => type.class_type));
+
+  if (replaceCustom) {
+    const removed = existing.filter(
+      (row) => isCustomClassKey(row.class_type) && !nextKeys.has(row.class_type)
+    );
+    if (removed.length) {
+      const { data: upcoming, error: upcomingError } = await db
+        .from("vendor_calendar_classes")
+        .select("class_type")
+        .eq("vendor_id", vendorId)
+        .eq("is_active", true)
+        .gt("start_time", new Date().toISOString())
+        .in(
+          "class_type",
+          removed.map((row) => row.class_type)
+        );
+      if (upcomingError) {
+        throw new Error(`Failed to check upcoming sessions: ${upcomingError.message}`);
+      }
+      const blockedKeys = new Set(
+        ((upcoming ?? []) as Array<{ class_type: string | null }>)
+          .map((row) => row.class_type)
+          .filter((key): key is string => Boolean(key))
+      );
+      const blocked = removed.filter((row) => blockedKeys.has(row.class_type));
+      if (blocked.length) {
+        throw new UpcomingSessionsBlockDeleteError(
+          blocked.map((row) => row.display_name?.trim() || "This class")
+        );
+      }
+      const { error: deleteError } = await db
+        .from("vendor_class_types")
+        .delete()
+        .eq("vendor_id", vendorId)
+        .in(
+          "id",
+          removed.map((row) => row.id)
+        );
+      if (deleteError) throw new Error(`Failed to delete class: ${deleteError.message}`);
+    }
+  }
+
+  const existingByKey = new Map(existing.map((row) => [row.class_type, row]));
+  for (const type of types) {
+    const current = existingByKey.get(type.class_type);
+    const fields = {
+      price: type.price,
+      is_active: type.is_active,
+      display_name: type.display_name,
+      description: type.description,
+      sort_order: type.sort_order,
+    };
+    if (current) {
+      const { error } = await db.from("vendor_class_types").update(fields).eq("id", current.id);
+      if (error) throw new Error(`Failed to update class type: ${error.message}`);
+    } else {
+      const { error } = await db.from("vendor_class_types").insert({
+        vendor_id: vendorId,
+        class_type: type.class_type,
+        ...fields,
+      });
+      if (error) throw new Error(`Failed to add class type: ${error.message}`);
+    }
+  }
+
+  return getClassTypes(vendorId);
+}
+
+/** Replace the instructor's checkout fees. Saving does not require Stripe. */
+export async function saveCheckoutFees(
+  vendorId: string,
+  fees: NormalizedFee[]
+): Promise<VendorCheckoutFee[]> {
+  const db = supabaseAdmin();
+  const existing = await getCheckoutFees(vendorId);
+  const keptIds = new Set(fees.map((fee) => fee.id).filter((id): id is string => Boolean(id)));
+  const removedIds = existing.map((fee) => fee.id).filter((id) => !keptIds.has(id));
+  if (removedIds.length) {
+    const { error } = await db
+      .from("vendor_checkout_fees")
+      .delete()
+      .eq("vendor_id", vendorId)
+      .in("id", removedIds);
+    if (error) throw new Error(`Failed to delete checkout fee: ${error.message}`);
+  }
+
+  const existingIds = new Set(existing.map((fee) => fee.id));
+  for (const fee of fees) {
+    const fields = {
+      name: fee.name,
+      amount: fee.amount,
+      note: fee.note,
+      applies_to_all: fee.applies_to_all,
+      class_types: fee.class_types,
+      is_active: fee.is_active,
+      sort_order: fee.sort_order,
+    };
+    if (fee.id && existingIds.has(fee.id)) {
+      const { error } = await db.from("vendor_checkout_fees").update(fields).eq("id", fee.id);
+      if (error) throw new Error(`Failed to update checkout fee: ${error.message}`);
+    } else {
+      const { error } = await db.from("vendor_checkout_fees").insert({
+        vendor_id: vendorId,
+        ...fields,
+      });
+      if (error) throw new Error(`Failed to add checkout fee: ${error.message}`);
+    }
+  }
+
+  return getCheckoutFees(vendorId);
 }
 
 export async function upsertClassTypes(

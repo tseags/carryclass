@@ -133,6 +133,12 @@ const CLASS_TYPE_LABELS: Record<string, string> = {
   add_a_gun: "Add-A-Gun",
 };
 
+function classLabel(classTypes: VendorClassType[], key: string | null | undefined): string {
+  if (!key) return "CCW Initial";
+  if (CLASS_TYPE_LABELS[key]) return CLASS_TYPE_LABELS[key];
+  return classTypes.find((ct) => ct.class_type === key)?.display_name?.trim() || "Other class";
+}
+
 /** Parse "HH:MM" (24h) into 12-hour parts for the time selects. */
 function parseTimeParts(value: string): {
   hour12: number;
@@ -207,7 +213,7 @@ export function Step3Schedule({
   const [manualSlots, setManualSlots] = useState<ManualSlot[]>([]);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>({
-    title: CLASS_TYPE_LABELS[classTypes[0]?.class_type ?? "initial"] ?? "CCW Initial",
+    title: classLabel(classTypes, classTypes[0]?.class_type ?? "initial"),
     date: "",
     startTime: "09:00",
     duration: 480,
@@ -404,7 +410,7 @@ export function Step3Schedule({
           );
           return {
             class_type: slot.classType,
-            title: slot.title.trim() || (CLASS_TYPE_LABELS[slot.classType] ?? slot.classType),
+            title: slot.title.trim() || classLabel(classTypes, slot.classType),
             start_time: startDt.toISOString(),
             end_time: endDt.toISOString(),
             max_students: slot.maxStudents ? parseInt(slot.maxStudents) : null,
@@ -717,7 +723,7 @@ export function Step3Schedule({
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-zinc-800">
-                        {slot.title.trim() || (CLASS_TYPE_LABELS[slot.classType] ?? slot.classType)}
+                        {slot.title.trim() || classLabel(classTypes, slot.classType)}
                       </p>
                       {slot.recurrence !== "one-time" && (
                         <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
@@ -879,9 +885,9 @@ export function Step3Schedule({
                     value={newSlot.classType}
                     onChange={(e) => {
                       const val = e.target.value;
-                      const nextLabel = CLASS_TYPE_LABELS[val] ?? val;
+                      const nextLabel = classLabel(classTypes, val);
                       setNewSlot((s) => {
-                        const prevLabel = CLASS_TYPE_LABELS[s.classType] ?? s.classType;
+                        const prevLabel = classLabel(classTypes, s.classType);
                         const titleStillDefault =
                           !s.title.trim() || s.title.trim() === prevLabel;
                         return {
@@ -896,7 +902,7 @@ export function Step3Schedule({
                   >
                     {activeClassTypes.map((ct) => (
                       <option key={ct.class_type} value={ct.class_type}>
-                        {CLASS_TYPE_LABELS[ct.class_type] ?? ct.class_type}
+                        {classLabel(classTypes, ct.class_type)}
                       </option>
                     ))}
                   </select>
@@ -1118,7 +1124,9 @@ function EventReviewTable({
                           ? "Initial"
                           : ct.class_type === "renewal"
                           ? "Renewal"
-                          : "Add-A-Gun"}
+                          : ct.class_type === "add_a_gun"
+                          ? "Add-A-Gun"
+                          : ct.display_name?.trim() || "Other class"}
                       </option>
                     ))}
                     <option value="skip">Skip this event</option>

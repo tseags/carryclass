@@ -7,6 +7,8 @@ export function revalidatePublishedVendorPaths(slug: string | null | undefined):
   if (trimmed) {
     revalidatePath(`/instructors/${trimmed}`);
     revalidatePath(`/instructors/${trimmed}/book`);
+    revalidatePath(`/instructors/${trimmed}/classes`);
+    revalidatePath(`/instructors/${trimmed}/classes/[classKey]`, "page");
   }
   revalidateTag(VENDOR_DATA_CACHE_TAG, "max");
   revalidatePath("/sitemap.xml");

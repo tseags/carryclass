@@ -4,6 +4,7 @@ import {
   getOrCreateVendorProfile,
   getClassTypes,
   getCalendarClasses,
+  getCheckoutFees,
 } from "@/lib/onboarding-db";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Step6Review } from "@/components/onboarding/Step6Review";
@@ -15,9 +16,10 @@ export default async function Step6Page() {
   const vendor = await getOrCreateVendorProfile(userId);
   if (vendor.is_published) redirect("/dashboard/vendor");
 
-  const [classTypes, calendarClasses] = await Promise.all([
+  const [classTypes, calendarClasses, checkoutFees] = await Promise.all([
     getClassTypes(vendor.id),
     getCalendarClasses(vendor.id),
+    getCheckoutFees(vendor.id).catch(() => []),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function Step6Page() {
             vendor={vendor}
             classTypes={classTypes}
             calendarClasses={calendarClasses}
+            checkoutFees={checkoutFees}
           />
         </div>
       </div>

@@ -2,6 +2,7 @@
  * Pure mapping helpers for the publish → live bridge (no DB imports).
  */
 import type { Vendor } from "@/types";
+import { isCustomClassKey } from "@/lib/instructor-catalog";
 import type {
   VendorCalendarClass,
   VendorClassType,
@@ -41,7 +42,8 @@ export type SessionScaffoldInput = {
   startsAt: Date;
   endsAt: Date | null;
   title: string | null;
-  classType: BookableClassType;
+  /** Canonical CCW key or a stable `custom_…` key. */
+  classType: string;
   priceCents: number;
   capacity: number;
 };
@@ -274,25 +276,34 @@ export function buildPrismaVendorData(
 
 /**
  * Map active onboarding calendar classes to Prisma ClassSession scaffolds.
- * Only initial/renewal (booking UI); price falls back to class-type dollars.
+ * Initial, renewal, and active custom classes. Add-a-Gun stays on gun_pricing
+ * and is not turned into a standard tuition session. Price falls back to the
+ * class-type dollars.
  */
 export function calendarClassesToSessions(
   calendarClasses: VendorCalendarClass[],
   classTypes: VendorClassType[]
 ): SessionScaffoldInput[] {
   const pricing = deriveClassPricing(classTypes);
-  const typePriceCents: Record<BookableClassType, number> = {
+  const typePriceCents: Record<string, number> = {
     initial:
       pricing.priceInitial != null ? dollarsToCents(pricing.priceInitial) : 0,
     renewal:
       pricing.priceRenewal != null ? dollarsToCents(pricing.priceRenewal) : 0,
   };
+  for (const type of classTypes) {
+    if (!type.is_active || !isCustomClassKey(type.class_type)) continue;
+    const dollars = Number(type.price);
+    if (Number.isFinite(dollars)) typePriceCents[type.class_type] = dollarsToCents(dollars);
+  }
 
   const out: SessionScaffoldInput[] = [];
   for (const cls of calendarClasses) {
     if (!cls.is_active) continue;
     const rawType = (cls.class_type ?? "").trim().toLowerCase();
-    if (rawType !== "initial" && rawType !== "renewal") continue;
+    const custom = isCustomClassKey(rawType);
+    if (rawType !== "initial" && rawType !== "renewal" && !custom) continue;
+    if (custom && typePriceCents[rawType] == null) continue;
 
     const startsAt = new Date(cls.start_time);
     if (!Number.isFinite(startsAt.getTime())) continue;
@@ -303,7 +314,7 @@ export function calendarClassesToSessions(
     const priceCents =
       cls.price != null && Number.isFinite(Number(cls.price))
         ? dollarsToCents(Number(cls.price))
-        : typePriceCents[rawType];
+        : (typePriceCents[rawType] ?? 0);
 
     const capacity =
       cls.max_students != null &&

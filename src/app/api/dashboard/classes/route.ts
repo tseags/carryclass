@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { isCustomClassKey } from "@/lib/instructor-catalog";
 import {
   getVendorProfile,
   createCalendarClass,
@@ -35,6 +36,17 @@ export async function POST(req: NextRequest) {
     const price =
       body.price === "" || body.price == null ? null : Number(body.price);
 
+    if (body.class_type && isCustomClassKey(body.class_type)) {
+      const types = await getClassTypes(vendor.id);
+      const custom = types.find((type) => type.class_type === body.class_type);
+      if (!custom?.is_active) {
+        return NextResponse.json(
+          { error: "Turn this class on before adding it to the schedule." },
+          { status: 400 }
+        );
+      }
+    }
+
     const created = await createCalendarClass(vendor.id, {
       class_type: body.class_type || null,
       title: body.title || null,
@@ -53,9 +65,7 @@ export async function POST(req: NextRequest) {
       recurrence_rule: body.recurrence_rule || null,
     });
 
-    // Make sure the chosen class type is offered + active on the profile, so an
-    // instructor can add any type even if they didn't enable it during onboarding.
-    if (body.class_type) {
+    if (body.class_type && !isCustomClassKey(body.class_type)) {
       // Pricing for add_a_gun lives in gun_pricing, so seed its type price at 0.
       const seedPrice =
         body.class_type === "add_a_gun" ? 0 : price ?? 0;

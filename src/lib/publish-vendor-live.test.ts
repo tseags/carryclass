@@ -313,6 +313,78 @@ describe("calendarClassesToSessions", () => {
       capacity: 12,
     });
   });
+
+  it("books active custom classes and leaves CCW listing prices unchanged", () => {
+    const pricing = deriveClassPricing([
+      classType({ class_type: "initial", price: 200 }),
+      classType({
+        class_type: "custom_abcd1234",
+        price: 180,
+        display_name: "Private lesson",
+      }),
+    ]);
+    expect(pricing.priceInitial).toBe(200);
+    expect(pricing.priceRenewal).toBeNull();
+    expect(pricing.classTypes).toEqual(["initial"]);
+
+    const sessions = calendarClassesToSessions(
+      [
+        {
+          id: "c-custom",
+          vendor_id: "v1",
+          external_event_id: null,
+          class_type: "custom_abcd1234",
+          title: "Private lesson",
+          description: null,
+          location: null,
+          range_location: null,
+          start_time: "2026-07-01T16:00:00.000Z",
+          end_time: "2026-07-01T18:00:00.000Z",
+          is_recurring: false,
+          recurrence_rule: null,
+          max_students: 1,
+          price: 180,
+          gun_pricing: null,
+          is_active: true,
+        },
+        {
+          id: "c-off",
+          vendor_id: "v1",
+          external_event_id: null,
+          class_type: "custom_abcd9999",
+          title: "Inactive",
+          description: null,
+          location: null,
+          range_location: null,
+          start_time: "2026-07-02T16:00:00.000Z",
+          end_time: "2026-07-02T18:00:00.000Z",
+          is_recurring: false,
+          recurrence_rule: null,
+          max_students: 1,
+          price: 50,
+          gun_pricing: null,
+          is_active: true,
+        },
+      ],
+      [
+        classType({ class_type: "initial", price: 200 }),
+        classType({ class_type: "custom_abcd1234", price: 180, display_name: "Private lesson" }),
+        classType({
+          class_type: "custom_abcd9999",
+          price: 50,
+          display_name: "Inactive",
+          is_active: false,
+        }),
+      ]
+    );
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      classType: "custom_abcd1234",
+      title: "Private lesson",
+      priceCents: 18000,
+      capacity: 1,
+    });
+  });
 });
 
 describe("findSourceRowIdsForCanonicalSlug", () => {
