@@ -11,7 +11,7 @@ function ClassCard({ slug, card }: { slug: string; card: PublicClassCard }) {
   return (
     <Link
       href={classPagePath(slug, card.key)}
-      className="group flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-4 py-3 !text-inherit !no-underline shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:gap-4 sm:px-5 sm:py-3"
+      className="group flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3 !text-inherit !no-underline shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:gap-4 sm:px-5 sm:py-3"
     >
       <div className="min-w-0 flex-1">
         <h4 className="text-[15px] font-semibold leading-[1.25] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[16px]">
@@ -52,7 +52,7 @@ export function AvailableClasses({
       </h3>
       <div className="mt-5 space-y-3">
         {empty ? (
-          <article className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-4 py-3 sm:px-5 sm:py-3">
+          <article className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3 sm:px-5 sm:py-3">
             <div>
               <h4 className="text-[15px] font-semibold text-[#1f1f1d] sm:text-[16px]">CCW Class</h4>
               <p className="mt-0.5 text-[13px] text-[#77766f]">Call or email for current rates</p>
