@@ -273,7 +273,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     )}
                   </div>
 
-                  <AvailableClasses slug={vendor.slug} ccw={profileCcw} other={profileOther} />
+                  <AvailableClasses
+                    slug={vendor.slug}
+                    ccw={profileCcw}
+                    other={profileOther}
+                  />
                 </section>
               )}
 
@@ -427,6 +431,15 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                       </div>
                     </section>
                   )}
+
+                  {vendor.acceptsBookings ? (
+                    <Link
+                      href={`/instructors/${vendor.slug}/book`}
+                      className="btn-primary small w-button match-header-btn inline-flex w-full items-center justify-center text-center !bg-[#1f1f1d] !text-white hover:!bg-[#2f2e2b] focus-visible:!bg-[#2f2e2b]"
+                    >
+                      Book Now
+                    </Link>
+                  ) : null}
 
                 </div>
               </div>

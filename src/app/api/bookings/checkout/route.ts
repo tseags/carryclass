@@ -158,53 +158,56 @@ export async function POST(req: Request) {
   let checkoutSession;
   try {
     checkoutSession = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: customerEmail,
-    line_items: lines.map((line) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: line.name,
-          ...(line.description ? { description: line.description } : {}),
+      mode: "payment",
+      ui_mode: "custom",
+      customer_email: customerEmail,
+      line_items: lines.map((line) => ({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: line.name,
+            ...(line.description ? { description: line.description } : {}),
+          },
+          unit_amount: line.unitAmountCents,
         },
-        unit_amount: line.unitAmountCents,
+        quantity: 1,
+      })),
+      payment_intent_data: {
+        application_fee_amount: amounts.platformFeeCents,
+        transfer_data: {
+          destination: classSession.vendor.stripeConnectAccountId,
+        },
       },
-      quantity: 1,
-    })),
-    payment_intent_data: {
-      application_fee_amount: amounts.platformFeeCents,
-      transfer_data: {
-        destination: classSession.vendor.stripeConnectAccountId,
+      return_url: `${origin}/instructors/${classSession.vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: {
+        classSessionId: classSession.id,
+        vendorId: classSession.vendorId,
+        customerName,
+        customerFirstName: firstName,
+        customerEmail,
+        customerPhone,
+        clerkUserId: userId ?? "",
+        classAmountCents: String(amounts.classTuitionCents),
+        serviceFeeCents: String(amounts.platformFeeCents),
+        passThroughCents: String(amounts.passThroughCents),
+        feeSnapshotId: snapshot.id,
       },
-    },
-    success_url: `${origin}/instructors/${classSession.vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/instructors/${classSession.vendor.slug}/book`,
-    metadata: {
-      classSessionId: classSession.id,
-      vendorId: classSession.vendorId,
-      customerName,
-      customerFirstName: firstName,
-      customerEmail,
-      customerPhone,
-      clerkUserId: userId ?? "",
-      classAmountCents: String(amounts.classTuitionCents),
-      serviceFeeCents: String(amounts.platformFeeCents),
-      passThroughCents: String(amounts.passThroughCents),
-      feeSnapshotId: snapshot.id,
-    },
-  });
+    });
   } catch (error) {
     await prisma.checkoutFeeSnapshot.delete({ where: { id: snapshot.id } }).catch(() => undefined);
     console.error("[bookings/checkout] stripe session failed", error);
     return NextResponse.json({ error: "Could not create checkout session." }, { status: 500 });
   }
 
-  if (!checkoutSession.url) {
+  if (!checkoutSession.client_secret) {
     return NextResponse.json(
       { error: "Could not create checkout session." },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({ url: checkoutSession.url });
+  return NextResponse.json({
+    clientSecret: checkoutSession.client_secret,
+    sessionId: checkoutSession.id,
+  });
 }

@@ -30,7 +30,7 @@ export default async function Step6Page() {
           <div className="mb-6">
             <h1 className="onboard-step-title">Review &amp; go live</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Everything look good? Hit &ldquo;Publish&rdquo; to make your listing live on CarryClass.
+              If everything looks good, publish to make these changes live on your CarryClass profile.
             </p>
           </div>
           <Step6Review

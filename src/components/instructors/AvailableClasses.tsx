@@ -2,31 +2,27 @@ import Link from "next/link";
 import {
   OTHER_CLASSES_HEADING,
   OTHER_CLASSES_NOTE,
-  classPagePath,
   classesIndexPath,
   type PublicClassCard,
 } from "@/lib/instructor-catalog";
 
-function ClassCard({ slug, card }: { slug: string; card: PublicClassCard }) {
+function ClassCard({ card }: { card: PublicClassCard }) {
   return (
-    <Link
-      href={classPagePath(slug, card.key)}
-      className="group flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3 !text-inherit !no-underline shadow-[0_1px_0_rgba(26,26,24,0.02)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[#d3d0c8] hover:shadow-[0_14px_32px_rgba(0,0,0,0.12)] sm:gap-4 sm:px-5 sm:py-3"
-    >
+    <article className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3.5 shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:gap-4 sm:px-5 sm:py-4">
       <div className="min-w-0 flex-1">
-        <h4 className="text-[15px] font-semibold leading-[1.25] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[16px]">
+        <h4 className="!m-0 text-[15px] font-semibold leading-[1.25] text-[#1f1f1d] sm:text-[16px]">
           {card.title}
         </h4>
         {card.subtitle ? (
-          <p className="mt-0.5 text-[12px] leading-[1.35] text-[#77766f] line-clamp-2 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[13px]">
+          <p className="!mb-0 mt-0.5 text-[12px] leading-[1.35] text-[#77766f] line-clamp-2 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[13px]">
             {card.subtitle}
           </p>
         ) : null}
       </div>
-      <p className="shrink-0 text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#1f1f1d] transition-colors duration-200 group-hover:text-[#c96442] sm:text-[26px]">
+      <p className="!m-0 shrink-0 self-center text-[20px] font-semibold leading-none tracking-[-0.02em] text-[#1f1f1d] sm:text-[26px]">
         {card.priceLabel}
       </p>
-    </Link>
+    </article>
   );
 }
 
@@ -42,7 +38,7 @@ export function AvailableClasses({
   const empty = ccw.length === 0 && other.length === 0;
   return (
     <div>
-      <h3 className="text-[22px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[40px]">
+      <h3 className="!m-0 min-w-0 text-[22px] font-semibold leading-[1.15] tracking-[-0.01em] text-[#1f1f1d] sm:text-[32px] lg:text-[40px]">
         <Link
           href={classesIndexPath(slug)}
           className="!text-inherit !no-underline hover:!text-[#c96442]"
@@ -52,15 +48,15 @@ export function AvailableClasses({
       </h3>
       <div className="mt-5 space-y-3">
         {empty ? (
-          <article className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3 sm:px-5 sm:py-3">
+          <article className="flex items-center justify-between gap-3 rounded-[14px] border border-[#ebe9e2] !bg-white px-4 py-3.5 sm:px-5 sm:py-4">
             <div>
-              <h4 className="text-[15px] font-semibold text-[#1f1f1d] sm:text-[16px]">CCW Class</h4>
-              <p className="mt-0.5 text-[13px] text-[#77766f]">Call or email for current rates</p>
+              <h4 className="!m-0 text-[15px] font-semibold text-[#1f1f1d] sm:text-[16px]">CCW Class</h4>
+              <p className="!mb-0 mt-0.5 text-[13px] text-[#77766f]">Call or email for current rates</p>
             </div>
-            <p className="text-[20px] font-semibold text-[#1f1f1d] sm:text-[26px]">Contact</p>
+            <p className="!m-0 shrink-0 self-center text-[20px] font-semibold text-[#1f1f1d] sm:text-[26px]">Contact</p>
           </article>
         ) : (
-          ccw.map((card) => <ClassCard key={card.key} slug={slug} card={card} />)
+          ccw.map((card) => <ClassCard key={card.key} card={card} />)
         )}
       </div>
       {other.length > 0 && (
@@ -73,7 +69,7 @@ export function AvailableClasses({
           </p>
           <div className="mt-4 space-y-3">
             {other.map((card) => (
-              <ClassCard key={card.key} slug={slug} card={card} />
+              <ClassCard key={card.key} card={card} />
             ))}
           </div>
         </div>

@@ -158,6 +158,84 @@ model CcwTimelineSubmission {
   @@index([status, submittedAt])
 }
 
+enum OutreachStage {
+  not_contacted
+  called
+  emailed
+  follow_up
+  replied
+  interested
+  not_interested
+  claimed
+  do_not_contact
+}
+
+enum OutreachActivityType {
+  note
+  stage_change
+  email
+  call
+}
+
+enum OutreachCallDisposition {
+  no_answer
+  voicemail
+  connected
+  bad_number
+}
+
+/// One instructor business for internal outreach, deduped from per-county
+/// `carry_class_vendor_data` rows. Derived fields are refreshed on sync; stage,
+/// next action, and activity are only ever changed by the person working the list.
+model OutreachContact {
+  id                String        @id @default(cuid())
+  dedupeKey         String        @unique
+  displayName       String
+  instructorNames   String[]
+  emails            String[]
+  phones            String[]
+  website           String?
+  addresses         String[]
+  city              String?
+  counties          String[]
+  primaryCounty     String?
+  bookingCapability String?
+  directorySlug     String?
+  sourceListingIds  String[]
+  tags              String[]
+  stage             OutreachStage @default(not_contacted)
+  nextActionAt      DateTime?
+  lastContactedAt   DateTime?
+  doNotContact      Boolean       @default(false)
+  syncedAt          DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  activities OutreachActivity[]
+
+  @@index([stage])
+  @@index([nextActionAt])
+}
+
+model OutreachActivity {
+  id              String                   @id @default(cuid())
+  contactId       String
+  contact         OutreachContact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  type            OutreachActivityType
+  body            String?
+  occurredAt      DateTime                 @default(now())
+  fromStage       OutreachStage?
+  toStage         OutreachStage?
+  disposition     OutreachCallDisposition?
+  durationSeconds Int?
+  phone           String?
+  zohoMessageId   String?
+  twilioCallSid   String?
+  createdAt       DateTime                 @default(now())
+
+  @@index([contactId, occurredAt])
+}
+
 model Booking {
   id        String @id @default(cuid())
   vendorId  String

@@ -1,0 +1,1263 @@
+/* Loaded last from layout.tsx — wins over Webflow ccw-directory.webflow.css */
+
+/* Onboarding step titles — Webflow sets h1 to 48px globally */
+h1.onboard-step-title {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-size: 18px !important;
+  line-height: 1.375 !important;
+  font-weight: 700 !important;
+  color: #141413 !important;
+}
+
+/* Claim search result tiles — Webflow/button resets strip borders from globals */
+button.claim-search-result {
+  border: 1px solid rgba(20, 20, 19, 0.28) !important;
+  background-color: #fafafa !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+button.claim-search-result:hover:not(:disabled),
+button.claim-search-result:focus-visible:not(:disabled) {
+  border-color: rgba(20, 20, 19, 0.55) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Claim flow title → subtitle gap (Webflow p rules zero out Tailwind mt-*) */
+.claim-listing-flow p.claim-flow-subtitle {
+  margin-top: 28px !important;
+  margin-bottom: 0 !important;
+}
+
+/* Publish CTA — subtler hover than default btn-primary scale(1.06) */
+button.onboard-publish-btn.btn-primary:hover:not(:disabled),
+button.onboard-publish-btn.btn-primary:focus-visible:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+/* Claim verify buttons sit side-by-side — kill Webflow scale so they don't collide */
+.claim-listing-flow .btn-primary:hover:not(:disabled),
+.claim-listing-flow .btn-primary:focus-visible:not(:disabled),
+.claim-listing-flow .btn-secondary:hover:not(:disabled),
+.claim-listing-flow .btn-secondary:focus-visible:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Webflow grid fix — `.grid-2-columns.title-and-btn-grid.mg-bottom-24px`     */
+/* ships with `grid-template-columns: 578px auto` from the export. That       */
+/* hardcoded 578px column overflows on phones (CountyScrollSection header),   */
+/* widens the document, and forces the fixed header + by-the-numbers section  */
+/* to scale past 375px. Webflow's own mobile rule only matches the plain      */
+/* `.title-and-btn-grid` (no `.mg-bottom-24px`) so we have to override the    */
+/* more-specific compound selector here.                                      */
+/* -------------------------------------------------------------------------- */
+.grid-2-columns.title-and-btn-grid.mg-bottom-24px {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 767px) {
+  .grid-2-columns.title-and-btn-grid,
+  .grid-2-columns.title-and-btn-grid.mg-bottom-24px {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark blue textured hero — background + noise: src/app/globals.css        */
+/* -------------------------------------------------------------------------- */
+
+.section-3.vendors-hero .container-2 {
+  max-width: 1100px;
+}
+
+/* Hero typography on dark */
+.section-3.vendors-hero .vendors-hero-title,
+.section-3.vendors-hero h1 {
+  color: #f8fafc !important;
+}
+
+/* Vendors hero H1 font-size: src/app/globals.css */
+
+.section-3.vendors-hero .vendors-hero-title {
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-3.vendors-hero .vendors-hero-description,
+.section-3.vendors-hero .paragraph-5 {
+  color: rgba(226, 232, 240, 0.92) !important;
+}
+
+/* Breadcrumb: centered (below-title rows only; --above-title spacing in globals.css) */
+.vendors-hero-breadcrumb-row {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  margin-top: 1.75rem;
+  margin-bottom: 0;
+}
+
+.vendors-hero-breadcrumb-row .vendors-hero-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  color: rgba(203, 213, 225, 0.95) !important;
+}
+
+/* Current page label (e.g. Find CCW Courses on /instructors) — final authority in src/app/globals.css */
+.vendors-hero-breadcrumb-row .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Match separator to link tone on vendors hero */
+.vendors-hero-content .vendors-hero-breadcrumb-row span.mx-2 {
+  color: #e2e8f0 !important;
+}
+
+.vendors-hero-breadcrumb-row a {
+  color: #e2e8f0 !important;
+  text-decoration: none;
+}
+
+.vendors-hero-breadcrumb-row a:hover {
+  color: #fff !important;
+  text-decoration: underline;
+}
+
+.vendors-hero-breadcrumb-row span.mx-2 {
+  color: rgba(148, 163, 184, 0.9) !important;
+}
+
+.vendors-hero .vendors-hero-content {
+  text-align: center;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/*
+  Two-line hero: explicit <br /> + full-width inline-block lines so each phrase is one row.
+  nowrap keeps each line from splitting into a 3rd visual line; br guarantees exactly two rows.
+*/
+.section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  vertical-align: top;
+}
+.section-3.vendors-hero .vendors-hero-title br {
+  line-height: 0;
+}
+.section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line + br + .vendors-hero-title-line {
+  margin-top: 0.15em;
+}
+
+/* Desktop: one phrase per line (paired with explicit <br /> on /ca) */
+@media screen and (min-width: 768px) {
+  .section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+    white-space: nowrap !important;
+  }
+}
+
+/* Mobile: horizontal inset + allow H1 to wrap (container-2 has no side padding in Webflow) */
+@media screen and (max-width: 767px) {
+  .section-3.vendors-hero .container-2 {
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+
+  .section-3.vendors-hero .vendors-hero-content {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .section-3.vendors-hero .vendors-hero-title .vendors-hero-title-line {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Hero subcopy: two short lines + br; from 768px nowrap each line so first span can’t wrap to a 3rd row */
+.section-3.vendors-hero .vendors-hero-description--two-lines {
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center !important;
+  width: 100%;
+}
+.section-3.vendors-hero .vendors-hero-description-line {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  vertical-align: top;
+}
+.section-3.vendors-hero .vendors-hero-description--two-lines br {
+  line-height: 0;
+}
+@media screen and (min-width: 768px) {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 767px) {
+  .section-3.vendors-hero .vendors-hero-description--two-lines .vendors-hero-description-line {
+    white-space: normal;
+  }
+}
+
+/* Search / filter card on hero — /instructors: light card on dark navy (see globals for white shell) */
+.section-3.vendors-hero .filter-bar {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Vendors filter card padding: see vendors-filter-bar-shell in src/app/globals.css (loads after links) */
+
+/* /instructors filter row: drop Webflow 876px cap; search column uses full card width to the left */
+.section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+
+.section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page > form.w-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.section-3.vendors-hero .filter-bar form .flex-horizontal {
+  width: 100%;
+}
+
+.section-3.vendors-hero .filter-bar form .flex-horizontal .input.icon-left-inside.search-btn-inside {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto;
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 991px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .section-3.vendors-hero .filter-bar .grid-3-columns.filters-grid.vendor-page {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* County dropdown (stacking, scroll, search inset): src/app/globals.css — linked file loses cascade to bundle */
+
+/* -------------------------------------------------------------------------- */
+/* /ca county result cards — image banner pinned to card top                  */
+/*                                                                            */
+/* Root cause of prior full-page overlay: Next.js <Image fill /> emits        */
+/* inline `position:absolute; inset:0` — if the parent wrapper fails to       */
+/* establish a positioned containing block (relative + explicit size), the    */
+/* img promotes up the ancestor chain and paints over the entire page.        */
+/* Rules below set the contain chain with !important so the img CANNOT        */
+/* escape, and add width/height/object-fit defensively.                       */
+/* -------------------------------------------------------------------------- */
+.county-result-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.county-result-card > *:not(.county-result-card__media) {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+.county-result-card > .popular-vendors-redesign__featured {
+  padding-top: 18px;
+  margin-bottom: 6px;
+}
+
+.county-result-card > .popular-vendors-redesign__title-row {
+  min-height: 0;
+  padding-top: 0;
+  margin-bottom: 14px;
+  padding-right: 0;
+}
+
+.county-result-card > .popular-vendors-redesign__prices {
+  padding-top: 10px;
+  padding-bottom: 22px;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.county-result-card__media {
+  position: relative !important;
+  display: block;
+  width: 100% !important;
+  margin: 0 0 14px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  background: #eef2f7;
+  isolation: isolate;
+}
+
+/* Intrinsic aspect via padding (fallback for browsers without aspect-ratio),
+   also guarantees a non-zero height so <Image fill /> renders visibly. */
+.county-result-card__media::before {
+  content: "";
+  display: block;
+  padding-top: 62.5%; /* 16:10 */
+}
+
+.county-result-card__image,
+.county-result-card__media > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center;
+  display: block;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: transform 0.3s ease;
+}
+
+.county-result-card:hover .county-result-card__image {
+  transform: scale(1.03);
+}
+
+.county-result-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e7ecf2 0%, #d7dfea 100%);
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Vendors list — 3 columns, square-forward cards, spacing                  */
+/* -------------------------------------------------------------------------- */
+.vendors-list-section .vendors-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.5rem !important;
+  align-items: stretch;
+}
+
+@media (max-width: 991px) {
+  .vendors-list-section .vendors-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .vendors-list-section .vendors-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.vendors-grid .vendor-card-webflow-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.vendors-grid .vendor-card-webflow-root > a {
+  flex: 1;
+  min-height: 0;
+}
+
+.mg-top-40px {
+  margin-top: 2.5rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendors page — map (Leaflet needs explicit height or tiles show as blank) */
+/* -------------------------------------------------------------------------- */
+/* Flex + gap prevents margin-collapse and guarantees space between map and cards */
+.vendors-page-content {
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.section-4.vendors-map-section {
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.section-4.vendors-map-section .container-3 {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/*
+  Webflow’s .w-widget-map { height: 400px } (webflow.css) was shorter than our
+  Leaflet wrapper (min(52vh, 520px)), so tiles/attribution painted below the
+  layout box while the card grid started after only 400px — visible overlap.
+*/
+.section-4.vendors-map-section .map-3.w-widget-map {
+  height: auto !important;
+  min-height: min(52vh, 520px);
+}
+
+.vendors-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: min(52vh, 520px);
+  min-height: 360px;
+  margin-bottom: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #e8eef5;
+}
+
+.vendors-map-wrapper.vendors-map-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  color: #64748b;
+}
+
+.vendors-map-container.leaflet-container,
+.vendors-map-wrapper .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 20px;
+  z-index: 0;
+}
+
+.vendors-map-popup-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  text-decoration: underline;
+}
+
+.vendors-map-popup-link:hover {
+  color: #0f172a;
+}
+
+.section.vendors-list-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* /instructors redesign: slim sidebar filters + homepage-identical cards         */
+/* -------------------------------------------------------------------------- */
+.vendors-results-shell {
+  background: #f2efe8;
+  padding: 36px 0 72px;
+}
+
+.vendors-results-layout {
+  display: grid !important;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  width: 100%;
+  max-width: 1304px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+
+.vendors-filters-sidebar {
+  position: sticky;
+  top: calc(var(--header-offset, 0px) + 32px) !important;
+  width: 100%;
+  min-width: 0;
+  /* Must not clip the absolutely-positioned dropdown menu inside. */
+  overflow: visible;
+  /* Raise above the results column so open menus paint over vendor cards
+     (which can create their own stacking contexts via hover transforms). */
+  z-index: 5;
+}
+
+/* Keep a guaranteed visual gap below sticky header on /instructors. */
+.vendors-results-layout .vendors-filters-sidebar {
+  top: calc(var(--header-offset, 0px) + 32px) !important;
+}
+
+.vendors-filters-card {
+  background: #ffffff;
+  border: 1px solid #e8e5dc;
+  border-radius: 12px;
+  padding: 18px 16px;
+  box-sizing: border-box;
+  width: 100%;
+  /* Never clip the dropdown menu that overflows the card. */
+  overflow: visible;
+}
+
+.vendors-filters-form {
+  /* Ensure form doesn't create clipping for overflowing dropdown menus. */
+  overflow: visible;
+}
+
+.vendors-filters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.vendors-filters-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #141413;
+}
+
+.vendors-filters-head a {
+  font-size: 12px;
+  color: #c96442;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.vendors-filters-head a:hover {
+  text-decoration: underline;
+}
+
+.vendors-filters-form {
+  display: grid;
+  gap: 14px;
+}
+
+.vendors-filter-group {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  /* Filter rows must not clip the absolute-positioned dropdown menu that
+     extends below the trigger into the next rows. */
+  position: relative;
+}
+
+/* Only style the group label (direct child span), not spans rendered inside
+   trigger buttons (e.g. .vendors-dd__trigger's selected label + chevron).
+   Previously this rule leaked into the trigger and made the selected value
+   render as tiny uppercase text, which looked broken next to the menu. */
+.vendors-filter-group > span {
+  color: #3f3f46;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vendors-filter-group input,
+.vendors-filter-group select {
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  background: #fff;
+  color: #141413;
+  font-size: 13px;
+  min-height: 36px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  appearance: auto;
+}
+
+.vendors-filter-group input:focus,
+.vendors-filter-group select:focus {
+  outline: none;
+  border-color: #c96442;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.12);
+}
+
+.vendors-dd {
+  position: relative;
+}
+
+/* When a dropdown is open, lift its row above sibling filter rows so the
+   absolutely-positioned menu renders above the next filter group (which
+   would otherwise paint over it if any sibling establishes a stacking
+   context via transforms, filters, etc.). */
+.vendors-filter-group:has(.vendors-dd__menu-wrap) {
+  z-index: 40;
+}
+
+.vendors-filter-group .vendors-dd__trigger {
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  background: #fff;
+  color: #141413;
+  font-size: 13px;
+  line-height: normal;
+  min-height: 36px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.vendors-dd__trigger:focus-visible {
+  outline: none;
+  border-color: #c96442;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.12);
+}
+
+.vendors-dd__chevron {
+  font-size: 12px;
+  color: #6b6b6b;
+  flex-shrink: 0;
+}
+
+.vendors-dd__menu-wrap {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  /* Sit above vendor cards, Leaflet map panes/controls (z-index 400–1000),
+     and any sticky/transformed siblings in the results area. */
+  z-index: 1000;
+  /* Establish an isolated stacking context so descendants can't be punched
+     through by a later sibling's stacking context. */
+  isolation: isolate;
+}
+
+.vendors-dd__menu {
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 20px rgba(20, 20, 19, 0.12);
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+  /* Defensive: guarantee the menu itself is visible regardless of any
+     inherited/legacy rule that might try to hide it. */
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vendors-dd__option {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #141413;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.vendors-dd__option:hover,
+.vendors-dd__option:focus-visible {
+  outline: none;
+  background: rgba(201, 100, 66, 0.12);
+}
+
+.vendors-dd__option--selected {
+  background: rgba(201, 100, 66, 0.18);
+  font-weight: 600;
+}
+
+.vendors-results-main {
+  min-width: 0;
+  width: 100%;
+}
+
+.vendors-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.vendors-results-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #141413;
+}
+
+.vendors-sort-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.vendors-sort-group span {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.vendors-sort-select {
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  background: #fff;
+  color: #141413;
+  font-size: 13px;
+  min-height: 36px;
+  padding: 6px 10px;
+  max-width: 180px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* /instructors — List / Map view toggle                                          */
+/* -------------------------------------------------------------------------- */
+.vendors-results-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.vendors-view-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #d7d4cb;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.vendors-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.vendors-view-toggle__btn:hover {
+  background: #f4f2ec;
+  color: #141413;
+  text-decoration: none;
+}
+
+.vendors-view-toggle__btn[aria-pressed="true"] {
+  background: #141413;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.vendors-view-toggle__btn[aria-pressed="true"]:hover {
+  background: #141413;
+  color: #ffffff;
+}
+
+.vendors-view-toggle__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.35);
+}
+
+.vendors-view-toggle__icon {
+  flex: 0 0 auto;
+}
+
+/* Map container spacing inside the results area */
+.vendors-results-map {
+  margin-top: 4px;
+}
+
+/* Empty state specific to the map view */
+.vendors-map-empty {
+  background: #ffffff;
+  border: 1px dashed #d7d4cb;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  color: #3f3f46;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 260px;
+  justify-content: center;
+}
+
+.vendors-map-empty strong {
+  font-size: 15px;
+  color: #141413;
+}
+
+.vendors-map-empty p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.vendors-map-empty__link {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c96442;
+  text-decoration: none;
+}
+
+.vendors-map-empty__link:hover {
+  text-decoration: underline;
+}
+
+/* Inside the results column the map is narrower than the legacy section. */
+.vendors-results-map .vendors-map-wrapper {
+  height: min(60vh, 560px);
+}
+
+@media (max-width: 900px) {
+  .vendors-results-header-controls {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .vendors-results-map .vendors-map-wrapper {
+    height: min(55vh, 440px);
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 600px) {
+  .vendors-view-toggle__btn {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+
+  .vendors-results-map .vendors-map-wrapper {
+    height: 380px;
+    min-height: 280px;
+  }
+}
+
+/* Force 3-column grid in the results area regardless of popular-vendors default */
+.vendors-results-main .vendors-results-grid,
+.vendors-results-main .popular-vendors-redesign__grid.vendors-results-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .vendors-results-main .vendors-results-grid,
+  .vendors-results-main .popular-vendors-redesign__grid.vendors-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .vendors-results-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .vendors-filters-sidebar {
+    position: static;
+  }
+
+  .vendors-results-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .vendors-results-main .vendors-results-grid,
+  .vendors-results-main .popular-vendors-redesign__grid.vendors-results-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendor profile hero map — Google Maps–like road style + UI chrome          */
+/* (Carto Voyager tiles + red pin; not Google’s proprietary tiles)            */
+/* -------------------------------------------------------------------------- */
+.vendor-hero-map.leaflet-container {
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #e5e3df;
+}
+
+.vendor-hero-map .leaflet-control-zoom {
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vendor-hero-map .leaflet-control-zoom a {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 16px;
+  color: #444;
+  background: #fff;
+}
+
+.vendor-hero-map .leaflet-control-zoom a:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
+.vendor-hero-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.92);
+  color: #444;
+  font-size: 10px;
+  line-height: 1.35;
+  padding: 2px 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  max-width: calc(100% - 12px);
+}
+
+.vendor-hero-map .leaflet-control-attribution a {
+  color: #1a73e8;
+}
+
+.vendor-hero-map-marker,
+.vendor-hero-map-marker-inner {
+  background: transparent !important;
+  border: none !important;
+}
+
+.vendor-hero-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 0;
+}
+
+.vendor-hero-map-popup .leaflet-popup-content {
+  margin: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #202124;
+}
+
+.vendor-hero-map-popup .leaflet-popup-tip {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Home page section background overrides                                     */
+/* -------------------------------------------------------------------------- */
+.section-2 {
+  background-color: #f2efe8 !important;
+}
+
+/* Home hero: visible surface is the inner card, not only the section wrapper */
+.section-2 .top-section-card.home {
+  background-color: #f2efe8 !important;
+}
+
+/* Home hero replacement image: keep prior tile ratio and crop in tighter. */
+.home-hero-image--crop-3x2 {
+  width: 100%;
+  display: block;
+}
+
+.home-hero-image--frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.home-hero-image--zoomed {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.22);
+  transform-origin: center;
+  display: block;
+}
+
+.section.bg-neutral-200.home-page.popular.popular-vendors-redesign {
+  background-color: #fafafa !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header background consistency (desktop + mobile menu states)               */
+/* -------------------------------------------------------------------------- */
+.header-wrapper,
+.header-wrapper.w-nav,
+.header-nav-menu-wrapper,
+.header-wrapper .header-nav-menu-wrapper,
+.header-wrapper [data-nav-menu-open] {
+  background-color: #fefcf9 !important;
+}
+
+/* Disable Webflow logo hover scaling in site header */
+.header-wrapper .header-logo-link,
+.header-wrapper .header-logo-link:hover,
+.header-wrapper .header-logo-link:focus,
+.header-wrapper .header-logo-link:active {
+  display: block;
+  padding-left: 0;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Hamburger menu — guarantee a 44×44 tap target on mobile. Webflow ships the
+   bars at width:26px (mobile) inside a button with no explicit min-size, so
+   the hit area is only ~26×42. Reserve the recommended 44×44 box without
+   moving the visible bars (Webflow positions them via static margin-top). */
+.header-wrapper .hamburger-menu-wrapper.w-nav-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 9px;
+  box-sizing: border-box;
+}
+
+/* Primary CTA unification: near-black button with white label */
+.btn-primary,
+a.btn-primary,
+button.btn-primary {
+  background-color: #141413 !important;
+  color: #ffffff !important;
+}
+
+/* Webflow .w-button is display:inline-block, which stacks Tailwind's block SVGs
+   (spinners) above the label. Keep CTAs as a single centered flex row. */
+.btn-primary.w-button,
+a.btn-primary.w-button,
+button.btn-primary.w-button,
+.btn-secondary.w-button,
+a.btn-secondary.w-button,
+button.btn-secondary.w-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Site footer (src/components/Footer.tsx) — neutralize Webflow anchor styles */
+/* so the dark, minimal column layout renders with its intended palette.      */
+/* -------------------------------------------------------------------------- */
+.site-footer a,
+.site-footer a:hover,
+.site-footer a:focus,
+.site-footer a:visited {
+  text-decoration: none;
+  background-image: none;
+  box-shadow: none;
+}
+.site-footer a {
+  color: inherit;
+}
+.site-footer .site-footer__wordmark {
+  color: #faf9f5;
+}
+.site-footer .site-footer__wordmark-accent {
+  color: #d97757;
+}
+.site-footer .site-footer__link {
+  color: #87867f;
+  transition: color 150ms ease;
+}
+.site-footer .site-footer__link:hover,
+.site-footer .site-footer__link:focus {
+  color: #b0aea5;
+}
+.site-footer .site-footer__columns {
+  justify-items: start;
+  align-items: start;
+}
+.site-footer .site-footer__column,
+.site-footer .site-footer__column * {
+  text-align: left;
+}
+.site-footer .site-footer__column-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.site-footer .site-footer__tagline {
+  margin-top: 2.5rem;
+}
+@media (max-width: 991px) {
+  .site-footer .site-footer__columns {
+    gap: 2rem;
+  }
+}
+@media (max-width: 767px) {
+  .site-footer .site-footer__columns {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* /instructors hero alignment with footer palette                                */
+/* -------------------------------------------------------------------------- */
+.section-3.vendors-hero {
+  background-color: #141413 !important;
+  background-image: none !important;
+}
+
+.section-3.vendors-hero::before,
+.section-3.vendors-hero::after {
+  content: none !important;
+  background-image: none !important;
+}
+
+.section-3.vendors-hero .vendors-hero-breadcrumb,
+.section-3.vendors-hero .vendors-hero-breadcrumb a,
+.section-3.vendors-hero .vendors-hero-breadcrumb .vendors-hero-breadcrumb-current,
+.section-3.vendors-hero .vendors-hero-breadcrumb-row span.mx-2 {
+  color: #c96442 !important;
+}
+
+.section-3.vendors-hero .vendors-hero-breadcrumb a:hover,
+.section-3.vendors-hero .vendors-hero-breadcrumb a:focus-visible {
+  color: #d97757 !important;
+  text-decoration: underline;
+}
+
+.section-3.vendors-hero .vendors-hero-description,
+.section-3.vendors-hero .paragraph-5 {
+  color: #b0aea5 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendor profile hero (/instructors/[slug]) — dark brand treatment               */
+/* -------------------------------------------------------------------------- */
+.vendor-profile-hero {
+  background-color: #141413 !important;
+}
+
+.vendor-profile-hero h1,
+.vendor-profile-hero h1 * {
+  color: #f8fafc !important;
+}
+
+.vendor-profile-hero p,
+.vendor-profile-hero p strong,
+.vendor-profile-hero svg {
+  color: #b0aea5 !important;
+}
+
+.vendor-profile-hero .vendor-profile-hero-breadcrumb-link,
+.vendor-profile-hero .vendor-profile-hero-breadcrumb-separator,
+.vendor-profile-hero .vendor-profile-hero-breadcrumb-current {
+  color: #c96442 !important;
+}
+
+.vendor-profile-hero .vendor-profile-hero-breadcrumb-link:hover,
+.vendor-profile-hero .vendor-profile-hero-breadcrumb-link:focus-visible {
+  color: #d97757 !important;
+  text-decoration: underline;
+}
+
+.vendor-profile-hero .vendor-profile-hero-cta.btn-primary,
+.vendor-profile-hero a.vendor-profile-hero-cta.btn-primary {
+  background-color: #c96442 !important;
+  color: #ffffff !important;
+}
+
+.vendor-profile-hero .vendor-profile-hero-cta.btn-primary:hover,
+.vendor-profile-hero a.vendor-profile-hero-cta.btn-primary:hover,
+.vendor-profile-hero .vendor-profile-hero-cta.btn-primary:focus-visible,
+.vendor-profile-hero a.vendor-profile-hero-cta.btn-primary:focus-visible {
+  background-color: #d97757 !important;
+  color: #ffffff !important;
+}
+
+.vendor-detail-tab {
+  color: #8f8e88 !important;
+  text-decoration: none !important;
+}
+
+.vendor-detail-tab[aria-selected="true"] {
+  color: #f3f2ed !important;
+}
+
+.vendor-detail-tab:hover {
+  color: #d6d3c8 !important;
+  text-decoration: none !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vendor profile tab panels: force left-edge card alignment                  */
+/* -------------------------------------------------------------------------- */
+#vendor-tab-panel-reviews .vendor-reviews-profile-summary,
+#vendor-tab-panel-reviews .vendor-reviews-profile-list,
+#vendor-tab-panel-what-to-bring .vendor-what-to-bring-list {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+#vendor-tab-panel-reviews .vendor-reviews-profile-list > .vendor-reviews-profile-card,
+#vendor-tab-panel-what-to-bring .vendor-what-to-bring-list > .vendor-what-to-bring-card {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}

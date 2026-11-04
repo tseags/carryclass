@@ -183,7 +183,7 @@ export function Step6Review({ vendor, classTypes, calendarClasses, checkoutFees 
         )}
         {vendor.calendar_type === "ical" && (
           <p className="text-sm text-zinc-700">
-            iCal feed ·{" "}
+            {vendor.ical_feed_url ? "iCal feed" : "iCal file"} ·{" "}
             <span className="font-medium">{activeClasses.length} classes imported</span>
           </p>
         )}

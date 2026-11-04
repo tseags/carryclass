@@ -1,0 +1,164 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+interface Props {
+  isConnected: boolean;
+  stripeAccountId?: string | null;
+  showDevHints?: boolean;
+  redirectUri?: string;
+}
+
+export function Step5Stripe({
+  isConnected,
+  stripeAccountId,
+  showDevHints = false,
+  redirectUri,
+}: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const justConnected = searchParams.get("connected") === "1";
+  const connectionError = searchParams.get("error");
+
+  const [saving, setSaving] = useState(false);
+  const connected = isConnected || justConnected;
+
+  async function advanceStep() {
+    setSaving(true);
+    try {
+      await fetch("/api/onboarding/step/5", { method: "POST" });
+      router.push("/onboard/step/6");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {showDevHints && !connected && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Local dev setup</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              In Stripe → Settings → Connect → <strong>Onboarding options → OAuth</strong>, enable{" "}
+              <strong>Standard OAuth</strong> (onboard connected accounts with OAuth).
+            </li>
+            <li>
+              Use Stripe <strong>test mode</strong> keys in <code>.env.development.local</code>{" "}
+              (<code>sk_test_...</code>, <code>ca_...</code> client id).
+            </li>
+            <li>
+              On that OAuth page, add this redirect URI:
+              {redirectUri ? (
+                <>
+                  {" "}
+                  <code className="break-all">{redirectUri}</code>
+                </>
+              ) : null}
+            </li>
+            <li>
+              <code>STRIPE_SECRET_KEY</code> must start with <code>sk_</code> — restricted keys (
+              <code>rk_</code>) will not work.
+            </li>
+          </ul>
+        </div>
+      )}
+
+      {/* Connected state */}
+      {connected ? (
+        <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-emerald-800">Stripe connected</p>
+              {stripeAccountId && (
+                <p className="text-sm text-emerald-600 mt-0.5">
+                  Account: {stripeAccountId}
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-emerald-700 mt-3">
+            You&apos;re all set to accept payments. Students will pay you directly through Stripe
+            when they book a class.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center">
+          <div className="mx-auto mb-5 flex h-12 items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/stripe-wordmark.svg"
+              alt="Stripe"
+              className="h-9 w-auto"
+            />
+          </div>
+          <h2 className="text-lg font-semibold text-zinc-900 mb-1">Connect Stripe to take bookings</h2>
+          <p className="text-sm text-zinc-500 max-w-sm mx-auto mb-6">
+            Stripe is what lets students book and pay online. CarryClass adds a small platform fee per
+            booking charged directly to the student on top of your class price — so you keep 100% of
+            what you charge.
+          </p>
+          <a
+            href="/api/stripe-connect/connect"
+            className="btn-primary w-button !inline-flex items-center justify-center"
+          >
+            Connect with Stripe
+          </a>
+
+          {connectionError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {connectionError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!connected && (
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
+          <p className="text-sm font-semibold text-zinc-800">Not ready for Stripe? Skip it.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600">
+            <li>You can still publish and keep updating your listing — profile, contact, and pricing.</li>
+            <li>Online booking stays off: students won&apos;t be able to book or pay through CarryClass.</li>
+            <li>Connect Stripe later from your dashboard and bookings turn on right away.</li>
+          </ul>
+        </div>
+      )}
+
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => router.push("/onboard/step/4")}
+          className="btn-secondary w-button"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={advanceStep}
+          disabled={saving}
+          className={`${
+            connected ? "btn-primary" : "btn-secondary"
+          } w-button inline-flex items-center justify-center gap-2 disabled:opacity-60`}
+        >
+          {saving && <Spinner />}
+          {connected ? "Continue" : "Skip for now — continue without booking"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}

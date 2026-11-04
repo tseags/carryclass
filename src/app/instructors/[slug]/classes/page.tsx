@@ -51,7 +51,11 @@ export default async function InstructorClassesPage({ params }: PageProps) {
           <span className="mx-2">/</span>
           <span className="font-medium text-zinc-900">Classes</span>
         </nav>
-        <AvailableClasses slug={vendor.slug} ccw={ccw} other={other} />
+        <AvailableClasses
+          slug={vendor.slug}
+          ccw={ccw}
+          other={other}
+        />
       </main>
       <Footer />
     </div>

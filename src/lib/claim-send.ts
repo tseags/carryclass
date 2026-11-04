@@ -49,7 +49,7 @@ export async function sendClaimEmailCode(input: {
     text: [
       `Use this code to claim "${input.listingName}" on CarryClass:`,
       "",
-      `  ${input.code}`,
+      input.code,
       "",
       "This code expires in 15 minutes.",
       "If you did not request this, you can ignore this email.",

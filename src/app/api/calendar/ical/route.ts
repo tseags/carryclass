@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import ICAL from "ical.js";
-
-interface CalendarEvent {
-  external_event_id: string;
-  title: string;
-  start_time: string;
-  end_time: string;
-  is_recurring: boolean;
-  recurrence_rule: string | null;
-}
+import {
+  MAX_ICS_BYTES,
+  calendarFeedFetchUrl,
+  parseIcsEvents,
+} from "@/lib/ical-import";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -17,68 +12,87 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { url } = await req.json();
-  if (!url) {
-    return NextResponse.json({ error: "URL required" }, { status: 400 });
+  const body = await req.json().catch(() => null);
+  const url = typeof body?.url === "string" ? body.url.trim() : "";
+  const ics = typeof body?.ics === "string" ? body.ics : "";
+
+  if (!url && !ics.trim()) {
+    return NextResponse.json(
+      { error: "Paste a calendar URL or upload an .ics file." },
+      { status: 400 }
+    );
   }
 
   let icsText: string;
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "CarryClass/1.0 Calendar Sync" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) {
+  if (ics.trim()) {
+    if (new TextEncoder().encode(ics).byteLength > MAX_ICS_BYTES) {
       return NextResponse.json(
-        { error: `Failed to fetch calendar (HTTP ${res.status})` },
+        { error: "Calendar file is too large (max 2 MB)." },
         { status: 400 }
       );
     }
-    icsText = await res.text();
-  } catch {
-    return NextResponse.json(
-      { error: "Could not fetch the calendar feed. Check the URL and try again." },
-      { status: 400 }
-    );
-  }
-
-  let events: CalendarEvent[] = [];
-  try {
-    const jcalData = ICAL.parse(icsText);
-    const comp = new ICAL.Component(jcalData);
-    const vevents = comp.getAllSubcomponents("vevent");
-
-    const now = new Date();
-    const cutoff = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-
-    for (const vevent of vevents) {
-      const event = new ICAL.Event(vevent);
-      const uid = vevent.getFirstPropertyValue("uid") as string | null;
-      const dtstart = event.startDate;
-      const dtend = event.endDate;
-
-      if (!dtstart || !dtend) continue;
-
-      const startDate = dtstart.toJSDate();
-      if (startDate < now || startDate > cutoff) continue;
-
-      const rrule = vevent.getFirstPropertyValue("rrule");
-
-      events.push({
-        external_event_id: uid ?? `ical_${startDate.getTime()}`,
-        title: event.summary ?? "Class",
-        start_time: dtstart.toJSDate().toISOString(),
-        end_time: dtend.toJSDate().toISOString(),
-        is_recurring: Boolean(rrule),
-        recurrence_rule: rrule ? String(rrule) : null,
-      });
+    icsText = ics;
+  } else {
+    let fetchUrl: string;
+    try {
+      fetchUrl = calendarFeedFetchUrl(url);
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : "Enter a valid calendar URL (https:// or webcal://).",
+        },
+        { status: 400 }
+      );
     }
+
+    try {
+      const res = await fetch(fetchUrl, {
+        headers: { "User-Agent": "CarryClass/1.0 Calendar Sync" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: `Failed to fetch calendar (HTTP ${res.status})` },
+          { status: 400 }
+        );
+      }
+      const declared = Number(res.headers.get("content-length"));
+      if (Number.isFinite(declared) && declared > MAX_ICS_BYTES) {
+        return NextResponse.json(
+          { error: "Calendar file is too large (max 2 MB)." },
+          { status: 400 }
+        );
+      }
+      const buf = await res.arrayBuffer();
+      if (buf.byteLength > MAX_ICS_BYTES) {
+        return NextResponse.json(
+          { error: "Calendar file is too large (max 2 MB)." },
+          { status: 400 }
+        );
+      }
+      icsText = new TextDecoder().decode(buf);
+    } catch {
+      return NextResponse.json(
+        { error: "Could not fetch the calendar feed. Check the URL and try again." },
+        { status: 400 }
+      );
+    }
+  }
+
+  try {
+    const events = parseIcsEvents(icsText);
+    return NextResponse.json({ events, count: events.length });
   } catch {
     return NextResponse.json(
-      { error: "Failed to parse calendar file. Make sure the URL points to a valid .ics feed." },
+      {
+        error: ics.trim()
+          ? "Couldn’t read that file. Drop a valid .ics calendar export."
+          : "Failed to parse calendar file. Make sure the URL points to a valid .ics feed.",
+      },
       { status: 400 }
     );
   }
-
-  return NextResponse.json({ events, count: events.length });
 }

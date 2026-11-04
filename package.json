@@ -24,7 +24,8 @@
     "check:stripe-connect": "tsx scripts/check-stripe-connect.ts",
     "configure:clerk-branding": "tsx scripts/configure-clerk-branding.ts",
     "ensure:vendor-assets-bucket": "tsx scripts/ensure-vendor-assets-bucket.ts",
-    "migrate:sql": "tsx scripts/apply-sql-migration.ts"
+    "migrate:sql": "tsx scripts/apply-sql-migration.ts",
+    "outreach:sync": "tsx --tsconfig tsconfig.json scripts/outreach-sync.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -34,7 +35,10 @@
     "@clerk/nextjs": "^7.0.4",
     "@clerk/themes": "^2.4.57",
     "@prisma/client": "6.19.0",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.1",
     "@supabase/supabase-js": "^2.105.1",
+    "@twilio/voice-sdk": "^2.18.5",
     "@vercel/analytics": "^2.0.1",
     "dotenv": "^17.3.1",
     "ical.js": "^2.2.1",

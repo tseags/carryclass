@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { VendorClassType } from "@/lib/onboarding-db";
 
@@ -182,6 +182,10 @@ function calendarErrorMessage(code: string | null): string {
   return CALENDAR_ERROR_MESSAGES[code] ?? `Connection error: ${code}`;
 }
 
+function isIcsFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".ics") || file.type === "text/calendar";
+}
+
 export function Step3Schedule({
   classTypes,
   googleConnected,
@@ -200,6 +204,9 @@ export function Step3Schedule({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(calendarErrorMessage(calError));
   const [icalFeedUrl, setIcalFeedUrl] = useState(icalUrl ?? "");
+  const [icalFileName, setIcalFileName] = useState<string | null>(null);
+  const [icsDragOver, setIcsDragOver] = useState(false);
+  const icsFileInputRef = useRef<HTMLInputElement>(null);
   const [fetchingEvents, setFetchingEvents] = useState(false);
   const [loadingCalendars, setLoadingCalendars] = useState(false);
   const [events, setEvents] = useState<FetchedEvent[]>([]);
@@ -306,29 +313,92 @@ export function Step3Schedule({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [option, googleConnected, googleJustConnected]);
 
+  async function applyIcalPayload(body: { url?: string; ics?: string }) {
+    const res = await fetch("/api/calendar/ical", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
+    setEvents(mapFetchedEvents(data.events ?? []));
+    setEventsFetched(true);
+    setEventSearch("");
+  }
+
   async function fetchIcalEvents() {
     if (!icalFeedUrl.trim()) {
-      setError("Please enter your calendar feed URL.");
+      setError("Paste a calendar URL, or drop an .ics file.");
       return;
     }
     setFetchingEvents(true);
     setError("");
+    setIcalFileName(null);
     try {
-      const res = await fetch("/api/calendar/ical", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: icalFeedUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
-      setEvents(mapFetchedEvents(data.events ?? []));
-      setEventsFetched(true);
-      setEventSearch("");
+      await applyIcalPayload({ url: icalFeedUrl });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load calendar.");
     } finally {
       setFetchingEvents(false);
     }
+  }
+
+  async function importIcsFile(file: File) {
+    if (!isIcsFile(file)) {
+      setError("Drop a .ics calendar file, or paste a feed URL.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("That calendar file is too large. The limit is 2 MB.");
+      return;
+    }
+    setFetchingEvents(true);
+    setError("");
+    try {
+      const ics = await file.text();
+      if (!ics.trim()) {
+        setError("That calendar file is empty.");
+        return;
+      }
+      await applyIcalPayload({ ics });
+      setIcalFileName(file.name);
+      setIcalFeedUrl("");
+    } catch (err) {
+      setIcalFileName(null);
+      setError(err instanceof Error ? err.message : "Could not read that calendar file.");
+    } finally {
+      setFetchingEvents(false);
+    }
+  }
+
+  function clearIcsFile() {
+    setIcalFileName(null);
+    setEvents([]);
+    setEventsFetched(false);
+    setError("");
+  }
+
+  function onIcsDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setIcsDragOver(true);
+  }
+
+  function onIcsDragLeave(e: React.DragEvent) {
+    const next = e.relatedTarget;
+    if (next instanceof Node && e.currentTarget.contains(next)) return;
+    setIcsDragOver(false);
+  }
+
+  function onIcsDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIcsDragOver(false);
+    const file = Array.from(e.dataTransfer.files).find((candidate) => isIcsFile(candidate));
+    if (!file) {
+      setError("Drop a .ics calendar file, or paste a feed URL.");
+      return;
+    }
+    void importIcsFile(file);
   }
 
   function toggleAllEvents(checked: boolean, ids?: string[]) {
@@ -381,6 +451,10 @@ export function Step3Schedule({
     setEventsFetched(false);
     setEventSearch("");
     setError("");
+    if (next !== "ical") {
+      setIcalFileName(null);
+      setIcsDragOver(false);
+    }
   }
 
   function priceForType(typeKey: string): string {
@@ -397,7 +471,7 @@ export function Step3Schedule({
     setSaving(true);
     try {
       let classesToSave: object[] = [];
-      let calendarType = option;
+      const calendarType = option;
 
       if (option === "manual") {
         classesToSave = manualSlots.map((slot) => {
@@ -439,7 +513,10 @@ export function Step3Schedule({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           calendarType,
-          icalFeedUrl: option === "ical" ? icalFeedUrl : null,
+          icalFeedUrl:
+            option === "ical" && !icalFileName && icalFeedUrl.trim()
+              ? icalFeedUrl.trim()
+              : null,
           googleCalendarId:
             option === "google" && selectedCalendarId ? selectedCalendarId : undefined,
           classes: classesToSave,
@@ -503,7 +580,7 @@ export function Step3Schedule({
             </svg>
           }
           title="iCal"
-          description="Paste a .ics feed URL"
+          description="Paste a URL or drop an .ics file"
         />
 
         {/* Manual */}
@@ -664,29 +741,118 @@ export function Step3Schedule({
       {option === "ical" && (
         <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <label className="block text-sm font-medium text-zinc-700 mb-2">
-            Paste your calendar feed URL (.ics)
+            Paste a calendar URL or drop an .ics file
           </label>
-          <div className="flex flex-col gap-5">
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={icalFeedUrl}
-                onChange={(e) => setIcalFeedUrl(e.target.value)}
-                placeholder="webcal://... or https://.../.ics"
-                className="input-field flex-1"
-              />
+          <div
+            onDragOver={onIcsDragOver}
+            onDragLeave={onIcsDragLeave}
+            onDrop={onIcsDrop}
+          >
+            {icalFileName ? (
+              <div className="flex gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2">
+                  <span
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
+                    aria-label="File uploaded"
+                  >
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-zinc-800">{icalFileName}</span>
+                  <span className="shrink-0 text-xs text-zinc-400">One-time import</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearIcsFile}
+                  className="btn-secondary small w-button whitespace-nowrap"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={icalFeedUrl}
+                  onChange={(e) => setIcalFeedUrl(e.target.value)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => e.preventDefault()}
+                  placeholder={icsDragOver ? "Drop .ics file" : "webcal://... or https://.../.ics"}
+                  className="input-field flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={fetchIcalEvents}
+                  disabled={fetchingEvents || !icalFeedUrl.trim()}
+                  className="btn-primary small w-button whitespace-nowrap disabled:opacity-50"
+                >
+                  {fetchingEvents ? "Fetching..." : "Fetch events"}
+                </button>
+              </div>
+            )}
+            <div
+              className={`mt-6 flex flex-col items-center rounded-xl border border-dashed px-4 py-7 transition-colors ${
+                icsDragOver ? "border-zinc-900 bg-zinc-50" : "border-zinc-300 bg-zinc-50"
+              }`}
+            >
               <button
                 type="button"
-                onClick={fetchIcalEvents}
-                disabled={fetchingEvents || !icalFeedUrl.trim()}
-                className="btn-primary small w-button whitespace-nowrap disabled:opacity-50"
+                onClick={() => icsFileInputRef.current?.click()}
+                aria-label="Add an .ics file"
+                className={`flex h-12 w-12 items-center justify-center rounded-full border bg-white shadow-sm transition-colors hover:border-zinc-900 hover:text-zinc-900 ${
+                  icalFileName && !icsDragOver
+                    ? "border-emerald-200 text-emerald-700"
+                    : "border-zinc-300 text-zinc-700"
+                }`}
               >
-                {fetchingEvents ? "Fetching..." : "Fetch events"}
+                {icalFileName && !icsDragOver ? (
+                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeWidth={2} d="M12 5v14M5 12h14" />
+                  </svg>
+                )}
               </button>
+              <p className="mt-3 text-center text-sm text-zinc-600">
+                {icsDragOver ? "Drop to import this calendar" : "Drop an .ics file here, or "}
+                {!icsDragOver && (
+                  <button
+                    type="button"
+                    onClick={() => icsFileInputRef.current?.click()}
+                    className="underline hover:text-zinc-900"
+                  >
+                    choose a file
+                  </button>
+                )}
+              </p>
             </div>
-            <p className="text-xs text-zinc-400">
-              In Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL.
-              Outlook: calendar settings → Shared calendars → publish and paste the ICS link here.
+            {icalFileName && (
+              <p className="mt-5 text-xs leading-relaxed text-zinc-500">
+                A file imports these classes once and does not stay in sync. Remove it to paste a feed URL instead.
+              </p>
+            )}
+            <input
+              ref={icsFileInputRef}
+              type="file"
+              accept=".ics,text/calendar"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void importIcsFile(file);
+              }}
+            />
+          </div>
+          <div className="mt-3 space-y-1 text-xs leading-relaxed text-zinc-400">
+            <p>
+              Paste a public feed URL to keep classes in sync, or drag an exported .ics file onto the field for a one-time import.
+            </p>
+            <p>
+              Apple Calendar: right-click your calendar → Share Calendar → copy the public or private .ics URL. Or choose File → Export and drop the .ics file here.
+              Outlook: calendar settings → Shared calendars → publish and paste the ICS link, or export the calendar and drop the .ics file here.
             </p>
           </div>
 

@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: T; src: url(THICCCBOI-Regular.woff2); font-weight: 400; }
+  @font-face { font-family: T; src: url(THICCCBOI-Medium.woff2); font-weight: 500; }
+  @font-face { font-family: T; src: url(THICCCBOI-SemiBold.woff2); font-weight: 600; }
+  @font-face { font-family: T; src: url(THICCCBOI-Bold.woff2); font-weight: 700; }
+
+  :root {
+    --ink: #141413;
+    --muted: #6b6a66;
+    --line: #e7e3da;
+    --cream: #f2efe8;
+    --paper: #fefcf9;
+    --terra: #c96442;
+    --terra-soft: #f6e6de;
+    --green: #2f7a4b;
+    --green-soft: #e3f1e7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 760px; background: transparent; }
+  body {
+    font-family: T, system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg, transparent);
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body > div { margin-top: 20px; }
+
+  .shadow {
+    box-shadow:
+      0 0 0 1px rgba(20,20,19,.10),
+      0 2px 4px rgba(20,20,19,.08),
+      0 14px 30px rgba(20,20,19,.14),
+      0 32px 64px rgba(20,20,19,.12);
+  }
+
+  /* ---------- Browser ---------- */
+  .browser {
+    position: absolute; left: 150px; top: 56px; width: 790px; height: 540px;
+    border-radius: 14px; overflow: hidden; background: #fff; border: 1px solid #e9e6df;
+  }
+  .chrome {
+    height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+    background: #faf9f6; border-bottom: 1px solid #ece9e2;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .url {
+    flex: 1; margin: 0 60px 0 40px; height: 26px; border-radius: 7px; background: #efede7;
+    display: flex; align-items: center; justify-content: center; font-size: 12.5px; color: #55544f;
+  }
+  .browser img.page { display: block; width: 100%; height: calc(100% - 42px); object-fit: cover; object-position: top; }
+
+  /* ---------- Dashboard card ---------- */
+  .dash {
+    position: absolute; left: 735px; top: 150px; width: 420px;
+    border-radius: 14px; background: #fff; border: 1px solid #ece9e2; overflow: hidden;
+  }
+  .dash-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--paper);
+  }
+  .dash-top img { height: 18px; display: block; }
+  .tabs { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  .tabs .on { color: var(--ink); font-weight: 600; position: relative; }
+  .tabs .on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -17px; height: 2px; background: var(--terra); }
+  .dash-body { padding: 18px 18px 16px; }
+  .eyebrow { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--terra); font-weight: 600; }
+  .dash h3 { font-size: 21px; font-weight: 700; margin-top: 4px; letter-spacing: -.01em; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .stat { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: #fff; }
+  .stat b { display: block; font-size: 24px; font-weight: 700; line-height: 1; }
+  .stat span { display: block; white-space: nowrap; font-size: 10.5px; color: #3c3b38; font-weight: 500; margin-top: 6px; }
+  .stat small { display: block; font-size: 9.5px; color: #9a9890; margin-top: 1px; }
+  .section-h { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; }
+  .section-h h4 { font-size: 12.5px; font-weight: 600; }
+  .section-h a { font-size: 11px; color: var(--terra); font-weight: 600; text-decoration: none; }
+  .rows { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; font-size: 11.5px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; flex: none; }
+  .row .who { flex: 1; min-width: 0; }
+  .row .who b { display: block; font-weight: 600; font-size: 11.5px; }
+  .row .who i { display: block; font-style: normal; color: #8d8b84; font-size: 10px; margin-top: 1px; }
+  .amt { font-weight: 600; font-size: 11.5px; margin-right: 8px; }
+  .pill { font-size: 9.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+  .pill.paid { background: var(--green-soft); color: var(--green); }
+  .pill.new { background: var(--terra-soft); color: var(--terra); }
+  .payout {
+    margin-top: 12px; display: flex; align-items: center; justify-content: space-between;
+    background: var(--cream); border-radius: 10px; padding: 10px 12px; font-size: 11px; color: #4a4945;
+  }
+  .payout b { color: var(--ink); font-size: 13px; font-weight: 700; }
+
+  /* ---------- Checkout card ---------- */
+  .checkout {
+    position: absolute; left: 70px; top: 418px; width: 268px;
+    transform: scale(.8); transform-origin: top left;
+    border-radius: 14px; background: #fff; border: 1px solid #ece9e2; padding: 16px;
+  }
+  .co-head { display: flex; align-items: center; gap: 9px; }
+  .co-icon { width: 26px; height: 26px; border-radius: 8px; background: var(--terra-soft); display: grid; place-items: center; }
+  .co-head h5 { font-size: 13px; font-weight: 600; }
+  .co-class {
+    margin-top: 12px; padding: 10px 11px; border-radius: 10px; background: var(--paper); border: 1px solid var(--line);
+  }
+  .co-class b { display: block; font-size: 12px; font-weight: 600; }
+  .co-class span { display: block; font-size: 10.5px; color: #7d7b74; margin-top: 2px; }
+  .co-line { display: flex; justify-content: space-between; font-size: 11px; color: #5a5954; margin-top: 10px; }
+  .co-line.total { color: var(--ink); font-weight: 700; font-size: 12.5px; padding-top: 8px; border-top: 1px dashed var(--line); }
+  .card-field {
+    margin-top: 10px; height: 32px; border: 1px solid #dcd8cf; border-radius: 8px; display: flex; align-items: center;
+    padding: 0 10px; gap: 8px; font-size: 11px; color: #3c3b38;
+  }
+  .card-field .brand { width: 24px; height: 15px; border-radius: 3px; background: linear-gradient(135deg,#1a1f71,#2c3cb0); }
+  .card-field .exp { margin-left: auto; color: #9a9890; }
+  .pay {
+    margin-top: 10px; height: 34px; border-radius: 8px; background: var(--ink); color: #fff;
+    display: grid; place-items: center; font-size: 12px; font-weight: 600;
+  }
+  .secure { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 9.5px; color: #8d8b84; }
+</style>
+</head>
+<body>
+<script>
+  if (location.hash) document.body.style.setProperty("--bg", location.hash);
+</script>
+
+  <div class="browser shadow">
+    <div class="chrome">
+      <div class="dot" style="background:#ff5f57"></div>
+      <div class="dot" style="background:#febc2e"></div>
+      <div class="dot" style="background:#28c840"></div>
+      <div class="url">getcarryclass.com</div>
+    </div>
+    <img class="page" src="homepage.png" alt="" />
+  </div>
+
+  <div class="dash shadow">
+    <div class="dash-top">
+      <img src="carryclass-logo.png" alt="CarryClass" />
+      <div class="tabs">
+        <span class="on">Overview</span>
+        <span>Classes</span>
+        <span>Registrations</span>
+        <span>Payments</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="eyebrow">Instructor Dashboard</div>
+      <h3>Welcome back, Mike</h3>
+
+      <div class="stats">
+        <div class="stat"><b>148</b><span>Registrations</span><small>via CarryClass</small></div>
+        <div class="stat"><b>23</b><span>This Month</span><small>+38% vs. Sept</small></div>
+        <div class="stat"><b>6</b><span>Upcoming Classes</span><small>Next: Sat 8am</small></div>
+      </div>
+
+      <div class="section-h">
+        <h4>Recent registrations</h4>
+        <a>View all →</a>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <div class="av" style="background:#c96442">JR</div>
+          <div class="who"><b>Jessica R.</b><i>Initial CCW · 16 hr · Nov 7</i></div>
+          <span class="amt">$225</span><span class="pill new">New</span>
+        </div>
+        <div class="row">
+          <div class="av" style="background:#3d4a3a">DM</div>
+          <div class="who"><b>Daniel M.</b><i>CCW Renewal · 8 hr · Nov 14</i></div>
+          <span class="amt">$125</span><span class="pill paid">Paid</span>
+        </div>
+        <div class="row">
+          <div class="av" style="background:#7a6a55">AT</div>
+          <div class="who"><b>Alyssa T.</b><i>Initial CCW · 16 hr · Nov 7</i></div>
+          <span class="amt">$225</span><span class="pill paid">Paid</span>
+        </div>
+      </div>
+
+      <div class="payout">
+        <span>Next payout · Oct 20</span>
+        <b>$3,140.00</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="checkout shadow">
+    <div class="co-head">
+      <div class="co-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c96442" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
+      </div>
+      <h5>Book your class</h5>
+    </div>
+    <div class="co-class">
+      <b>Initial CCW Course · 16 hr</b>
+      <span>Sat, Nov 7 · 8:00 AM · Irvine, CA</span>
+    </div>
+    <div class="co-line"><span>Class fee</span><span>$225.00</span></div>
+    <div class="co-line total"><span>Total</span><span>$225.00</span></div>
+    <div class="card-field"><div class="brand"></div><span>•••• 4242</span><span class="exp">12 / 28</span></div>
+    <div class="pay">Pay $225 &amp; reserve seat</div>
+    <div class="secure">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8d8b84" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      Secure checkout powered by Stripe
+    </div>
+  </div>
+
+</body>
+</html>

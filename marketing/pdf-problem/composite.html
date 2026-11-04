@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: T; src: url(THICCCBOI-Regular.woff2); font-weight: 400; }
+  @font-face { font-family: T; src: url(THICCCBOI-Medium.woff2); font-weight: 500; }
+  @font-face { font-family: T; src: url(THICCCBOI-SemiBold.woff2); font-weight: 600; }
+  @font-face { font-family: T; src: url(THICCCBOI-Bold.woff2); font-weight: 700; }
+
+  :root {
+    --ink: #141413;
+    --muted: #6b6a66;
+    --line: #e7e3da;
+    --cream: #f2efe8;
+    --paper: #fefcf9;
+    --terra: #c96442;
+    --terra-soft: #f6e6de;
+    --green: #2f7a4b;
+    --green-soft: #e3f1e7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 820px; height: 890px; background: transparent; }
+  body {
+    font-family: T, system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg, transparent);
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shadow {
+    box-shadow:
+      0 0 0 1px rgba(20,20,19,.10),
+      0 2px 4px rgba(20,20,19,.08),
+      0 14px 30px rgba(20,20,19,.14),
+      0 32px 64px rgba(20,20,19,.12);
+  }
+
+  /* ---------- PDF viewer ---------- */
+  .viewer {
+    position: absolute; left: 50px; top: 40px; width: 560px; height: 700px;
+    border-radius: 14px; overflow: hidden; background: #e9e7e3;
+  }
+  .chrome {
+    height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+    background: #faf9f6; border-bottom: 1px solid #ece9e2;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .url {
+    flex: 1; margin-left: 28px; height: 26px; border-radius: 7px; background: #efede7;
+    display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 11.5px; color: #55544f;
+    white-space: nowrap; overflow: hidden;
+  }
+  .pdf-tag { font-size: 9px; font-weight: 700; color: #fff; background: #d23f31; border-radius: 3px; padding: 2px 4px; flex: none; }
+  .pdfbar {
+    height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    background: #3a3a38; color: #e8e6e1; font-size: 11px;
+  }
+  .pdfbar .pg { opacity: .75; }
+  .sheet-wrap { padding: 22px 26px 0; }
+  .sheet { position: relative; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .sheet img { display: block; width: 100%; }
+  .hl {
+    position: absolute; left: 4.6%; right: 3.6%; top: 39.1%; height: 6.9%;
+    border: 2.5px solid var(--terra); border-radius: 4px; background: rgba(201,100,66,.10);
+  }
+  .stale {
+    position: absolute; right: 9%; top: 6.2%;
+    background: var(--terra); color: #fff; font-size: 11px; font-weight: 600;
+    padding: 5px 9px; border-radius: 999px; transform: rotate(3deg);
+    box-shadow: 0 4px 10px rgba(201,100,66,.35);
+  }
+
+  /* ---------- "What you actually get" card ---------- */
+  .card {
+    position: absolute; left: 400px; top: 300px; width: 380px;
+    border-radius: 14px; background: #fff; overflow: hidden;
+  }
+  .card-head { padding: 16px 18px 14px; border-bottom: 1px solid var(--line); background: var(--paper); }
+  .eyebrow { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--terra); font-weight: 600; }
+  .card-head h3 { font-size: 19px; font-weight: 700; margin-top: 4px; letter-spacing: -.01em; }
+  .card-head p { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .card-body { padding: 12px 18px 16px; }
+  .grp { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8d8b84; margin: 6px 0 6px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 12.5px; }
+  .item .ic { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .item .val { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+  .have .ic { background: var(--green-soft); }
+  .miss .ic { background: #f3f1ec; }
+  .miss .lbl { color: #9a9890; }
+  .miss .val { color: #b9b6ad; font-style: italic; }
+  .divider { height: 1px; background: var(--line); margin: 8px 0 4px; }
+  .score {
+    margin-top: 12px; display: flex; align-items: center; gap: 14px;
+    background: #2f2f2d; color: #e9e7e2; border-radius: 10px; padding: 12px 14px;
+  }
+  .score b { font-size: 30px; font-weight: 700; color: #e07a55; line-height: 1; white-space: nowrap; }
+  .score span { font-size: 11.5px; line-height: 1.35; }
+
+  /* ---------- Phone call card ---------- */
+  .call {
+    position: absolute; left: 20px; top: 660px; width: 280px;
+    transform: scale(.82); transform-origin: top left;
+    border-radius: 14px; background: #fff; padding: 16px;
+  }
+  .call-top { display: flex; align-items: center; gap: 11px; }
+  .call-av { width: 38px; height: 38px; border-radius: 50%; background: var(--cream); display: grid; place-items: center; flex: none; }
+  .call-top b { display: block; font-size: 13.5px; font-weight: 600; }
+  .call-top i { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .vm {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--terra-soft);
+    font-size: 11.5px; color: #8a3f24; line-height: 1.4;
+  }
+  .vm b { font-weight: 700; }
+  .call-meta { margin-top: 10px; display: flex; justify-content: space-between; font-size: 10.5px; color: #8d8b84; }
+</style>
+</head>
+<body>
+<script>
+  if (location.hash) document.body.style.setProperty("--bg", location.hash);
+</script>
+
+  <div class="viewer shadow">
+    <div class="chrome">
+      <div class="dot" style="background:#ff5f57"></div>
+      <div class="dot" style="background:#febc2e"></div>
+      <div class="dot" style="background:#28c840"></div>
+      <div class="url"><span class="pdf-tag">PDF</span>permitium-downloads.s3.amazonaws.com/SFPD/SFPDccwTrainingProviders.pdf</div>
+    </div>
+    <div class="pdfbar">
+      <span>SFPDccwTrainingProviders.pdf</span>
+      <span class="pg">Page 1 of 1 &nbsp;·&nbsp; 100%</span>
+    </div>
+    <div class="sheet-wrap">
+      <div class="sheet">
+        <img src="sf-p1.png" alt="" />
+        <div class="hl"></div>
+        <div class="stale">Last updated Aug 2024</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-head">
+      <div class="eyebrow">One listing, as published</div>
+      <h3>Gun Kraft LLC</h3>
+      <p>What a student gets from the county PDF</p>
+    </div>
+    <div class="card-body">
+      <div class="grp">Listed</div>
+      <div class="item have"><span class="ic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2f7a4b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><span class="lbl">Business name</span></div>
+      <div class="item have"><span class="ic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2f7a4b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><span class="lbl">Range location</span><span class="val">San Leandro</span></div>
+      <div class="item have"><span class="ic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2f7a4b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><span class="lbl">Phone number</span><span class="val">408-515-3536</span></div>
+      <div class="item have"><span class="ic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2f7a4b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><span class="lbl">Website</span><span class="val">gunkraft.com</span></div>
+
+      <div class="divider"></div>
+      <div class="grp">Not listed</div>
+      <div class="item miss"><span class="ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a9a69d" stroke-width="3.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lbl">Class price</span><span class="val">Call to ask</span></div>
+      <div class="item miss"><span class="ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a9a69d" stroke-width="3.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lbl">Dates &amp; open seats</span><span class="val">Call to ask</span></div>
+      <div class="item miss"><span class="ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a9a69d" stroke-width="3.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lbl">Initial (16 hr) vs. renewal (8 hr)</span><span class="val">Call to ask</span></div>
+      <div class="item miss"><span class="ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a9a69d" stroke-width="3.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lbl">Reviews</span><span class="val">None</span></div>
+      <div class="item miss"><span class="ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a9a69d" stroke-width="3.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="lbl">Book &amp; pay online</span><span class="val">Not possible</span></div>
+
+      <div class="score">
+        <b>4 of 9</b>
+        <span>details a student needs before booking. The rest happens by phone.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="call shadow">
+    <div class="call-top">
+      <div class="call-av">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#c96442" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.4 1.8.7 2.7a2 2 0 01-.5 2.1L8 9.8a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.7.7a2 2 0 011.7 2z"/></svg>
+      </div>
+      <div><b>Calling Gun Kraft LLC…</b><i>408-515-3536</i></div>
+    </div>
+    <div class="vm"><b>No answer.</b> “Leave a message and we’ll get back to you about class dates.”</div>
+    <div class="call-meta"><span>Call 3 of 3 today</span><span>0:42</span></div>
+  </div>
+
+</body>
+</html>

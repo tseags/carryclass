@@ -959,32 +959,31 @@ function EmailCardPreview({
   onOpen: () => void;
 }) {
   return (
-    <div className={`flex w-full shrink-0 flex-col items-stretch gap-2 lg:w-[380px] ${muted ? "opacity-60" : ""}`}>
-      <div className="relative h-[240px] rounded-lg border border-gray-200 bg-white text-left shadow-sm">
-        <div className="flex h-7 items-center border-b border-gray-100 bg-gray-50 px-3">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Preview</span>
-        </div>
-        <div className="pointer-events-none h-[212px] overflow-hidden px-3.5 pt-2.5">
-          <p className="!m-0 line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">
+    <div className={`flex w-full shrink-0 flex-col items-stretch gap-3 lg:w-[380px] ${muted ? "opacity-60" : ""}`}>
+      <div className="group relative h-[240px] overflow-hidden rounded-xl bg-white text-left shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-6px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_32px_-8px_rgba(0,0,0,0.18)]">
+        <div className="pointer-events-none h-full overflow-hidden px-4 pt-3.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Preview</span>
+          <p className="!mb-0 !mt-1 line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">
             {subject || "(no subject)"}
           </p>
+          <div className="my-2.5 h-px bg-gray-100" />
           <div
-            className="mt-2 text-xs leading-relaxed text-gray-600 [&_a]:!text-[#C1440E] [&_div]:!text-xs [&_div]:!leading-relaxed [&_p]:!mb-2.5 [&_p]:!mt-0 [&_p]:!text-xs [&_p]:!leading-relaxed [&_p]:!text-gray-600 [&_strong]:font-semibold [&_strong]:!text-gray-900"
+            className="text-xs leading-relaxed text-gray-600 [&_a]:!text-[#C1440E] [&_div]:!text-xs [&_div]:!leading-relaxed [&_p]:!mb-2.5 [&_p]:!mt-0 [&_p]:!text-xs [&_p]:!leading-relaxed [&_p]:!text-gray-600 [&_strong]:font-semibold [&_strong]:!text-gray-900"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent" />
         <button
           type="button"
           onClick={onOpen}
           aria-label={`Preview ${name}`}
-          className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E]"
+          className="absolute inset-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E]"
         />
       </div>
       <button
         type="button"
         onClick={onOpen}
-        className="self-end rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        className="self-end rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white transition-colors hover:bg-black"
       >
         View / Edit
       </button>
@@ -1038,7 +1037,8 @@ function EmailTemplatesPanel({
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
                   {isConfirmation ? (
-                    <span className="shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Always on
                     </span>
                   ) : (
