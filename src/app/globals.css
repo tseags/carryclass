@@ -355,11 +355,16 @@ img.county-hero-image-fill {
   padding-top: 12px;
 }
 
-.county-scroll-wrapper .county-scroll-arrow {
+.county-scroll-wrapper .county-scroll-arrow,
+.county-scroll-wrapper .county-scroll-arrow:hover,
+.county-scroll-wrapper .county-scroll-arrow:active,
+.county-scroll-wrapper .county-scroll-arrow:focus,
+.county-scroll-wrapper .county-scroll-arrow:focus-visible {
   position: absolute;
   top: 50%;
   z-index: 2;
-  transform: translateY(-50%);
+  /* Keep the centering offset. Webflow hover replaces transform with scale3d(). */
+  transform: translateY(-50%) !important;
 }
 
 .county-scroll-wrapper .county-scroll-arrow-left {
@@ -382,7 +387,8 @@ img.county-hero-image-fill {
   color: #000 !important;
   border: 1px solid rgba(0, 0, 0, 0.15) !important;
 }
-.county-scroll-wrapper .county-scroll-arrow:hover {
+.county-scroll-wrapper .county-scroll-arrow:hover,
+.county-scroll-wrapper .county-scroll-arrow:active {
   background-color: #111 !important;
   color: #fff !important;
   border-color: #111 !important;
