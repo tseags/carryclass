@@ -245,6 +245,8 @@ model Booking {
 
   stripeCheckoutSessionId String? @unique
   stripePaymentIntentId   String?
+  /// Human-friendly booking number shown to students and instructors (e.g. CC-7K2M9Q).
+  confirmationCode        String? @unique
 
   customerEmail String
   customerName  String

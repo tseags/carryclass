@@ -78,6 +78,7 @@ export async function sendBookingConfirmationEmail(input: {
   customerName: string;
   customerFirstName?: string;
   customerEmail: string;
+  confirmationCode?: string | null;
 }): Promise<void> {
   const recipient = input.customerEmail.trim().toLowerCase();
   if (!recipient) {
@@ -147,6 +148,7 @@ export async function sendBookingConfirmationEmail(input: {
     instructor_name: instructorName,
     instructor_email: instructorEmail,
     location,
+    confirmation_code: input.confirmationCode?.trim() || "",
     what_to_bring_link: `${baseUrl}/instructors/${bookingVendor.slug}?tab=what-to-bring`,
     rebooking_link: `${baseUrl}/instructors/${bookingVendor.slug}/book`,
   };

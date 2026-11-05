@@ -6,6 +6,10 @@ import { prisma } from "@/lib/db";
 import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
 import { parsePassThroughSnapshot } from "@/lib/instructor-catalog";
 import { sendBookingConfirmationEmail } from "@/lib/booking-confirmation-email";
+import {
+  generateConfirmationCode,
+  isConfirmationCodeCollision,
+} from "@/lib/booking-confirmation-code";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -59,8 +63,8 @@ export async function POST(req: Request) {
     const paymentIntentId =
       typeof pi === "string" ? pi : pi && "id" in pi ? pi.id : null;
 
-    try {
-      await prisma.$transaction(async (tx) => {
+    const createPaidBooking = (confirmationCode: string) =>
+      prisma.$transaction(async (tx) => {
         const cs = await tx.classSession.findUnique({
           where: { id: md.classSessionId },
         });
@@ -77,6 +81,7 @@ export async function POST(req: Request) {
             classSessionId: md.classSessionId,
             stripeCheckoutSessionId: session.id,
             stripePaymentIntentId: paymentIntentId,
+            confirmationCode,
             customerEmail: md.customerEmail ?? session.customer_email ?? "",
             customerName: md.customerName ?? "",
             customerPhone: md.customerPhone || null,
@@ -98,6 +103,18 @@ export async function POST(req: Request) {
         });
       });
 
+    try {
+      let confirmationCode = generateConfirmationCode();
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          await createPaidBooking(confirmationCode);
+          break;
+        } catch (err) {
+          if (attempt >= 5 || !isConfirmationCodeCollision(err)) throw err;
+          confirmationCode = generateConfirmationCode();
+        }
+      }
+
       // Best-effort: booking is already paid/enrolled — don't fail the webhook
       // (and trigger Stripe retries) if Resend is down.
       try {
@@ -107,6 +124,7 @@ export async function POST(req: Request) {
           customerName: md.customerName ?? "",
           customerFirstName: md.customerFirstName ?? "",
           customerEmail: md.customerEmail ?? session.customer_email ?? "",
+          confirmationCode,
         });
       } catch (emailErr) {
         console.error(

@@ -20,6 +20,7 @@ export const MERGE_TAGS = [
   "{instructor_name}",
   "{instructor_email}",
   "{location}",
+  "{confirmation_code}",
   "{what_to_bring_link}",
   "{rebooking_link}",
 ] as const;
@@ -37,6 +38,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailTemplateType, DefaultTemplate>
 Thanks for booking your {class_type} with {company_name}. Your spot is confirmed.
 
 **Here are your class details:**
+• Confirmation #: {confirmation_code}
 • Date: {class_date}
 • Time: {class_time}
 • Location: {location}
@@ -81,12 +83,13 @@ Stay safe,
 };
 
 /**
- * Confirmation copy from before the class-details rewrite. Instructors who
- * saved that generic default (without editing it) should pick up the new one.
+ * Earlier generic confirmation defaults. Instructors who saved one of these
+ * unedited should pick up the current default.
  */
-const LEGACY_CONFIRMATION: DefaultTemplate = {
-  subject: "You're booked, {student_name} — {class_type} on {class_date}",
-  body: `Hi {student_name},
+const LEGACY_CONFIRMATIONS: DefaultTemplate[] = [
+  {
+    subject: "You're booked, {student_name} — {class_type} on {class_date}",
+    body: `Hi {student_name},
 
 Thanks for booking your {class_type} with {instructor_name}. Your spot is confirmed.
 
@@ -98,7 +101,28 @@ Here are your class details:
 Please arrive a few minutes early and bring a valid photo ID.
 
 If you have any questions before class, you can reach out to {instructor_name} here: {instructor_email}.`,
-};
+  },
+  {
+    subject: "You're booked, {first_name} — {class_type} on {class_date}",
+    body: `Hi {first_name},
+
+Thanks for booking your {class_type} with {company_name}. Your spot is confirmed.
+
+**Here are your class details:**
+• Date: {class_date}
+• Time: {class_time}
+• Location: {location}
+
+Please bring a valid photo ID and the following items listed [here]({what_to_bring_link}).
+
+Please keep all firearms unloaded and leave all ammunition in your vehicle.
+
+If you have any questions before class, you can respond directly to this email.
+
+Thank you,
+{instructor_name}`,
+  },
+];
 
 /** Every template opens with the student's first name, including older saved drafts. */
 function greetByFirstName(body: string): string {
@@ -108,11 +132,12 @@ function greetByFirstName(body: string): string {
 function savedOrDefault(
   saved: string | null | undefined,
   fallback: string,
-  legacy?: string
+  legacy: string[] = []
 ): string {
-  const trimmed = (saved ?? "").replace(/\r\n/g, "\n").trim();
+  const normalize = (value: string) => value.replace(/\r\n/g, "\n").trim();
+  const trimmed = normalize(saved ?? "");
   if (!trimmed) return fallback;
-  if (legacy && trimmed === legacy.replace(/\r\n/g, "\n").trim()) return fallback;
+  if (legacy.some((old) => trimmed === normalize(old))) return fallback;
   return saved!;
 }
 
@@ -122,10 +147,20 @@ export function resolveTemplateContent(
   saved: { subject?: string | null; body?: string | null } | undefined
 ): DefaultTemplate {
   const def = DEFAULT_EMAIL_TEMPLATES[type];
-  const legacy = type === "confirmation" ? LEGACY_CONFIRMATION : undefined;
+  const legacy = type === "confirmation" ? LEGACY_CONFIRMATIONS : [];
   return {
-    subject: savedOrDefault(saved?.subject, def.subject, legacy?.subject),
-    body: greetByFirstName(savedOrDefault(saved?.body, def.body, legacy?.body)),
+    subject: savedOrDefault(
+      saved?.subject,
+      def.subject,
+      legacy.map((t) => t.subject)
+    ),
+    body: greetByFirstName(
+      savedOrDefault(
+        saved?.body,
+        def.body,
+        legacy.map((t) => t.body)
+      )
+    ),
   };
 }
 
@@ -222,6 +257,7 @@ export function emailPreviewMergeValues(input?: EmailPreviewContext): Record<str
     instructor_name: signOff,
     instructor_email: input?.vendorEmail?.trim() || "instructor@example.com",
     location: "3274 San Tomas Dr. 92056, Oceanside, CA",
+    confirmation_code: "CC-7K2M9Q",
     what_to_bring_link: absolutePreviewUrl(
       input?.whatToBringUrl,
       "https://www.getcarryclass.com/instructors/your-listing?tab=what-to-bring"

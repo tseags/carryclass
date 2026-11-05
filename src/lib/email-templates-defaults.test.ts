@@ -48,6 +48,36 @@ If you have any questions before class, you can reach out to {instructor_name} h
     expect(resolved.body).toContain("Hi {first_name},");
   });
 
+  it("includes the confirmation number in the default and upgrades the previous default", () => {
+    expect(resolveTemplateContent("confirmation", undefined).body).toContain(
+      "Confirmation #: {confirmation_code}"
+    );
+
+    const previous = resolveTemplateContent("confirmation", {
+      body: `Hi {first_name},
+
+Thanks for booking your {class_type} with {company_name}. Your spot is confirmed.
+
+**Here are your class details:**
+• Date: {class_date}
+• Time: {class_time}
+• Location: {location}
+
+Please bring a valid photo ID and the following items listed [here]({what_to_bring_link}).
+
+Please keep all firearms unloaded and leave all ammunition in your vehicle.
+
+If you have any questions before class, you can respond directly to this email.
+
+Thank you,
+{instructor_name}`,
+    });
+    expect(previous.body).toContain("Confirmation #: {confirmation_code}");
+
+    const custom = resolveTemplateContent("confirmation", { body: "Hi {first_name},\n\nCustom." });
+    expect(custom.body).not.toContain("{confirmation_code}");
+  });
+
   it("greets with the student first name in every template", () => {
     for (const type of ["confirmation", "reminder", "followup"] as const) {
       expect(resolveTemplateContent(type, undefined).body.startsWith("Hi {first_name},")).toBe(

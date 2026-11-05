@@ -73,7 +73,9 @@ function applyFilters(regs: DashboardRegistration[], f: Filters): DashboardRegis
   const now = Date.now();
   return regs.filter((r) => {
     if (q) {
-      const hay = `${r.customerName} ${r.customerEmail} ${r.customerPhone ?? ""}`.toLowerCase();
+      const hay = `${r.customerName} ${r.customerEmail} ${r.customerPhone ?? ""} ${
+        r.confirmationCode ?? ""
+      }`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (f.classType && r.classType !== f.classType) return false;
@@ -371,7 +373,7 @@ export function RegistrationsCrm({
             type="search"
             value={filters.query}
             onChange={(e) => patch({ query: e.target.value })}
-            placeholder="Search name or email"
+            placeholder="Search name, email, or confirmation #"
             className="w-full rounded-lg border border-gray-200 py-1.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#C1440E]/40 focus:outline-none focus:ring-1 focus:ring-[#C1440E]/30"
           />
         </label>
@@ -639,6 +641,16 @@ function StudentDrawer({
     <Drawer open={r !== null} onClose={onClose} title={r?.customerName ?? "Student"}>
       {r && (
         <dl className="space-y-4 p-5 text-sm">
+          {r.confirmationCode && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Confirmation #
+              </dt>
+              <dd className="mt-1 font-mono font-semibold tracking-wider text-gray-900">
+                {r.confirmationCode}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</dt>
             <dd className="mt-1">
