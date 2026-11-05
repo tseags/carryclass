@@ -34,8 +34,7 @@ export default async function Step5Page({
           <div className="mb-6">
             <h1 className="onboard-step-title">Get paid for your classes</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Optional. Connect Stripe to let students book and pay online — or skip it and publish a
-              listing-only profile.
+              Connect Stripe to let students book and pay online.
             </p>
           </div>
           <Step5Stripe
