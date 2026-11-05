@@ -160,6 +160,7 @@ export async function POST(req: Request) {
     checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
       ui_mode: "custom",
+      excluded_payment_method_types: ["amazon_pay"],
       customer_email: customerEmail,
       line_items: lines.map((line) => ({
         price_data: {
