@@ -6,6 +6,7 @@ import {
   insertCalendarClasses,
   advanceOnboardingStep,
 } from "@/lib/onboarding-db";
+import { syncLiveScheduleForPublishedVendor } from "@/lib/publish-vendor-live";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest) {
   }
 
   await advanceOnboardingStep(vendor.id, 4);
+
+  if (vendor.is_published && classes?.length) {
+    try {
+      await syncLiveScheduleForPublishedVendor(vendor);
+    } catch (error) {
+      console.error("[onboarding/step/3] live schedule sync failed:", error);
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

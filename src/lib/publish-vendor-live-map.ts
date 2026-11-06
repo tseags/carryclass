@@ -2,6 +2,7 @@
  * Pure mapping helpers for the publish → live bridge (no DB imports).
  */
 import type { Vendor } from "@/types";
+import { expandClassOccurrences } from "@/lib/expand-recurrence";
 import { isCustomClassKey } from "@/lib/instructor-catalog";
 import type {
   VendorCalendarClass,
@@ -279,10 +280,14 @@ export function buildPrismaVendorData(
  * Initial, renewal, and active custom classes. Add-a-Gun stays on gun_pricing
  * and is not turned into a standard tuition session. Price falls back to the
  * class-type dollars.
+ *
+ * Recurring classes become one session per occurrence: through the end date
+ * on the rule, or for the next two years when the instructor leaves it open.
  */
 export function calendarClassesToSessions(
   calendarClasses: VendorCalendarClass[],
-  classTypes: VendorClassType[]
+  classTypes: VendorClassType[],
+  now = new Date()
 ): SessionScaffoldInput[] {
   const pricing = deriveClassPricing(classTypes);
   const typePriceCents: Record<string, number> = {
@@ -298,6 +303,7 @@ export function calendarClassesToSessions(
   }
 
   const out: SessionScaffoldInput[] = [];
+  const seen = new Set<string>();
   for (const cls of calendarClasses) {
     if (!cls.is_active) continue;
     const rawType = (cls.class_type ?? "").trim().toLowerCase();
@@ -323,14 +329,26 @@ export function calendarClassesToSessions(
         ? Math.floor(Number(cls.max_students))
         : 12;
 
-    out.push({
-      startsAt,
-      endsAt: endsAtValid,
-      title: trimOrNull(cls.title),
-      classType: rawType,
-      priceCents,
-      capacity,
+    const occurrences = expandClassOccurrences({
+      start: startsAt,
+      end: endsAtValid,
+      recurrenceRule: cls.is_recurring ? cls.recurrence_rule : null,
+      now,
     });
+
+    for (const occurrence of occurrences) {
+      const key = `${occurrence.startsAt.getTime()}|${rawType}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        startsAt: occurrence.startsAt,
+        endsAt: occurrence.endsAt,
+        title: trimOrNull(cls.title),
+        classType: rawType,
+        priceCents,
+        capacity,
+      });
+    }
   }
   return out;
 }

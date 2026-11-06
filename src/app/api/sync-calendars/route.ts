@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { syncCalendarClasses } from "@/lib/onboarding-db";
+import { refreshPublishedLiveSchedules } from "@/lib/publish-vendor-live";
 import ICAL from "ical.js";
 import { Resend } from "resend";
 import { getStripe } from "@/lib/stripe";
@@ -47,7 +48,11 @@ export async function GET(req: NextRequest) {
     .in("calendar_type", ["google", "ical"]);
 
   if (!vendors?.length) {
-    return NextResponse.json({ synced: 0 });
+    const recurring = await refreshPublishedLiveSchedules().catch((error: unknown) => {
+      console.error("[sync-calendars] recurring roll failed", error);
+      return { vendors: 0, errors: 1 };
+    });
+    return NextResponse.json({ synced: 0, recurring });
   }
 
   const results: Array<{
@@ -96,7 +101,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ synced: vendors.length, results });
+  const recurring = await refreshPublishedLiveSchedules().catch((error: unknown) => {
+    console.error("[sync-calendars] recurring roll failed", error);
+    return { vendors: 0, errors: 1 };
+  });
+
+  return NextResponse.json({ synced: vendors.length, results, recurring });
 }
 
 async function fetchIcalEvents(url: string): Promise<CalendarEvent[]> {

@@ -315,6 +315,16 @@ export async function getVendorProfile(
   return (data as VendorProfile | null) ?? null;
 }
 
+/** Published instructors whose live booking calendar should stay in sync. */
+export async function listPublishedVendorProfiles(): Promise<VendorProfile[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("vendors")
+    .select("*")
+    .eq("is_published", true);
+  if (error) throw new Error(`Failed to list published vendors: ${error.message}`);
+  return (data ?? []) as VendorProfile[];
+}
+
 /** Fetch onboarding vendor profile by claimed listing slug. */
 export async function getVendorProfileBySlug(
   slug: string

@@ -385,6 +385,45 @@ describe("calendarClassesToSessions", () => {
       capacity: 1,
     });
   });
+
+  it("turns an every-2-weeks class into a session on each date", () => {
+    const sessions = calendarClassesToSessions(
+      [
+        {
+          id: "c-biweekly",
+          vendor_id: "v1",
+          external_event_id: null,
+          class_type: "initial",
+          title: "16hr Initial",
+          description: null,
+          location: null,
+          range_location: null,
+          start_time: "2026-11-10T02:00:00.000Z",
+          end_time: "2026-11-10T04:00:00.000Z",
+          is_recurring: true,
+          recurrence_rule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20261124T075959Z",
+          max_students: 8,
+          price: 275,
+          gun_pricing: null,
+          is_active: true,
+        },
+      ],
+      [classType({ class_type: "initial", price: 200 })],
+      new Date("2026-11-06T20:00:00.000Z")
+    );
+
+    expect(sessions.map((session) => session.startsAt.toISOString())).toEqual([
+      "2026-11-10T02:00:00.000Z",
+      "2026-11-24T02:00:00.000Z",
+    ]);
+    expect(sessions[0]).toMatchObject({
+      classType: "initial",
+      priceCents: 27500,
+      capacity: 8,
+      title: "16hr Initial",
+    });
+    expect(sessions[1].endsAt?.toISOString()).toBe("2026-11-24T04:00:00.000Z");
+  });
 });
 
 describe("findSourceRowIdsForCanonicalSlug", () => {

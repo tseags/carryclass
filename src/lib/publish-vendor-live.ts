@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import {
   getCalendarClasses,
   getClassTypes,
+  listPublishedVendorProfiles,
   type VendorCalendarClass,
   type VendorClassType,
   type VendorProfile,
@@ -18,7 +19,10 @@ import {
   parsePublishLiveSlugAllowlist,
   type SessionScaffoldInput,
 } from "@/lib/publish-vendor-live-map";
-import { revalidatePublishedVendorPaths } from "@/lib/publish-vendor-revalidate";
+import {
+  revalidateInstructorSchedulePaths,
+  revalidatePublishedVendorPaths,
+} from "@/lib/publish-vendor-revalidate";
 import {
   findCarryClassSourceRowIdsForSlug,
   getVendorBySlug,
@@ -268,4 +272,54 @@ export async function syncLiveScheduleForPublishedVendor(
   });
   revalidatePublishedVendorPaths(profile.slug);
   return result;
+}
+
+/**
+ * Rebuild bookable sessions from stored schedules, including later dates on
+ * open-ended recurring classes. Does not rewrite the public listing.
+ */
+async function refreshBookingSessions(profile: VendorProfile): Promise<void> {
+  const slug = profile.slug?.trim();
+  if (!profile.is_published || !slug) return;
+
+  const bookingVendor = await prisma.vendor.findUnique({
+    where: { slug },
+    select: { id: true, acceptsBookings: true },
+  });
+  if (!bookingVendor?.acceptsBookings) return;
+
+  const [classTypes, calendarClasses] = await Promise.all([
+    getClassTypes(profile.id),
+    getCalendarClasses(profile.id),
+  ]);
+  await upsertClassSessionsForVendor(
+    bookingVendor.id,
+    calendarClassesToSessions(calendarClasses, classTypes)
+  );
+  revalidateInstructorSchedulePaths(slug);
+}
+
+/**
+ * Keep every published instructor's booking calendar current.
+ * The daily cron calls this so an ongoing series still shows dates after the
+ * previous window rolls forward.
+ */
+export async function refreshPublishedLiveSchedules(): Promise<{
+  vendors: number;
+  errors: number;
+}> {
+  const profiles = await listPublishedVendorProfiles();
+  let errors = 0;
+  for (const profile of profiles) {
+    try {
+      await refreshBookingSessions(profile);
+    } catch (error) {
+      errors += 1;
+      console.error(
+        `[publish-vendor-live] schedule refresh failed for ${profile.slug ?? profile.id}:`,
+        error
+      );
+    }
+  }
+  return { vendors: profiles.length, errors };
 }

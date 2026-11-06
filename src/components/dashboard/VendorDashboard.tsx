@@ -35,6 +35,7 @@ import {
   formatTime,
   formatCurrency,
 } from "./dashboard-format";
+import { describeStoredRecurrence } from "@/lib/expand-recurrence";
 import {
   applyMergeTags,
   emailBodyToHtml,
@@ -699,7 +700,14 @@ function ClassesPanel({
             <tbody>
               {classes.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 last:border-0">
-                  <td className="!py-5 !pr-4 align-top font-medium leading-snug text-gray-900 whitespace-nowrap">{formatLongDate(c.start_time)}</td>
+                  <td className="!py-5 !pr-4 align-top font-medium leading-snug text-gray-900 whitespace-nowrap">
+                    {formatLongDate(c.start_time)}
+                    {c.is_recurring ? (
+                      <span className="mt-0.5 block text-xs font-normal text-gray-500">
+                        {describeStoredRecurrence(c.recurrence_rule)}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="!py-5 !pr-4 align-top leading-snug text-gray-600 whitespace-nowrap">{formatTime(c.start_time)}</td>
                   <td className="!py-5 !pr-4 align-top text-gray-600">
                     <span className="block max-w-44 leading-snug line-clamp-2" title={c.location || undefined}>
