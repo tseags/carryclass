@@ -43,6 +43,7 @@ const EXPECTED: Record<string, string[]> = {
     "ical_feed_url",
     "google_calendar_id",
     "google_refresh_token",
+    "what_to_bring",
   ],
   vendor_class_types: [
     "id",

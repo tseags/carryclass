@@ -28,6 +28,8 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS calendar_type text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS ical_feed_url text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_calendar_id text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_refresh_token text;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS what_to_bring text[];
+NOTIFY pgrst, 'reload schema';
 
 -- Unique index on clerk_user_id
 CREATE UNIQUE INDEX IF NOT EXISTS vendors_clerk_user_id_idx ON vendors (clerk_user_id) WHERE clerk_user_id IS NOT NULL;

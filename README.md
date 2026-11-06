@@ -118,7 +118,7 @@ npm run ensure:vendor-assets-bucket
 
 4. Enter the code. In development the code is also logged to the server console (`[claim] email code for …`); set `CLAIM_DEV_LOG_CODES=1` to get that outside dev. Email needs `RESEND_API_KEY`; SMS needs all three `TWILIO_*` vars, otherwise use the email channel.
 5. Verify redirects to `/onboard`, which forwards to `/onboard/step/{onboarding_step}`.
-6. Walk steps 1–6. Step 5 (Stripe Connect) is **optional** — "Skip for now" advances to step 6 without a `stripe_account_id`. Step 6 publishes and redirects to `/dashboard/vendor`.
+6. Walk steps 1–6. Step 1 includes the student packing list (What To Bring) and writes `vendors.what_to_bring`, which the public profile tab reads. Step 5 (Stripe Connect) is **optional** — "Skip for now" advances to step 6 without a `stripe_account_id`. Step 6 publishes and redirects to `/dashboard/vendor`.
 
 Guards worth checking: `/onboard` before claiming bounces to `/instructors/claim`, and `/dashboard/vendor` before publishing bounces to `/onboard`. Step URLs are **not** gated on `onboarding_step`, so a claimed user can open `/onboard/step/5` directly.
 

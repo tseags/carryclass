@@ -22,20 +22,11 @@ import { VendorWebsiteLink } from "@/components/VendorWebsiteLink";
 import { AvailableClasses } from "@/components/instructors/AvailableClasses";
 import { directoryCcwCards } from "@/lib/instructor-catalog";
 import { getOnboardingPublicCatalog } from "@/lib/public-instructor-classes";
+import { getVendorProfileBySlug } from "@/lib/onboarding-db";
+import { resolveWhatToBringItems } from "@/lib/what-to-bring";
 
 /** Cache public profiles for 24h — crawlers and repeat visitors avoid repeated full DB reads. */
 export const revalidate = 86400;
-
-const WHAT_TO_BRING_ITEMS = [
-  "Firearm (must be on your permit application)",
-  "100 rounds of ammunition",
-  "Eye protection (wrap-around)",
-  "Ear protection (muffs or plugs)",
-  "Holster",
-  "Belt (sturdy, designed for carry)",
-  "Spare magazine",
-  "6 snap caps",
-] as const;
 
 const TAB_CONFIG = [
   { id: "about", label: "About" },
@@ -103,7 +94,11 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
 
   const heroButtonClassName =
     "vendor-profile-hero-cta btn-primary bg-secondary-2 small w-button match-header-btn mt-6 inline-block self-start text-center !bg-[#c96442] !text-white hover:!bg-[#d97757] focus-visible:!bg-[#d97757]";
-  const publishedCatalog = await getOnboardingPublicCatalog(vendor.slug);
+  const [publishedCatalog, onboardingProfile] = await Promise.all([
+    getOnboardingPublicCatalog(vendor.slug),
+    getVendorProfileBySlug(vendor.slug).catch(() => null),
+  ]);
+  const whatToBringItems = resolveWhatToBringItems(onboardingProfile?.what_to_bring);
   const profileCcw = publishedCatalog ? publishedCatalog.ccw : directoryCcwCards(vendor);
   const profileOther = publishedCatalog?.other ?? [];
   const tabHref = (tab: VendorTab) => `/instructors/${vendor.slug}?tab=${tab}`;
@@ -311,7 +306,7 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                     </p>
                   </div>
                   <ul className="vendor-what-to-bring-list m-0 w-full list-none space-y-3 p-0 text-left">
-                    {WHAT_TO_BRING_ITEMS.map((item) => (
+                    {whatToBringItems.map((item) => (
                       <li
                         key={item}
                         className="vendor-what-to-bring-card flex w-full items-center justify-start gap-3 rounded-[14px] border border-[#ebe9e2] bg-white px-5 py-3.5 text-left shadow-[0_1px_0_rgba(26,26,24,0.02)] sm:px-6"

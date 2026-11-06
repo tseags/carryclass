@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { getVendorProfile, updateVendorProfile, advanceOnboardingStep } from "@/lib/onboarding-db";
 import { normalizeCountiesServed } from "@/data/counties";
 import { parseWebsiteInput } from "@/lib/vendor-website-url";
+import { normalizeWhatToBring } from "@/lib/what-to-bring";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -18,6 +20,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: websiteResult.error }, { status: 400 });
   }
 
+  let whatToBring: string[] | undefined;
+  if (body.whatToBring !== undefined) {
+    const normalized = normalizeWhatToBring(body.whatToBring);
+    if (!normalized.ok) {
+      return NextResponse.json({ error: normalized.error, field: "whatToBring" }, { status: 400 });
+    }
+    whatToBring = normalized.items;
+  }
+
   await updateVendorProfile(vendor.id, {
     name: body.name ?? null,
     canonical_name: body.name ?? vendor.canonical_name,
@@ -31,9 +42,15 @@ export async function POST(req: NextRequest) {
     badge_tags: body.badgeTags ?? null,
     photo_url: body.photoUrl ?? null,
     gallery_urls: body.galleryUrls ?? null,
+    ...(whatToBring ? { what_to_bring: whatToBring } : {}),
   });
 
   await advanceOnboardingStep(vendor.id, 2);
 
-  return NextResponse.json({ ok: true });
+  const slug = vendor.slug?.trim();
+  if (slug && whatToBring) {
+    revalidatePath(`/instructors/${slug}`);
+  }
+
+  return NextResponse.json({ ok: true, whatToBring: whatToBring ?? null });
 }

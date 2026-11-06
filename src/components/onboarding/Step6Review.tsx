@@ -7,6 +7,7 @@ import type { VendorProfile, VendorClassType, VendorCalendarClass, VendorCheckou
 import { isCanonicalClassType, isCustomClassKey } from "@/lib/instructor-catalog";
 import { cancellationPolicyLabel } from "@/lib/cancellation-policy";
 import { clearVendorSignupIntentCookie } from "@/lib/auth/signup-intent";
+import { resolveWhatToBringItems } from "@/lib/what-to-bring";
 
 const CLASS_TYPE_LABELS: Record<string, string> = {
   initial: "CCW Initial",
@@ -43,6 +44,7 @@ export function Step6Review({ vendor, classTypes, calendarClasses, checkoutFees 
   const activeOther = otherClasses.filter((ct) => ct.is_active);
   const activeFees = checkoutFees.filter((fee) => fee.is_active);
   const activeClasses = calendarClasses.filter((c) => c.is_active);
+  const bringItems = resolveWhatToBringItems(vendor.what_to_bring);
 
   async function handlePublish() {
     setPublishing(true);
@@ -207,6 +209,14 @@ export function Step6Review({ vendor, classTypes, calendarClasses, checkoutFees 
             vendor.cancellation_refund_percent
           )}
         </p>
+      </SummaryCard>
+
+      <SummaryCard title="What to bring" editHref="/onboard/step/1">
+        <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-zinc-700">
+          {bringItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </SummaryCard>
 
       {/* Stripe */}

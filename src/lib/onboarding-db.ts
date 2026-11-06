@@ -32,6 +32,8 @@ export interface VendorProfile {
   ical_feed_url: string | null;
   google_calendar_id: string | null;
   google_refresh_token: string | null;
+  /** Null until the instructor saves a packing list. Public profile then uses the defaults. */
+  what_to_bring: string[] | null;
   slug: string | null;
   created_at: string;
   updated_at: string;

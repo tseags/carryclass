@@ -289,6 +289,7 @@ const ONBOARDING_VENDOR_COLUMNS = [
   "ical_feed_url",
   "google_calendar_id",
   "google_refresh_token",
+  "what_to_bring",
 ];
 
 const ONBOARDING_TABLES = [

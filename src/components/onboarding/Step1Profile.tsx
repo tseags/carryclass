@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { VendorProfile } from "@/lib/onboarding-db";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { LocationInput } from "@/components/dashboard/LocationInput";
 import { parseWebsiteInput } from "@/lib/vendor-website-url";
+import { WhatToBringFields, type WhatToBringFieldsHandle } from "@/components/onboarding/WhatToBringFields";
 
 const BADGE_OPTIONS = [
   "NRA Certified",
@@ -44,6 +45,7 @@ interface Props {
 export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }: Props) {
   const router = useRouter();
   const isDashboard = mode === "dashboard";
+  const whatToBringRef = useRef<WhatToBringFieldsHandle>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
@@ -251,6 +253,12 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     const website = normalizeWebsiteField();
     if (website === false) return;
 
+    const whatToBring = whatToBringRef.current?.collect();
+    if (!whatToBring?.ok) {
+      setError(whatToBring?.error ?? "Select at least one item.");
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     setError("");
@@ -270,12 +278,14 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           badgeTags: form.badgeTags,
           photoUrl: form.photoUrl,
           galleryUrls: form.galleryUrls,
+          whatToBring: whatToBring.items,
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         if (res.status === 400 && typeof data?.error === "string") {
-          setWebsiteError(data.error);
+          if (data.field === "whatToBring") setError(data.error);
+          else setWebsiteError(data.error);
           return;
         }
         throw new Error("Save failed");
@@ -295,6 +305,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           badge_tags: form.badgeTags,
           photo_url: form.photoUrl || null,
           gallery_urls: form.galleryUrls,
+          what_to_bring: whatToBring.items,
         });
         setSaved(true);
       } else {
@@ -691,6 +702,14 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
             {photoError}
           </p>
         )}
+      </section>
+
+      <section id="listing-what-to-bring" className="scroll-mt-[calc(var(--header-height)+1rem)]">
+        <h2 className="mb-1 text-base font-semibold text-zinc-800">What students need to bring</h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          These items appear on the What To Bring tab of your live profile.
+        </p>
+        <WhatToBringFields ref={whatToBringRef} items={vendor.what_to_bring} />
       </section>
 
       {error && (

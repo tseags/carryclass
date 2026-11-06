@@ -69,6 +69,7 @@ const LISTING_SUBSECTIONS: { id: string; label: string }[] = [
   { id: "listing-description", label: "Public description" },
   { id: "listing-certifications", label: "Certifications & specializations" },
   { id: "listing-photos", label: "Photos" },
+  { id: "listing-what-to-bring", label: "What to bring" },
   { id: "listing-class-types", label: "Class types & pricing" },
   { id: "listing-fees", label: "Checkout fees" },
   { id: "listing-cancellation", label: "Cancellation policy" },
