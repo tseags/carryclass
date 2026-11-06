@@ -14,6 +14,14 @@ function p2002(target: unknown) {
   });
 }
 
+function rawUnique(message: string) {
+  return new Prisma.PrismaClientKnownRequestError("Raw query failed", {
+    code: "P2010",
+    clientVersion: "test",
+    meta: { code: "23505", message },
+  });
+}
+
 describe("generateConfirmationCode", () => {
   it("produces CC- plus six unambiguous characters", () => {
     for (let i = 0; i < 500; i += 1) {
@@ -34,6 +42,18 @@ describe("isConfirmationCodeCollision", () => {
     expect(isConfirmationCodeCollision(p2002(["confirmationCode"]))).toBe(true);
     expect(isConfirmationCodeCollision(p2002("Booking_confirmationCode_key"))).toBe(true);
     expect(isConfirmationCodeCollision(p2002(["stripeCheckoutSessionId"]))).toBe(false);
+    expect(
+      isConfirmationCodeCollision(
+        rawUnique('duplicate key value violates unique constraint "Booking_confirmationCode_key"')
+      )
+    ).toBe(true);
+    expect(
+      isConfirmationCodeCollision(
+        rawUnique(
+          'duplicate key value violates unique constraint "Booking_stripeCheckoutSessionId_key"'
+        )
+      )
+    ).toBe(false);
     expect(isConfirmationCodeCollision(new Error("boom"))).toBe(false);
   });
 });

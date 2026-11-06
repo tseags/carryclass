@@ -16,9 +16,18 @@ export function generateConfirmationCode(): string {
   return code;
 }
 
+function uniqueErrorText(error: Prisma.PrismaClientKnownRequestError): string {
+  const meta = error.meta as { target?: unknown; message?: string; constraint?: string } | undefined;
+  return [error.message, meta?.message, meta?.constraint, JSON.stringify(meta?.target ?? "")].join(
+    " "
+  );
+}
+
 /** Unique-constraint hit on confirmationCode (not on the Stripe session id). */
 export function isConfirmationCodeCollision(error: unknown): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code !== "P2002") return false;
-  return JSON.stringify(error.meta?.target ?? "").includes("confirmationCode");
+  // Prisma create reports P2002. A raw INSERT reports P2010 with Postgres 23505.
+  if (error.code !== "P2002" && error.code !== "P2010") return false;
+  const text = uniqueErrorText(error);
+  return text.includes("confirmationCode") && !text.includes("stripeCheckoutSessionId");
 }
