@@ -24,6 +24,12 @@ export async function POST(req: NextRequest) {
 
   revalidatePath("/");
   revalidatePath("/instructors");
+  // Instructor profiles use ISR (revalidate=86400). Busting /instructors alone
+  // does not refresh /instructors/[slug] — invalidate the dynamic page type too.
+  revalidatePath("/instructors/[slug]", "page");
+  revalidatePath("/instructors/[slug]/book", "page");
+  revalidatePath("/instructors/[slug]/classes", "page");
+  revalidatePath("/instructors/[slug]/classes/[classKey]", "page");
   revalidatePath("/ca");
   revalidatePath("/ca", "layout");
   revalidatePath("/sitemap.xml");
@@ -32,5 +38,6 @@ export async function POST(req: NextRequest) {
     ok: true,
     revalidatedTag: VENDOR_DATA_CACHE_TAG,
     revalidatedCounties: CALIFORNIA_COUNTIES.length,
+    revalidatedInstructorPages: true,
   });
 }
