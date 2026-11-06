@@ -1,5 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { outreachSurfaceAllowed } from "./access";
 
 export function outreachAllowedUserIds(): Set<string> {
   return new Set(
@@ -14,10 +16,16 @@ export function isOutreachUser(userId: string | null | undefined): userId is str
   return Boolean(userId) && outreachAllowedUserIds().has(userId as string);
 }
 
-/** Signed-in Clerk user id when it is on the outreach allowlist, else null. */
+/**
+ * Local operator id for CRM routes. Null on the public site, so those routes 404.
+ * A signed-in Clerk id is used when present; otherwise a fixed local id.
+ * Stages, notes, and call history are stored on the contact rows, not on this id.
+ */
 export async function getOutreachUserId(): Promise<string | null> {
+  const host = (await headers()).get("host");
+  if (!outreachSurfaceAllowed(host)) return null;
   const { userId } = await auth();
-  return isOutreachUser(userId) ? userId : null;
+  return userId ?? "local";
 }
 
 export function outreachNotFound(): NextResponse {

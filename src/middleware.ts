@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
+import { outreachSurfaceAllowed } from "@/lib/outreach/access";
 
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
 /** `/onboard` and subpaths only — must not match `/onboarding` */
@@ -27,7 +28,28 @@ function isVendorOnboardingPath(pathname: string): boolean {
   );
 }
 
+function isPublicOutreachVoiceWebhook(pathname: string): boolean {
+  return pathname === "/api/outreach/twilio/voice";
+}
+
+function isOutreachSurface(pathname: string): boolean {
+  return (
+    pathname === "/outreach" ||
+    pathname.startsWith("/outreach/") ||
+    pathname.startsWith("/api/outreach")
+  );
+}
+
 export default clerkMiddleware(async (auth, req) => {
+  const { pathname } = req.nextUrl;
+  if (
+    isOutreachSurface(pathname) &&
+    !isPublicOutreachVoiceWebhook(pathname) &&
+    !outreachSurfaceAllowed(req.headers.get("host"))
+  ) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const { userId } = await auth();
 
   if (
