@@ -231,13 +231,48 @@ export interface EmailPreviewContext {
   whatToBringUrl?: string | null;
 }
 
+/** Public site used in student emails. Local dev hosts are never sent to a student. */
+export const PUBLIC_EMAIL_APP_URL = "https://www.getcarryclass.com";
+
+function isLocalAppHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host.endsWith(".local")
+  );
+}
+
+/** Origin for links in student emails. A localhost app URL is replaced with production. */
+export function publicEmailAppUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (!raw) return PUBLIC_EMAIL_APP_URL;
+  try {
+    const url = new URL(raw);
+    if (isLocalAppHost(url.hostname)) return PUBLIC_EMAIL_APP_URL;
+    return url.origin;
+  } catch {
+    return PUBLIC_EMAIL_APP_URL;
+  }
+}
+
 /** Turn a site path into an absolute URL so email previews can render it as a link. */
 function absolutePreviewUrl(url: string | null | undefined, fallback: string): string {
   const trimmed = url?.trim();
   if (!trimmed) return fallback;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://www.getcarryclass.com";
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (isLocalAppHost(parsed.hostname)) {
+        return `${PUBLIC_EMAIL_APP_URL}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return trimmed;
+    }
+    return trimmed;
+  }
+  const base = publicEmailAppUrl();
   return `${base}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
 }
 

@@ -262,6 +262,8 @@ model Booking {
 
   status BookingStatus @default(PENDING)
   paidAt DateTime?
+  /// Set once the student confirmation email is accepted by Resend.
+  confirmationEmailSentAt DateTime?
 
   createdAt DateTime @default(now())
 

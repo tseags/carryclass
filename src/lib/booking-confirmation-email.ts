@@ -10,6 +10,7 @@ import {
   applyMergeTags,
   emailBodyToHtml,
   emailBodyToPlainText,
+  publicEmailAppUrl,
   resolveTemplateContent,
 } from "@/lib/email-templates-defaults";
 import {
@@ -79,11 +80,11 @@ export async function sendBookingConfirmationEmail(input: {
   customerFirstName?: string;
   customerEmail: string;
   confirmationCode?: string | null;
-}): Promise<void> {
+}): Promise<boolean> {
   const recipient = input.customerEmail.trim().toLowerCase();
   if (!recipient) {
     console.warn("[booking-confirmation-email] missing recipient — skip");
-    return;
+    return false;
   }
 
   const resend = getResend();
@@ -91,7 +92,7 @@ export async function sendBookingConfirmationEmail(input: {
     console.warn(
       "[booking-confirmation-email] RESEND_API_KEY unset — skip confirmation email"
     );
-    return;
+    return false;
   }
 
   const session = await prisma.classSession.findUnique({
@@ -103,7 +104,7 @@ export async function sendBookingConfirmationEmail(input: {
       classSessionId: input.classSessionId,
       prismaVendorId: input.prismaVendorId,
     });
-    return;
+    return false;
   }
 
   const bookingVendor = session.vendor;
@@ -113,9 +114,7 @@ export async function sendBookingConfirmationEmail(input: {
   const { subject, body } = resolveTemplateContent("confirmation", saved);
 
   const tz = session.timezone || "America/Los_Angeles";
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "https://www.getcarryclass.com";
+  const baseUrl = publicEmailAppUrl();
   const companyName =
     bookingVendor.name?.trim() || profile?.name?.trim() || "Your instructor";
   const instructorName = await signatureName(profile?.clerk_user_id, companyName);
@@ -205,4 +204,5 @@ export async function sendBookingConfirmationEmail(input: {
     }
     throw err;
   }
+  return true;
 }

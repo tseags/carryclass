@@ -2,8 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   emailBodyToHtml,
   emailBodyToPlainText,
+  publicEmailAppUrl,
   resolveTemplateContent,
 } from "./email-templates-defaults";
+
+describe("confirmation email links", () => {
+  it("points student emails at production when the app is running locally", () => {
+    const previous = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3001";
+    expect(publicEmailAppUrl()).toBe("https://www.getcarryclass.com");
+    process.env.NEXT_PUBLIC_APP_URL = "https://www.getcarryclass.com/";
+    expect(publicEmailAppUrl()).toBe("https://www.getcarryclass.com");
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previous;
+  });
+});
 
 describe("confirmation email rendering", () => {
   it("bolds the class-details heading and links the packing-list word", () => {

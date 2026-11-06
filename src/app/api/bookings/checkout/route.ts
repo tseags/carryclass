@@ -175,6 +175,7 @@ export async function POST(req: Request) {
       })),
       payment_intent_data: {
         application_fee_amount: amounts.platformFeeCents,
+        receipt_email: customerEmail,
         transfer_data: {
           destination: classSession.vendor.stripeConnectAccountId,
         },

@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import type Stripe from "stripe";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
-import { parsePassThroughSnapshot } from "@/lib/instructor-catalog";
-import { sendBookingConfirmationEmail } from "@/lib/booking-confirmation-email";
-import {
-  generateConfirmationCode,
-  isConfirmationCodeCollision,
-} from "@/lib/booking-confirmation-code";
+import { fulfillPaidCheckoutSession } from "@/lib/fulfill-paid-booking";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -37,106 +29,12 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const md = session.metadata;
-    if (!md?.classSessionId || !md?.vendorId) {
-      console.warn("checkout.session.completed missing metadata", session.id);
-      return NextResponse.json({ received: true });
-    }
-
-    let classAmountCents = parseInt(md.classAmountCents ?? "0", 10);
-    let serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
-    let passThroughFees: Prisma.InputJsonValue | typeof Prisma.JsonNull = Prisma.JsonNull;
-    let passThroughCents = 0;
-    if (md.feeSnapshotId) {
-      const snap = await prisma.checkoutFeeSnapshot.findUnique({
-        where: { id: md.feeSnapshotId },
-      });
-      if (snap && snap.classSessionId === md.classSessionId) {
-        classAmountCents = snap.classAmountCents;
-        serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
-        const lines = parsePassThroughSnapshot(snap.passThroughFees);
-        if (lines.length) passThroughFees = lines as Prisma.InputJsonValue;
-        passThroughCents = lines.reduce((sum, line) => sum + line.amountCents, 0);
-      }
-    }
-    const pi = session.payment_intent;
-    const paymentIntentId =
-      typeof pi === "string" ? pi : pi && "id" in pi ? pi.id : null;
-
-    const createPaidBooking = (confirmationCode: string) =>
-      prisma.$transaction(async (tx) => {
-        const cs = await tx.classSession.findUnique({
-          where: { id: md.classSessionId },
-        });
-        if (!cs) {
-          throw new Error("ClassSession missing");
-        }
-        if (cs.enrolled >= cs.capacity) {
-          throw new Error("ClassSession full");
-        }
-
-        await tx.booking.create({
-          data: {
-            vendorId: md.vendorId,
-            classSessionId: md.classSessionId,
-            stripeCheckoutSessionId: session.id,
-            stripePaymentIntentId: paymentIntentId,
-            confirmationCode,
-            customerEmail: md.customerEmail ?? session.customer_email ?? "",
-            customerName: md.customerName ?? "",
-            customerPhone: md.customerPhone || null,
-            clerkUserId: md.clerkUserId || null,
-            classAmountCents,
-            serviceFeeCents,
-            passThroughFees,
-            passThroughCents,
-            totalAmountCents:
-              session.amount_total ?? classAmountCents + passThroughCents + serviceFeeCents,
-            status: "PAID",
-            paidAt: new Date(),
-          },
-        });
-
-        await tx.classSession.update({
-          where: { id: cs.id },
-          data: { enrolled: { increment: 1 } },
-        });
-      });
-
     try {
-      let confirmationCode = generateConfirmationCode();
-      for (let attempt = 1; ; attempt += 1) {
-        try {
-          await createPaidBooking(confirmationCode);
-          break;
-        } catch (err) {
-          if (attempt >= 5 || !isConfirmationCodeCollision(err)) throw err;
-          confirmationCode = generateConfirmationCode();
-        }
-      }
-
-      // Best-effort: booking is already paid/enrolled — don't fail the webhook
-      // (and trigger Stripe retries) if Resend is down.
-      try {
-        await sendBookingConfirmationEmail({
-          prismaVendorId: md.vendorId,
-          classSessionId: md.classSessionId,
-          customerName: md.customerName ?? "",
-          customerFirstName: md.customerFirstName ?? "",
-          customerEmail: md.customerEmail ?? session.customer_email ?? "",
-          confirmationCode,
-        });
-      } catch (emailErr) {
-        console.error(
-          "[webhooks/stripe] booking confirmation email failed",
-          emailErr
-        );
-      }
+      // Idempotent with the success page, which fulfills the same session when
+      // this webhook never arrives (local test mode has no endpoint).
+      await fulfillPaidCheckoutSession(session);
     } catch (e: unknown) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        return NextResponse.json({ received: true, duplicate: true });
-      }
-      console.error("Webhook booking transaction failed", e);
+      console.error("Webhook booking fulfillment failed", e);
       return NextResponse.json({ error: "Processing failed" }, { status: 500 });
     }
   }

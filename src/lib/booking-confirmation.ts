@@ -1,14 +1,21 @@
 /**
  * Booking success-page data, keyed by Stripe Checkout session id.
  *
- * The Booking row is written by the Stripe webhook, which can lag the redirect
- * back from Checkout. Until it lands, class/price details come from the
- * Checkout session metadata so the page is never empty.
+ * A paid Checkout is fulfilled here as well as by the Stripe webhook. The
+ * webhook can lag the redirect, and in local test mode it often never arrives,
+ * which is why students were getting Stripe's receipt and no confirmation.
+ * Until the Booking row exists, class/price details come from Checkout metadata
+ * so the page is never empty.
  */
+import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 import { getVendorProfileBySlug } from "@/lib/onboarding-db";
 import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
+import {
+  ensureBookingConfirmationEmail,
+  fulfillPaidCheckoutSession,
+} from "@/lib/fulfill-paid-booking";
 import {
   CCW_PUBLIC_COPY,
   isCanonicalClassType,
@@ -89,14 +96,9 @@ async function fromBooking(sessionId: string): Promise<BookingConfirmation | nul
   };
 }
 
-async function fromCheckoutSession(sessionId: string): Promise<BookingConfirmation | null> {
-  let session;
-  try {
-    session = await getStripe().checkout.sessions.retrieve(sessionId);
-  } catch (error) {
-    console.warn("[booking-confirmation] checkout session lookup failed", error);
-    return null;
-  }
+async function fromCheckoutSession(
+  session: Stripe.Checkout.Session
+): Promise<BookingConfirmation | null> {
   const md = session.metadata;
   if (!md?.classSessionId) return null;
 
@@ -145,5 +147,41 @@ export async function getBookingConfirmation(
   sessionId: string
 ): Promise<BookingConfirmation | null> {
   if (!sessionId.startsWith("cs_")) return null;
-  return (await fromBooking(sessionId)) ?? (await fromCheckoutSession(sessionId));
+
+  const existing = await fromBooking(sessionId);
+  if (existing) {
+    try {
+      await ensureBookingConfirmationEmail(sessionId);
+    } catch (error) {
+      console.error("[booking-confirmation] confirmation email failed", error);
+    }
+    return existing;
+  }
+
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await getStripe().checkout.sessions.retrieve(sessionId);
+  } catch (error) {
+    console.warn("[booking-confirmation] checkout session lookup failed", error);
+    return null;
+  }
+
+  if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+    try {
+      await fulfillPaidCheckoutSession(session);
+    } catch (error) {
+      console.error("[booking-confirmation] could not record paid checkout", error);
+    }
+    const booked = await fromBooking(sessionId);
+    if (booked) {
+      try {
+        await ensureBookingConfirmationEmail(sessionId);
+      } catch (error) {
+        console.error("[booking-confirmation] confirmation email failed", error);
+      }
+      return booked;
+    }
+  }
+
+  return fromCheckoutSession(session);
 }

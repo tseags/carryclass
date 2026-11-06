@@ -295,6 +295,35 @@ function PaymentSummary({ data }: { data: BookingConfirmation }) {
 export function BookingSuccessClient({ sessionId, initial }: Props) {
   const [data, setData] = useState(initial);
   const [timedOut, setTimedOut] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [receiptError, setReceiptError] = useState(false);
+
+  async function downloadReceipt() {
+    if (downloadingReceipt) return;
+    setReceiptError(false);
+    setDownloadingReceipt(true);
+    try {
+      const { buildBookingReceiptPdf, bookingReceiptFilename } = await import(
+        "@/lib/booking-receipt-pdf"
+      );
+      const bytes = await buildBookingReceiptPdf(data);
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      const url = URL.createObjectURL(new Blob([copy], { type: "application/pdf" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = bookingReceiptFilename(data);
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setReceiptError(true);
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  }
 
   useEffect(() => {
     if (initial.state !== "pending") return;
@@ -431,11 +460,17 @@ export function BookingSuccessClient({ sessionId, initial }: Props) {
             {data.state === "confirmed" && (
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="w-full !rounded-lg !border !border-solid !border-[rgba(17,24,39,0.15)] !bg-white px-4 py-2.5 text-sm font-medium !text-[#141413] transition-colors hover:!border-[#141413]"
+                onClick={downloadReceipt}
+                disabled={downloadingReceipt}
+                className="w-full !rounded-lg !border !border-solid !border-[rgba(17,24,39,0.15)] !bg-white px-4 py-2.5 text-sm font-medium !text-[#141413] transition-colors hover:!border-[#141413] disabled:cursor-wait disabled:opacity-60"
               >
-                Print receipt
+                {downloadingReceipt ? "Preparing receipt…" : "Download receipt"}
               </button>
+            )}
+            {receiptError && (
+              <p className="!mb-0 text-center text-xs text-red-700" role="alert">
+                Could not create the receipt. Try again.
+              </p>
             )}
             {timedOut && (
               <button
