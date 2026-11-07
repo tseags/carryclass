@@ -11,6 +11,11 @@ import {
   nextActionLabel,
   type OutreachStageId,
 } from "@/lib/outreach/sequence";
+import {
+  BOOKING_TOOLS,
+  BOOKING_TOOL_LABELS,
+  type BookingTool,
+} from "@/lib/outreach/booking";
 import { OUTREACH_TAGS } from "@/lib/outreach/dedupe";
 import { OutreachContactDrawer } from "./OutreachContactDrawer";
 import { TAG_LABELS, selectClass, stagePill, websiteHost } from "./outreach-ui";
@@ -46,6 +51,7 @@ const STAT_TAGS = ["website-no-booking", "website-has-booking", "no-website", "m
 interface Filters {
   query: string;
   tag: string | null;
+  bookingTool: string | null;
   stage: OutreachStageId | null;
   county: string | null;
   hasEmail: boolean;
@@ -55,6 +61,7 @@ interface Filters {
 const EMPTY_FILTERS: Filters = {
   query: "",
   tag: null,
+  bookingTool: null,
   stage: null,
   county: null,
   hasEmail: false,
@@ -81,6 +88,7 @@ function inView(c: OutreachContactView, view: ViewId, now: Date): boolean {
 
 function matchesFilters(c: OutreachContactView, f: Filters): boolean {
   if (f.tag && !c.tags.includes(f.tag)) return false;
+  if (f.bookingTool && c.bookingTool !== f.bookingTool) return false;
   if (f.stage && c.stage !== f.stage) return false;
   if (f.county && !c.counties.includes(f.county)) return false;
   if (f.hasEmail && c.emails.length === 0) return false;
@@ -371,6 +379,21 @@ export function OutreachDashboard({
                 </select>
 
                 <select
+                  value={filters.bookingTool ?? ""}
+                  onChange={(e) => patch({ bookingTool: e.target.value || null })}
+                  className={`${selectClass} min-w-[160px]`}
+                  aria-label="Booking tool"
+                >
+                  <option value="">All booking tools</option>
+                  {BOOKING_TOOLS.map((tool) => (
+                    <option key={tool} value={tool}>
+                      {BOOKING_TOOL_LABELS[tool]} (
+                      {contacts.filter((c) => c.bookingTool === tool).length})
+                    </option>
+                  ))}
+                </select>
+
+                <select
                   value={filters.stage ?? ""}
                   onChange={(e) => patch({ stage: (e.target.value || null) as OutreachStageId | null })}
                   className={`${selectClass} min-w-[140px]`}
@@ -548,7 +571,15 @@ function ContactsTable({
                 <td className="!py-5 !pr-4 align-top">
                   <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{c.displayName}</p>
                   <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">
-                    {[c.city, host].filter(Boolean).join(" · ") || "—"}
+                    {[
+                      c.city,
+                      host,
+                      c.bookingTool
+                        ? BOOKING_TOOL_LABELS[c.bookingTool as BookingTool] ?? c.bookingTool
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
                   </p>
                 </td>
                 <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">

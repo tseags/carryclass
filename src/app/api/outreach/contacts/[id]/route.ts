@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOutreachUserId, outreachNotFound } from "@/lib/outreach/auth";
 import {
+  isBookingTool,
+  isWebsiteBookingOption,
+  type BookingTool,
+  type WebsiteBookingOption,
+} from "@/lib/outreach/booking";
+import {
   OutreachInputError,
   getOutreachContact,
+  updateOutreachListing,
   updateOutreachStage,
 } from "@/lib/outreach/contacts";
 import { OUTREACH_STAGES, dayKeyToInstant, type OutreachStageId } from "@/lib/outreach/sequence";
@@ -19,13 +26,19 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   return NextResponse.json(detail);
 }
 
-/** Body: `{ stage?, nextActionDay? }` where nextActionDay is "YYYY-MM-DD" or null to clear. */
+/**
+ * Body: `{ stage?, nextActionDay?, websiteBooking?, bookingTool? }`
+ * nextActionDay is "YYYY-MM-DD" or null to clear.
+ * bookingTool is a known tool id or null to clear.
+ */
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!(await getOutreachUserId())) return outreachNotFound();
   const { id } = await ctx.params;
   const body = (await req.json().catch(() => ({}))) as {
     stage?: string;
     nextActionDay?: string | null;
+    websiteBooking?: string;
+    bookingTool?: string | null;
   };
 
   if (body.stage !== undefined && !OUTREACH_STAGES.includes(body.stage as OutreachStageId)) {
@@ -40,11 +53,33 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     nextActionAt = dayKeyToInstant(body.nextActionDay);
   }
 
+  const listingPatch: {
+    websiteBooking?: WebsiteBookingOption;
+    bookingTool?: BookingTool | null;
+  } = {};
+  if (body.websiteBooking !== undefined) {
+    if (!isWebsiteBookingOption(body.websiteBooking)) {
+      return NextResponse.json({ error: "Unknown website booking option" }, { status: 400 });
+    }
+    listingPatch.websiteBooking = body.websiteBooking;
+  }
+  if (body.bookingTool !== undefined) {
+    if (body.bookingTool !== null && !isBookingTool(body.bookingTool)) {
+      return NextResponse.json({ error: "Unknown booking tool" }, { status: 400 });
+    }
+    listingPatch.bookingTool = body.bookingTool;
+  }
+
   try {
-    await updateOutreachStage(id, {
-      stage: body.stage as OutreachStageId | undefined,
-      nextActionAt,
-    });
+    if (body.stage !== undefined || nextActionAt !== undefined) {
+      await updateOutreachStage(id, {
+        stage: body.stage as OutreachStageId | undefined,
+        nextActionAt,
+      });
+    }
+    if (listingPatch.websiteBooking !== undefined || listingPatch.bookingTool !== undefined) {
+      await updateOutreachListing(id, listingPatch);
+    }
   } catch (e) {
     if (e instanceof OutreachInputError) return NextResponse.json({ error: e.message }, { status: 400 });
     throw e;

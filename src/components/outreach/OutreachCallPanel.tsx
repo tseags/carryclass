@@ -164,7 +164,7 @@ export function OutreachCallPanel({
     }
   }
 
-  const after = stageAfterCall({ stage, nextActionAt: null });
+  const after = stageAfterCall({ stage, nextActionAt: null }, new Date(), disposition);
   const stageHint =
     after.stage !== stage
       ? `Saving moves this to ${STAGE_LABELS[after.stage]}${

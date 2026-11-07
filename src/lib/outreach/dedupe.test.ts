@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { cleanWebsite, dedupeOutreachRows, websiteKey, type OutreachSourceRow } from "./dedupe";
+import {
+  cleanWebsite,
+  dedupeOutreachRows,
+  mergePreservedTags,
+  websiteKey,
+  type OutreachSourceRow,
+} from "./dedupe";
 
 let seq = 0;
 function row(partial: Partial<OutreachSourceRow>): OutreachSourceRow {
@@ -18,6 +24,7 @@ function row(partial: Partial<OutreachSourceRow>): OutreachSourceRow {
     address: null,
     crawl_status: null,
     enrichment_confidence: null,
+    confidence_notes: null,
     hidden_from_directory: false,
     accepts_bookings: false,
     stripe_connect_account_id: null,
@@ -109,5 +116,28 @@ describe("dedupeOutreachRows", () => {
     ]);
     expect(c.addresses).toHaveLength(2);
     expect(c.tags).toContain("multi-location");
+  });
+
+  it("tags USCCA when confidence notes mention it", () => {
+    const [c] = dedupeOutreachRows([
+      row({
+        website_url: "f.com",
+        booking_capability: "direct_booking",
+        confidence_notes: "Confirmed online booking. Uses USCCA curriculum.",
+      }),
+    ]);
+    expect(c.tags).toContain("uscca");
+    expect(c.tags).toContain("website-has-booking");
+  });
+
+  it("preserves curated USCCA tags across sync merges", () => {
+    expect(mergePreservedTags(["website-has-booking"], ["uscca", "has-email"])).toEqual([
+      "website-has-booking",
+      "uscca",
+    ]);
+    expect(mergePreservedTags(["website-has-booking", "uscca"], ["uscca"])).toEqual([
+      "website-has-booking",
+      "uscca",
+    ]);
   });
 });

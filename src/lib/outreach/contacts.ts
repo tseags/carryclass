@@ -1,6 +1,14 @@
 import type { OutreachActivity, OutreachContact, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
+  applyBookingToolTag,
+  applyWebsiteBooking,
+  isBookingTool,
+  isWebsiteBookingOption,
+  type BookingTool,
+  type WebsiteBookingOption,
+} from "./booking";
+import {
   defaultNextActionForStage,
   stageAfterCall,
   stageAfterEmail,
@@ -21,6 +29,8 @@ export interface OutreachContactView {
   counties: string[];
   primaryCounty: string | null;
   bookingCapability: string | null;
+  bookingCapabilityLocked: boolean;
+  bookingTool: string | null;
   directorySlug: string | null;
   tags: string[];
   stage: OutreachStageId;
@@ -55,6 +65,8 @@ export function toContactView(c: OutreachContact): OutreachContactView {
     counties: c.counties,
     primaryCounty: c.primaryCounty,
     bookingCapability: c.bookingCapability,
+    bookingCapabilityLocked: c.bookingCapabilityLocked,
+    bookingTool: c.bookingTool,
     directorySlug: c.directorySlug,
     tags: c.tags,
     stage: c.stage,
@@ -159,6 +171,47 @@ export async function updateOutreachStage(
   await commit(current, { stage, nextActionAt }, null);
 }
 
+/**
+ * Manual website-booking / booking-tool curation. Locks bookingCapability so
+ * the next directory sync won't wipe the person's choice.
+ */
+export async function updateOutreachListing(
+  id: string,
+  input: {
+    websiteBooking?: WebsiteBookingOption;
+    bookingTool?: BookingTool | null;
+  }
+): Promise<void> {
+  const current = await loadContact(id);
+  let tags = current.tags;
+  let bookingCapability = current.bookingCapability;
+  let bookingCapabilityLocked = current.bookingCapabilityLocked;
+  let bookingTool = current.bookingTool;
+
+  if (input.websiteBooking !== undefined) {
+    if (!isWebsiteBookingOption(input.websiteBooking)) {
+      throw new OutreachInputError("Unknown website booking option");
+    }
+    const next = applyWebsiteBooking(tags, input.websiteBooking);
+    tags = next.tags;
+    bookingCapability = next.bookingCapability;
+    bookingCapabilityLocked = true;
+  }
+
+  if (input.bookingTool !== undefined) {
+    if (input.bookingTool !== null && !isBookingTool(input.bookingTool)) {
+      throw new OutreachInputError("Unknown booking tool");
+    }
+    bookingTool = input.bookingTool;
+    tags = applyBookingToolTag(tags, input.bookingTool);
+  }
+
+  await prisma.outreachContact.update({
+    where: { id: current.id },
+    data: { tags, bookingCapability, bookingCapabilityLocked, bookingTool },
+  });
+}
+
 export async function addOutreachNote(id: string, body: string): Promise<void> {
   const current = await loadContact(id);
   await prisma.outreachActivity.create({ data: { contactId: current.id, type: "note", body } });
@@ -178,7 +231,11 @@ export async function logOutreachCall(
   const current = await loadContact(id);
   if (current.doNotContact) throw new OutreachInputError("This contact is marked do not contact");
   const now = new Date();
-  const next = stageAfterCall({ stage: current.stage, nextActionAt: current.nextActionAt }, now);
+  const next = stageAfterCall(
+    { stage: current.stage, nextActionAt: current.nextActionAt },
+    now,
+    input.disposition
+  );
   await commit(
     current,
     {

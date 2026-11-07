@@ -3,6 +3,7 @@ import { PAYMENTS_TIME_ZONE, addDays, pacificDayKey } from "@/lib/payments-time"
 export const OUTREACH_STAGES = [
   "not_contacted",
   "called",
+  "called_no_answer",
   "emailed",
   "follow_up",
   "replied",
@@ -17,6 +18,7 @@ export type OutreachStageId = (typeof OUTREACH_STAGES)[number];
 export const STAGE_LABELS: Record<OutreachStageId, string> = {
   not_contacted: "Not contacted",
   called: "Called",
+  called_no_answer: "Called - no answer",
   emailed: "Emailed",
   follow_up: "Follow-up called",
   replied: "Replied",
@@ -69,19 +71,29 @@ export interface StageState {
 }
 
 /** Result of logging a call, before any date I pick by hand. */
-export function stageAfterCall(current: StageState, now: Date = new Date()): StageState {
-  if (current.stage === "not_contacted") {
-    return { stage: "called", nextActionAt: daysFromToday(DAYS_CALL_TO_EMAIL, now) };
-  }
+export function stageAfterCall(
+  current: StageState,
+  now: Date = new Date(),
+  disposition?: CallDisposition | null
+): StageState {
   if (current.stage === "emailed") {
     return { stage: "follow_up", nextActionAt: null };
+  }
+  if (disposition === "no_answer" && (current.stage === "not_contacted" || current.stage === "called")) {
+    return {
+      stage: "called_no_answer",
+      nextActionAt: current.nextActionAt ?? daysFromToday(DAYS_CALL_TO_EMAIL, now),
+    };
+  }
+  if (current.stage === "not_contacted") {
+    return { stage: "called", nextActionAt: daysFromToday(DAYS_CALL_TO_EMAIL, now) };
   }
   return current;
 }
 
 /** Result of logging an email I sent. */
 export function stageAfterEmail(current: StageState, now: Date = new Date()): StageState {
-  if (current.stage === "not_contacted" || current.stage === "called") {
+  if (current.stage === "not_contacted" || current.stage === "called" || current.stage === "called_no_answer") {
     return { stage: "emailed", nextActionAt: daysFromToday(DAYS_EMAIL_TO_FOLLOW_UP, now) };
   }
   return current;
@@ -92,7 +104,7 @@ export function defaultNextActionForStage(
   stage: OutreachStageId,
   now: Date = new Date()
 ): Date | null {
-  if (stage === "called") return daysFromToday(DAYS_CALL_TO_EMAIL, now);
+  if (stage === "called" || stage === "called_no_answer") return daysFromToday(DAYS_CALL_TO_EMAIL, now);
   if (stage === "emailed") return daysFromToday(DAYS_EMAIL_TO_FOLLOW_UP, now);
   return null;
 }
@@ -108,6 +120,8 @@ export function suggestedStep(stage: OutreachStageId): string {
       return "Call them (day 0)";
     case "called":
       return "Send the intro email (day 3)";
+    case "called_no_answer":
+      return "No answer. Send the intro email (day 3)";
     case "emailed":
       return "Follow-up call (day 7)";
     case "follow_up":
@@ -129,6 +143,7 @@ export function nextActionLabel(stage: OutreachStageId): string {
     case "not_contacted":
       return "Call";
     case "called":
+    case "called_no_answer":
       return "Email";
     case "emailed":
       return "Follow-up call";

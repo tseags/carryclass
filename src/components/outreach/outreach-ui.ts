@@ -1,3 +1,7 @@
+import {
+  BOOKING_TOOL_LABELS,
+  WEBSITE_BOOKING_LABELS,
+} from "@/lib/outreach/booking";
 import type { OutreachStageId } from "@/lib/outreach/sequence";
 
 export const TAG_LABELS: Record<string, string> = {
@@ -12,6 +16,7 @@ export const TAG_LABELS: Record<string, string> = {
   "no-phone": "No phone",
   "on-carryclass": "On CarryClass",
   "needs-review": "Needs review",
+  uscca: "USCCA",
 };
 
 export const BOOKING_LABELS: Record<string, string> = {
@@ -21,9 +26,12 @@ export const BOOKING_LABELS: Record<string, string> = {
   unclear: "Unclear",
 };
 
+export { BOOKING_TOOL_LABELS, WEBSITE_BOOKING_LABELS };
+
 export function stagePill(stage: OutreachStageId): string {
   switch (stage) {
     case "called":
+    case "called_no_answer":
     case "emailed":
     case "follow_up":
       return "bg-[#C1440E]/10 text-[#C1440E]";

@@ -3,7 +3,7 @@
 
 DO $$ BEGIN
   CREATE TYPE "OutreachStage" AS ENUM (
-    'not_contacted', 'called', 'emailed', 'follow_up', 'replied',
+    'not_contacted', 'called', 'called_no_answer', 'emailed', 'follow_up', 'replied',
     'interested', 'not_interested', 'claimed', 'do_not_contact'
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

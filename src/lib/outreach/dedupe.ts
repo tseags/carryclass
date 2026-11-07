@@ -15,6 +15,7 @@ export interface OutreachSourceRow {
   address: string | null;
   crawl_status: string | null;
   enrichment_confidence: string | null;
+  confidence_notes: string | null;
   hidden_from_directory: boolean | null;
   accepts_bookings: boolean | null;
   stripe_connect_account_id: string | null;
@@ -32,9 +33,13 @@ export const OUTREACH_TAGS = [
   "no-phone",
   "on-carryclass",
   "needs-review",
+  "uscca",
 ] as const;
 
 export type OutreachTag = (typeof OUTREACH_TAGS)[number];
+
+/** Curated tags kept across sync when not re-derived from listing rows. */
+export const PRESERVED_OUTREACH_TAGS = ["uscca"] as const satisfies readonly OutreachTag[];
 
 export interface DedupedOutreachContact {
   dedupeKey: string;
@@ -286,6 +291,9 @@ function buildContact(group: OutreachSourceRow[]): DedupedOutreachContact {
   ) {
     tags.push("needs-review");
   }
+  if (group.some((r) => /\buscca\b/i.test(trim(r.confidence_notes)))) {
+    tags.push("uscca");
+  }
 
   const nameVotes = new Map<string, number>();
   for (const r of ranked) {
@@ -315,4 +323,16 @@ export function countTags(contacts: DedupedOutreachContact[]): Record<OutreachTa
   const counts = Object.fromEntries(OUTREACH_TAGS.map((t) => [t, 0])) as Record<OutreachTag, number>;
   for (const c of contacts) for (const t of c.tags) counts[t] += 1;
   return counts;
+}
+
+/** Keep curated tags (e.g. uscca) that sync would otherwise wipe. */
+export function mergePreservedTags(
+  derived: string[],
+  existing: string[] | null | undefined
+): string[] {
+  const out = [...derived];
+  for (const tag of PRESERVED_OUTREACH_TAGS) {
+    if (existing?.includes(tag) && !out.includes(tag)) out.push(tag);
+  }
+  return out;
 }

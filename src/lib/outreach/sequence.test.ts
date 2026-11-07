@@ -15,6 +15,18 @@ describe("call-first sequence", () => {
     expect(suggestedStep("not_contacted")).toMatch(/^Call/);
   });
 
+  it("a no-answer call is its own stage and still schedules the email on day 3", () => {
+    const next = stageAfterCall({ stage: "not_contacted", nextActionAt: null }, now, "no_answer");
+    expect(next.stage).toBe("called_no_answer");
+    expect(pacificDayKey(next.nextActionAt!)).toBe("2026-11-01");
+  });
+
+  it("emailing after a no-answer call moves to emailed", () => {
+    const next = stageAfterEmail({ stage: "called_no_answer", nextActionAt: null }, now);
+    expect(next.stage).toBe("emailed");
+    expect(pacificDayKey(next.nextActionAt!)).toBe("2026-11-02");
+  });
+
   it("a call from not contacted moves to called with the email due on day 3", () => {
     const next = stageAfterCall({ stage: "not_contacted", nextActionAt: null }, now);
     expect(next.stage).toBe("called");

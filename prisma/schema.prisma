@@ -161,6 +161,7 @@ model CcwTimelineSubmission {
 enum OutreachStage {
   not_contacted
   called
+  called_no_answer
   emailed
   follow_up
   replied
@@ -200,6 +201,10 @@ model OutreachContact {
   counties          String[]
   primaryCounty     String?
   bookingCapability String?
+  /// When true, sync keeps bookingCapability and the website booking tag the person set.
+  bookingCapabilityLocked Boolean @default(false)
+  /// How they take bookings online: uscca, shootingclasses, onsite_checkout, etc.
+  bookingTool       String?
   directorySlug     String?
   sourceListingIds  String[]
   tags              String[]

@@ -14,10 +14,18 @@ import {
   type OutreachStageId,
 } from "@/lib/outreach/sequence";
 import { pacificDayKey } from "@/lib/payments-time";
+import {
+  BOOKING_TOOLS,
+  BOOKING_TOOL_LABELS,
+  WEBSITE_BOOKING_OPTIONS,
+  WEBSITE_BOOKING_LABELS,
+  websiteBookingFromTags,
+  type BookingTool,
+  type WebsiteBookingOption,
+} from "@/lib/outreach/booking";
 import { OutreachCallPanel, type LogCallInput } from "./OutreachCallPanel";
 import { OutreachZohoThread } from "./OutreachZohoThread";
 import {
-  BOOKING_LABELS,
   TAG_LABELS,
   formatDuration,
   secondaryButtonClass,
@@ -115,8 +123,8 @@ export function OutreachContactDrawer({
       body: JSON.stringify(body),
     });
 
-  const patchContact = (body: Record<string, unknown>) =>
-    send("stage", `/api/outreach/contacts/${contactId}`, {
+  const patchContact = (label: string, body: Record<string, unknown>) =>
+    send(label, `/api/outreach/contacts/${contactId}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }).catch(() => {});
@@ -148,9 +156,9 @@ export function OutreachContactDrawer({
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${stagePill(c.stage)}`}>
                 {STAGE_LABELS[c.stage]}
               </span>
-              {c.bookingCapability && (
-                <span className="text-xs text-gray-500">
-                  Website booking: {BOOKING_LABELS[c.bookingCapability] ?? c.bookingCapability}
+              {c.bookingTool && (
+                <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-600">
+                  {BOOKING_TOOL_LABELS[c.bookingTool as BookingTool] ?? c.bookingTool}
                 </span>
               )}
             </div>
@@ -231,6 +239,58 @@ export function OutreachContactDrawer({
             </dl>
           </Section>
 
+          <Section title="Website booking">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="block min-w-[180px] flex-1">
+                <span className="mb-1 block text-xs text-gray-500">Booking on their site</span>
+                <select
+                  value={websiteBookingFromTags(c.tags) ?? ""}
+                  disabled={busy === "listing"}
+                  onChange={(e) =>
+                    patchContact("listing", {
+                      websiteBooking: e.target.value as WebsiteBookingOption,
+                    })
+                  }
+                  className={`${selectClass} w-full`}
+                >
+                  <option value="" disabled>
+                    Not set
+                  </option>
+                  {WEBSITE_BOOKING_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {WEBSITE_BOOKING_LABELS[option]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block min-w-[180px] flex-1">
+                <span className="mb-1 block text-xs text-gray-500">Booking tool</span>
+                <select
+                  value={c.bookingTool ?? ""}
+                  disabled={busy === "listing"}
+                  onChange={(e) =>
+                    patchContact("listing", {
+                      bookingTool: e.target.value ? (e.target.value as BookingTool) : null,
+                    })
+                  }
+                  className={`${selectClass} w-full`}
+                >
+                  <option value="">Not set</option>
+                  {BOOKING_TOOLS.map((tool) => (
+                    <option key={tool} value={tool}>
+                      {BOOKING_TOOL_LABELS[tool]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {c.bookingCapabilityLocked && (
+              <p className="mt-2 text-xs text-gray-500">
+                Website booking is locked so directory sync won’t overwrite it.
+              </p>
+            )}
+          </Section>
+
           <Section title="Next step">
             <p className="font-medium text-gray-900">{suggestedStep(c.stage)}</p>
             <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -239,7 +299,9 @@ export function OutreachContactDrawer({
                 <select
                   value={c.stage}
                   disabled={busy === "stage"}
-                  onChange={(e) => patchContact({ stage: e.target.value as OutreachStageId })}
+                  onChange={(e) =>
+                    patchContact("stage", { stage: e.target.value as OutreachStageId })
+                  }
                   className={selectClass}
                 >
                   {OUTREACH_STAGES.map((s) => (
@@ -255,7 +317,9 @@ export function OutreachContactDrawer({
                   type="date"
                   value={c.nextActionAt ? pacificDayKey(c.nextActionAt) : ""}
                   disabled={busy === "stage"}
-                  onChange={(e) => patchContact({ nextActionDay: e.target.value || null })}
+                  onChange={(e) =>
+                    patchContact("stage", { nextActionDay: e.target.value || null })
+                  }
                   className={selectClass}
                 />
               </label>

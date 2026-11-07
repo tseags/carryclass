@@ -8,14 +8,23 @@
  * website-no-booking by booking_capability: inquiry_only 177 · unclear 43 · none 16 · blank 51
  *
  * Sync only rewrites derived listing fields and tags. Stage, next action,
- * do-not-contact, and activity are never touched.
+ * do-not-contact, bookingTool, and activity are never touched. Curated tags in
+ * PRESERVED_OUTREACH_TAGS (e.g. uscca) are kept when already present. When
+ * bookingCapabilityLocked is set, website booking tags + capability stay put.
  */
 
 import { prisma } from "@/lib/db";
 import { getCarryClassDirectorySlugBySourceRowId } from "@/lib/vendors-db";
 import {
+  applyBookingToolTag,
+  replaceWebsiteBookingTags,
+  websiteBookingFromTags,
+  type BookingTool,
+} from "./booking";
+import {
   countTags,
   dedupeOutreachRows,
+  mergePreservedTags,
   nameKey,
   phoneKey,
   websiteKey,
@@ -36,7 +45,7 @@ async function readListingRows(): Promise<OutreachSourceRow[]> {
   return prisma.$queryRawUnsafe<OutreachSourceRow[]>(
     `SELECT id::text AS id, county, needs_review, vendor_name, instructor_names, email, phone,
             website_url, booking_capability, city, address, crawl_status, enrichment_confidence,
-            hidden_from_directory, accepts_bookings, stripe_connect_account_id
+            confidence_notes, hidden_from_directory, accepts_bookings, stripe_connect_account_id
        FROM public.carry_class_vendor_data`
   );
 }
@@ -96,9 +105,18 @@ export async function syncOutreachContacts(): Promise<OutreachSyncReport> {
   const { rows, contacts, directorySlugs } = await buildOutreachContacts();
 
   const existing = await prisma.outreachContact.findMany({
-    select: { id: true, dedupeKey: true, sourceListingIds: true },
+    select: {
+      id: true,
+      dedupeKey: true,
+      sourceListingIds: true,
+      tags: true,
+      bookingCapability: true,
+      bookingCapabilityLocked: true,
+      bookingTool: true,
+    },
   });
   const byKey = new Map(existing.map((e) => [e.dedupeKey, e.id]));
+  const byId = new Map(existing.map((e) => [e.id, e]));
   const bySourceId = new Map<string, string>();
   for (const e of existing) for (const id of e.sourceListingIds) bySourceId.set(id, e.id);
 
@@ -109,6 +127,28 @@ export async function syncOutreachContacts(): Promise<OutreachSyncReport> {
   const writes: Array<() => Promise<unknown>> = [];
 
   for (const contact of contacts) {
+    // Match on the dedupe key first; fall back to a shared listing row so a
+    // contact whose website changed keeps its stage and history.
+    let matchId = byKey.get(contact.dedupeKey);
+    if (!matchId || claimed.has(matchId)) {
+      matchId = contact.sourceListingIds.map((id) => bySourceId.get(id)).find(
+        (id): id is string => Boolean(id) && !claimed.has(id as string)
+      );
+    }
+
+    const prior = matchId ? byId.get(matchId) : undefined;
+    let tags = mergePreservedTags(contact.tags, prior?.tags ?? null);
+    let bookingCapability = contact.bookingCapability;
+    if (prior?.bookingCapabilityLocked) {
+      const lockedSegment = websiteBookingFromTags(prior.tags);
+      tags = replaceWebsiteBookingTags(tags, lockedSegment);
+      tags = mergePreservedTags(tags, prior.tags);
+      bookingCapability = prior.bookingCapability;
+    }
+    if (prior?.bookingTool) {
+      tags = applyBookingToolTag(tags, prior.bookingTool as BookingTool);
+    }
+
     const data = {
       dedupeKey: contact.dedupeKey,
       displayName: contact.displayName,
@@ -120,21 +160,12 @@ export async function syncOutreachContacts(): Promise<OutreachSyncReport> {
       city: contact.city,
       counties: contact.counties,
       primaryCounty: contact.primaryCounty,
-      bookingCapability: contact.bookingCapability,
+      bookingCapability,
       directorySlug: directorySlugFor(contact, directorySlugs),
       sourceListingIds: contact.sourceListingIds,
-      tags: contact.tags,
+      tags,
       syncedAt: now,
     };
-
-    // Match on the dedupe key first; fall back to a shared listing row so a
-    // contact whose website changed keeps its stage and history.
-    let matchId = byKey.get(contact.dedupeKey);
-    if (!matchId || claimed.has(matchId)) {
-      matchId = contact.sourceListingIds.map((id) => bySourceId.get(id)).find(
-        (id): id is string => Boolean(id) && !claimed.has(id as string)
-      );
-    }
 
     if (matchId) {
       const id = matchId;
