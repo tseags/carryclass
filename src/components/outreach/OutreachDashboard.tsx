@@ -199,6 +199,13 @@ export function OutreachDashboard({
   }
 
   function patch(partial: Partial<Filters>) {
+    // Booking-tool picks are curated across the whole list; the queue view
+    // (website · no booking) would hide every instructor we just tagged.
+    if (partial.bookingTool) {
+      setView("all");
+      setFilters({ ...EMPTY_FILTERS, bookingTool: partial.bookingTool });
+      return;
+    }
     setFilters((prev) => ({ ...prev, ...partial }));
   }
 
