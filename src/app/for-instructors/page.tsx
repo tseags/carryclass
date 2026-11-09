@@ -145,6 +145,7 @@ export default async function ForInstructorsPage() {
 
         {/* Why instructors use CarryClass */}
         <section
+          id="for-instructors-benefits"
           className="for-instructors-benefits"
           aria-labelledby="for-instructors-benefits-heading"
         >

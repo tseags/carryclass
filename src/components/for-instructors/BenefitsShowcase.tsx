@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 type BenefitIconName = "booking" | "dashboard" | "visibility";
 
@@ -10,6 +10,23 @@ export type InstructorBenefit = {
   description: string;
   icon: BenefitIconName;
 };
+
+function benefitSlugFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  const fromQuery = new URLSearchParams(window.location.search).get("benefit");
+  if (fromQuery) return fromQuery.toLowerCase();
+  const fromHash = window.location.hash.replace(/^#/, "");
+  return fromHash ? decodeURIComponent(fromHash).toLowerCase() : null;
+}
+
+function indexFromSlug(
+  benefits: readonly InstructorBenefit[],
+  slug: string | null,
+): number | null {
+  if (!slug) return null;
+  const i = benefits.findIndex((b) => b.icon === slug);
+  return i >= 0 ? i : null;
+}
 
 const SHOTS: Record<BenefitIconName, { src: string; alt: string }> = {
   booking: {
@@ -91,6 +108,21 @@ export function BenefitsShowcase({ benefits }: { benefits: readonly InstructorBe
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const suppressClick = useRef(false);
   const count = benefits.length;
+
+  useEffect(() => {
+    function applyFromLocation() {
+      const next = indexFromSlug(benefits, benefitSlugFromLocation());
+      if (next === null) return;
+      setIndex(next);
+      document
+        .getElementById("for-instructors-benefits")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    applyFromLocation();
+    window.addEventListener("hashchange", applyFromLocation);
+    return () => window.removeEventListener("hashchange", applyFromLocation);
+  }, [benefits]);
 
   function go(next: number, focus = false) {
     const i = (next + count) % count;
