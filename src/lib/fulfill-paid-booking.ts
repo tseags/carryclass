@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import { calculatePlatformServiceFeeCents } from "@/lib/booking-constants";
 import { parsePassThroughSnapshot } from "@/lib/instructor-catalog";
 import { sendBookingConfirmationEmail } from "@/lib/booking-confirmation-email";
+import { sendInstructorBookingNotificationEmail } from "@/lib/instructor-booking-notification-email";
 import {
   generateConfirmationCode,
   isConfirmationCodeCollision,
@@ -253,6 +254,35 @@ async function sendConfirmationOnce(
   }
 }
 
+/** Same once-only claim pattern as the student confirmation email. */
+async function sendInstructorNotificationOnce(booking: PaidBooking): Promise<void> {
+  const claim = await prisma.booking.updateMany({
+    where: { id: booking.id, instructorNotificationSentAt: null },
+    data: { instructorNotificationSentAt: new Date() },
+  });
+  if (claim.count !== 1) return;
+
+  try {
+    const sent = await sendInstructorBookingNotificationEmail({
+      bookingId: booking.id,
+    });
+    if (!sent) {
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { instructorNotificationSentAt: null },
+      });
+    }
+  } catch (err) {
+    await prisma.booking
+      .update({
+        where: { id: booking.id },
+        data: { instructorNotificationSentAt: null },
+      })
+      .catch(() => undefined);
+    throw err;
+  }
+}
+
 export async function fulfillPaidCheckoutSession(
   session: Stripe.Checkout.Session
 ): Promise<void> {
@@ -271,6 +301,12 @@ export async function fulfillPaidCheckoutSession(
   });
   const booking = existing ?? (await createPaidBooking(session));
   await sendConfirmationOnce(booking, md.customerFirstName);
+  try {
+    await sendInstructorNotificationOnce(booking);
+  } catch (err) {
+    // Student confirmation already succeeded — don't fail fulfillment over this.
+    console.warn("[fulfill-paid-booking] instructor notification failed", err);
+  }
 }
 
 /** Retry the confirmation email for a booking the webhook or success page already wrote. */

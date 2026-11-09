@@ -430,14 +430,17 @@ export function VendorDashboard(props: Props) {
                 whatToBringUrl={emailPreview.whatToBringUrl}
               />
             ) : (
-              <EmailTemplatesPanel
-                templates={templates}
-                onEdit={openEmailEditor}
-                onToggle={toggleTemplate}
-                heading
-                metrics={props.emailMetrics}
-                preview={emailPreview}
-              />
+              <div className="space-y-8">
+                <BookingNotificationsPanel vendor={vendor} onSaved={handleProfileSaved} />
+                <EmailTemplatesPanel
+                  templates={templates}
+                  onEdit={openEmailEditor}
+                  onToggle={toggleTemplate}
+                  heading
+                  metrics={props.emailMetrics}
+                  preview={emailPreview}
+                />
+              </div>
             ))}
           {tab === "payments" && (
             <PaymentsTab
@@ -450,7 +453,9 @@ export function VendorDashboard(props: Props) {
               onFocusHandled={handlePayoutsFocused}
             />
           )}
-          {tab === "settings" && <SettingsTab vendor={vendor} />}
+          {tab === "settings" && (
+            <SettingsTab vendor={vendor} onVendorSaved={handleProfileSaved} />
+          )}
         </div>
       </main>
 
@@ -1348,9 +1353,163 @@ function ListingSection({
   );
 }
 
+// ── Booking notifications (instructor alerts) ────────────────────────────────
+
+function BookingNotificationsPanel({
+  vendor,
+  onSaved,
+  heading = true,
+}: {
+  vendor: VendorProfile;
+  onSaved: (vendor: VendorProfile) => void;
+  heading?: boolean;
+}) {
+  const [enabled, setEnabled] = useState(vendor.booking_notification_enabled !== false);
+  const [emailsText, setEmailsText] = useState(
+    (vendor.booking_notification_emails ?? []).join(", ")
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEnabled(vendor.booking_notification_enabled !== false);
+    setEmailsText((vendor.booking_notification_emails ?? []).join(", "));
+  }, [vendor.booking_notification_enabled, vendor.booking_notification_emails]);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard/booking-notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled, emails: emailsText }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof data.error === "string" ? data.error : "Could not save notification settings."
+        );
+      }
+      const emails = Array.isArray(data.emails)
+        ? data.emails.filter((e: unknown): e is string => typeof e === "string")
+        : [];
+      setEmailsText(emails.join(", "));
+      onSaved({
+        ...vendor,
+        booking_notification_enabled: data.enabled !== false,
+        booking_notification_emails: emails.length ? emails : null,
+      });
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save notification settings.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const fallback = vendor.email?.trim() || null;
+
+  return (
+    <section>
+      {heading ? (
+        <h2 className="mb-4 text-2xl font-bold text-gray-900">Booking notifications</h2>
+      ) : (
+        <h2 className="mb-1 text-sm font-semibold text-gray-900">Booking notifications</h2>
+      )}
+      {!heading && (
+        <p className="mb-4 text-xs text-gray-500">
+          Email yourself when a student books online. Student confirmation emails are separate.
+        </p>
+      )}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-gray-900">New booking alerts</h3>
+              {enabled ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  On
+                </span>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                  Off
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Sent immediately when someone completes online checkout.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-label="Toggle new booking alerts"
+            onClick={() => setEnabled((v) => !v)}
+            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+              enabled ? "bg-[#C1440E]" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                enabled ? "translate-x-4" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className={`mt-4 space-y-2 ${enabled ? "" : "opacity-60"}`}>
+          <label htmlFor="booking-notification-emails" className="block text-xs font-medium text-gray-700">
+            Send alerts to
+          </label>
+          <input
+            id="booking-notification-emails"
+            type="text"
+            value={emailsText}
+            onChange={(e) => setEmailsText(e.target.value)}
+            disabled={!enabled}
+            placeholder={fallback ?? "you@example.com"}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+          />
+          <p className="text-xs text-gray-500">
+            Comma-separated, up to 5 addresses.
+            {fallback
+              ? ` Leave blank to use your account email (${fallback}).`
+              : " Leave blank to use your account email once it’s set on your listing."}
+          </p>
+        </div>
+
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white transition-colors hover:bg-black disabled:opacity-60"
+          >
+            {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
-function SettingsTab({ vendor }: { vendor: VendorProfile }) {
+function SettingsTab({
+  vendor,
+  onVendorSaved,
+}: {
+  vendor: VendorProfile;
+  onVendorSaved: (vendor: VendorProfile) => void;
+}) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -1377,6 +1536,8 @@ function SettingsTab({ vendor }: { vendor: VendorProfile }) {
           Edit account details
         </Link>
       </section>
+
+      <BookingNotificationsPanel vendor={vendor} onSaved={onVendorSaved} heading={false} />
     </div>
   );
 }

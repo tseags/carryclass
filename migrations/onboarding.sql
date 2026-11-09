@@ -30,6 +30,9 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_calendar_id text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_refresh_token text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS what_to_bring text[];
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS require_application_ack boolean NOT NULL DEFAULT false;
+-- Instructor alerts when a student books online (default on).
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS booking_notification_enabled boolean NOT NULL DEFAULT true;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS booking_notification_emails text[];
 NOTIFY pgrst, 'reload schema';
 
 -- Unique index on clerk_user_id

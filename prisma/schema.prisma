@@ -269,6 +269,8 @@ model Booking {
   paidAt DateTime?
   /// Set once the student confirmation email is accepted by Resend.
   confirmationEmailSentAt DateTime?
+  /// Set once the instructor new-booking notification is accepted by Resend.
+  instructorNotificationSentAt DateTime?
 
   createdAt DateTime @default(now())
 

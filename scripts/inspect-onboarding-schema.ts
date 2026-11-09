@@ -45,6 +45,8 @@ const EXPECTED: Record<string, string[]> = {
     "google_refresh_token",
     "what_to_bring",
     "require_application_ack",
+    "booking_notification_enabled",
+    "booking_notification_emails",
   ],
   vendor_class_types: [
     "id",

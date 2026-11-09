@@ -29,6 +29,10 @@ vi.mock("@/lib/booking-confirmation-email", () => ({
   sendBookingConfirmationEmail: (...args: unknown[]) => sendEmail(...args),
 }));
 
+vi.mock("@/lib/instructor-booking-notification-email", () => ({
+  sendInstructorBookingNotificationEmail: vi.fn().mockResolvedValue(true),
+}));
+
 const session = {
   id: "cs_test_paid",
   payment_status: "paid",

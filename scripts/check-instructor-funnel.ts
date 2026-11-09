@@ -291,6 +291,8 @@ const ONBOARDING_VENDOR_COLUMNS = [
   "google_refresh_token",
   "what_to_bring",
   "require_application_ack",
+  "booking_notification_enabled",
+  "booking_notification_emails",
 ];
 
 const ONBOARDING_TABLES = [

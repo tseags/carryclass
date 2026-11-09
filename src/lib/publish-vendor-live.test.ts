@@ -59,6 +59,8 @@ function profile(overrides: Partial<VendorProfile> = {}): VendorProfile {
     google_refresh_token: null,
     what_to_bring: null,
     require_application_ack: false,
+    booking_notification_enabled: true,
+    booking_notification_emails: null,
     slug: "acme-training-abcdef0123",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",

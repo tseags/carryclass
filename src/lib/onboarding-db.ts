@@ -36,6 +36,15 @@ export interface VendorProfile {
   what_to_bring: string[] | null;
   /** When true, booking checkout requires the application-timing acknowledgment. */
   require_application_ack: boolean;
+  /**
+   * When true (default), email the instructor on each paid online booking.
+   * Missing/null from older rows is treated as enabled at send time.
+   */
+  booking_notification_enabled: boolean;
+  /**
+   * Optional override recipients for booking alerts. Null/empty → profile email.
+   */
+  booking_notification_emails: string[] | null;
   slug: string | null;
   created_at: string;
   updated_at: string;
