@@ -94,7 +94,11 @@ const STATS: AnimatedStat[] = [
   { number: "5 minutes", label: "To verify and complete your profile" },
 ];
 
-export default async function ForInstructorsPage() {
+type PageProps = {
+  searchParams: Promise<{ benefit?: string }>;
+};
+
+export default async function ForInstructorsPage({ searchParams }: PageProps) {
   const user = await currentUser();
   const isInstructor = user?.publicMetadata?.role === VENDOR_ROLE;
   const vendor = isInstructor && user ? await getVendorProfile(user.id) : null;
@@ -104,6 +108,8 @@ export default async function ForInstructorsPage() {
       ? `/instructors/${vendor.slug}`
       : "/instructors/claim";
   const primaryCtaLabel = hasCompletedOnboarding ? "View Profile" : "Create Profile";
+  const benefitSlug = (await searchParams).benefit?.toLowerCase();
+  const initialBenefitIndex = BENEFITS.findIndex((b) => b.icon === benefitSlug);
 
   return (
     <>
@@ -163,7 +169,10 @@ export default async function ForInstructorsPage() {
                 </p>
               </div>
             </div>
-            <BenefitsShowcase benefits={BENEFITS} />
+            <BenefitsShowcase
+              benefits={BENEFITS}
+              initialIndex={initialBenefitIndex >= 0 ? initialBenefitIndex : 0}
+            />
           </div>
         </section>
 

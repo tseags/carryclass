@@ -102,26 +102,47 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-export function BenefitsShowcase({ benefits }: { benefits: readonly InstructorBenefit[] }) {
-  const [index, setIndex] = useState(0);
+export function BenefitsShowcase({
+  benefits,
+  initialIndex = 0,
+}: {
+  benefits: readonly InstructorBenefit[];
+  initialIndex?: number;
+}) {
+  const safeInitial = initialIndex >= 0 && initialIndex < benefits.length ? initialIndex : 0;
+  const [index, setIndex] = useState(safeInitial);
   const baseId = useId();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const suppressClick = useRef(false);
   const count = benefits.length;
 
   useEffect(() => {
-    function applyFromLocation() {
+    function scrollToBenefits() {
+      const hash = window.location.hash.replace(/^#/, "");
+      const target =
+        (hash && document.getElementById(hash)) ||
+        document.getElementById("for-instructors-benefits");
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function applyFromLocation(scroll: boolean) {
       const next = indexFromSlug(benefits, benefitSlugFromLocation());
       if (next === null) return;
       setIndex(next);
-      document
-        .getElementById("for-instructors-benefits")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (scroll) {
+        // Next/Clerk hydration can reset scroll; retry briefly after paint.
+        requestAnimationFrame(() => {
+          scrollToBenefits();
+          window.setTimeout(scrollToBenefits, 120);
+          window.setTimeout(scrollToBenefits, 400);
+        });
+      }
     }
 
-    applyFromLocation();
-    window.addEventListener("hashchange", applyFromLocation);
-    return () => window.removeEventListener("hashchange", applyFromLocation);
+    applyFromLocation(true);
+    const onHashChange = () => applyFromLocation(true);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, [benefits]);
 
   function go(next: number, focus = false) {
@@ -177,7 +198,7 @@ export function BenefitsShowcase({ benefits }: { benefits: readonly InstructorBe
               }}
               type="button"
               role="tab"
-              id={`${baseId}-tab-${i}`}
+              id={benefit.icon}
               className={`for-instructors-benefits__card${active ? " is-active" : ""}`}
               aria-selected={active}
               aria-controls={`${baseId}-panel`}
@@ -210,7 +231,7 @@ export function BenefitsShowcase({ benefits }: { benefits: readonly InstructorBe
       <div
         id={`${baseId}-panel`}
         role="tabpanel"
-        aria-labelledby={`${baseId}-tab-${index}`}
+        aria-labelledby={benefits[index]?.icon}
         className="for-instructors-benefits__stage"
       >
         {benefits.map((benefit, i) => {
