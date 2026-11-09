@@ -7,6 +7,7 @@ import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { LocationInput } from "@/components/dashboard/LocationInput";
 import { parseWebsiteInput } from "@/lib/vendor-website-url";
 import { WhatToBringFields, type WhatToBringFieldsHandle } from "@/components/onboarding/WhatToBringFields";
+import { APPLICATION_ACK_LABEL } from "@/lib/booking-acknowledgments";
 
 const BADGE_OPTIONS = [
   "NRA Certified",
@@ -68,6 +69,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     badgeTags: vendor.badge_tags ?? ([] as string[]),
     photoUrl: vendor.photo_url ?? "",
     galleryUrls: vendor.gallery_urls ?? ([] as string[]),
+    requireApplicationAck: Boolean(vendor.require_application_ack),
   });
 
   const [countyQuery, setCountyQuery] = useState("");
@@ -279,6 +281,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           photoUrl: form.photoUrl,
           galleryUrls: form.galleryUrls,
           whatToBring: whatToBring.items,
+          requireApplicationAck: form.requireApplicationAck,
         }),
       });
       if (!res.ok) {
@@ -306,6 +309,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           photo_url: form.photoUrl || null,
           gallery_urls: form.galleryUrls,
           what_to_bring: whatToBring.items,
+          require_application_ack: form.requireApplicationAck,
         });
         setSaved(true);
       } else {
@@ -710,6 +714,36 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           These items appear on the What To Bring tab of your live profile.
         </p>
         <WhatToBringFields ref={whatToBringRef} items={vendor.what_to_bring} />
+      </section>
+
+      <section id="listing-application-ack" className="scroll-mt-[calc(var(--header-height)+1rem)]">
+        <div className="mb-1 flex items-center gap-2">
+          <h2 className="text-base font-semibold text-zinc-800">Application acknowledgment</h2>
+          <span className="rounded-full border border-[#c96442]/40 bg-[#c96442]/10 px-2 py-0.5 text-xs font-semibold text-[#c96442]">
+            Optional
+          </span>
+        </div>
+        <p className="mb-4 text-sm text-zinc-500">
+          When enabled, students must check this box before paying for a class.
+        </p>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={form.requireApplicationAck}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, requireApplicationAck: e.target.checked }))
+            }
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-[#141413] focus:ring-[#141413]"
+          />
+          <span className="text-sm text-zinc-700">
+            Require students to acknowledge application timing at checkout
+          </span>
+        </label>
+        {form.requireApplicationAck && (
+          <p className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm leading-relaxed text-zinc-600">
+            {APPLICATION_ACK_LABEL}
+          </p>
+        )}
       </section>
 
       {error && (

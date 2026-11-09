@@ -44,6 +44,7 @@ const EXPECTED: Record<string, string[]> = {
     "google_calendar_id",
     "google_refresh_token",
     "what_to_bring",
+    "require_application_ack",
   ],
   vendor_class_types: [
     "id",

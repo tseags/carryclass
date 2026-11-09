@@ -34,6 +34,8 @@ export interface VendorProfile {
   google_refresh_token: string | null;
   /** Null until the instructor saves a packing list. Public profile then uses the defaults. */
   what_to_bring: string[] | null;
+  /** When true, booking checkout requires the application-timing acknowledgment. */
+  require_application_ack: boolean;
   slug: string | null;
   created_at: string;
   updated_at: string;

@@ -290,6 +290,7 @@ const ONBOARDING_VENDOR_COLUMNS = [
   "google_calendar_id",
   "google_refresh_token",
   "what_to_bring",
+  "require_application_ack",
 ];
 
 const ONBOARDING_TABLES = [

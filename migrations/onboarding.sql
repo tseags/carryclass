@@ -29,6 +29,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS ical_feed_url text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_calendar_id text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS google_refresh_token text;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS what_to_bring text[];
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS require_application_ack boolean NOT NULL DEFAULT false;
 NOTIFY pgrst, 'reload schema';
 
 -- Unique index on clerk_user_id

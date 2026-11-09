@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     photo_url: body.photoUrl ?? null,
     gallery_urls: body.galleryUrls ?? null,
     ...(whatToBring ? { what_to_bring: whatToBring } : {}),
+    require_application_ack: Boolean(body.requireApplicationAck),
   });
 
   await advanceOnboardingStep(vendor.id, 2);

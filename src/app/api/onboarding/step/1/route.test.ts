@@ -46,13 +46,17 @@ describe("onboarding step 1 what to bring", () => {
       post({
         name: "Acme",
         whatToBring: [" holster ", "Notebook"],
+        requireApplicationAck: true,
       })
     );
 
     expect(res.status).toBe(200);
     expect(updateVendorProfileMock).toHaveBeenCalledWith(
       "v1",
-      expect.objectContaining({ what_to_bring: ["Holster", "Notebook"] })
+      expect.objectContaining({
+        what_to_bring: ["Holster", "Notebook"],
+        require_application_ack: true,
+      })
     );
     expect(revalidatePathMock).toHaveBeenCalledWith("/instructors/acme-training");
     expect(advanceOnboardingStepMock).toHaveBeenCalledWith("v1", 2);

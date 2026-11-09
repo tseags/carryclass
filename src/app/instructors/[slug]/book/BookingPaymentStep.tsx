@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   CheckoutElementsProvider,
   ExpressCheckoutElement,
@@ -9,8 +10,16 @@ import {
 } from "@stripe/react-stripe-js/checkout";
 import type { Appearance } from "@stripe/stripe-js";
 import { getStripeBrowser } from "@/lib/stripe-client";
+import { APPLICATION_ACK_LABEL } from "@/lib/booking-acknowledgments";
 import { PLATFORM_SERVICE_FEE_PERCENT_LABEL } from "@/lib/booking-constants";
 import { PLATFORM_FEE_LINE_LABEL, formatCents } from "@/lib/instructor-catalog";
+
+const ACK_CHECKBOX_CLASS =
+  "mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-[#141413] focus:ring-[#141413]";
+const ACK_LABEL_CLASS =
+  "flex cursor-pointer items-start gap-3 rounded-lg border border-[rgba(17,24,39,0.12)] bg-[#fafafa] px-3 py-3";
+const POLICY_LINK_CLASS =
+  "font-medium text-[#141413] underline underline-offset-2 hover:text-[#c96442]";
 
 const CARD_CLASS =
   "rounded-[14px] border border-[rgba(17,24,39,0.12)] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.05)] sm:px-6 sm:py-6";
@@ -62,6 +71,7 @@ export type BookingPaymentSummary = {
   totalCents: number;
   refundPolicy: string | null;
   vendorName: string;
+  requireApplicationAck?: boolean;
 };
 
 type Props = {
@@ -97,6 +107,11 @@ function PaymentLayout({
   const checkoutState = useCheckoutElements();
   const [refundPolicyOpen, setRefundPolicyOpen] = useState(false);
   const [expressState, setExpressState] = useState<"pending" | "ready" | "none">("pending");
+  const [legalAcked, setLegalAcked] = useState(false);
+  const [applicationAcked, setApplicationAcked] = useState(false);
+  const needsApplicationAck = Boolean(summary.requireApplicationAck);
+  const acknowledgmentsComplete =
+    legalAcked && (!needsApplicationAck || applicationAcked);
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-10">
@@ -166,12 +181,61 @@ function PaymentLayout({
           )}
           {checkoutState.type === "success" && (
             <div className="mt-5 space-y-4">
+              <label className={ACK_LABEL_CLASS}>
+                <input
+                  type="checkbox"
+                  checked={legalAcked}
+                  onChange={(e) => setLegalAcked(e.target.checked)}
+                  className={ACK_CHECKBOX_CLASS}
+                />
+                <span className="text-xs leading-relaxed text-zinc-700">
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={POLICY_LINK_CLASS}
+                  >
+                    Terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={POLICY_LINK_CLASS}
+                  >
+                    Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+              {needsApplicationAck && (
+                <label className={ACK_LABEL_CLASS}>
+                  <input
+                    type="checkbox"
+                    checked={applicationAcked}
+                    onChange={(e) => setApplicationAcked(e.target.checked)}
+                    className={ACK_CHECKBOX_CLASS}
+                  />
+                  <span className="text-xs leading-relaxed text-zinc-700">
+                    {APPLICATION_ACK_LABEL}
+                  </span>
+                </label>
+              )}
               <div className={expressState === "none" ? "hidden" : "block"}>
                 <ExpressCheckoutElement
                   onReady={(event) => {
                     setExpressState(event.availablePaymentMethods ? "ready" : "none");
                   }}
-                  onConfirm={async () => {
+                  onConfirm={async (event) => {
+                    if (!acknowledgmentsComplete) {
+                      event.paymentFailed({
+                        reason: "fail",
+                        message: "Please confirm the required acknowledgments above before paying.",
+                      });
+                      return;
+                    }
                     await checkoutState.checkout.confirm();
                   }}
                 />
@@ -184,7 +248,7 @@ function PaymentLayout({
                 ) : null}
               </div>
               <PaymentElement options={{ layout: "accordion" }} />
-              <PayButton />
+              <PayButton acknowledgmentsComplete={acknowledgmentsComplete} />
             </div>
           )}
         </section>
@@ -273,7 +337,7 @@ function PaymentLayout({
   );
 }
 
-function PayButton() {
+function PayButton({ acknowledgmentsComplete }: { acknowledgmentsComplete: boolean }) {
   const checkoutState = useCheckoutElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,6 +348,10 @@ function PayButton() {
 
   async function handlePay() {
     setError(null);
+    if (!acknowledgmentsComplete) {
+      setError("Please confirm the required acknowledgments above before paying.");
+      return;
+    }
     setLoading(true);
     try {
       const result = await checkout.confirm();
@@ -307,7 +375,7 @@ function PayButton() {
       )}
       <button
         type="button"
-        disabled={!checkout.canConfirm || loading}
+        disabled={!checkout.canConfirm || loading || !acknowledgmentsComplete}
         onClick={handlePay}
         className="btn-primary bg-secondary-2 small w-button w-full disabled:cursor-not-allowed"
       >
