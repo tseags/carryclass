@@ -4,6 +4,18 @@ import { useMemo, useState } from "react";
 import type { DashboardPaymentStatus } from "@/lib/dashboard-db";
 import { formatCurrency, formatLongDate } from "../dashboard-format";
 import {
+  DASH_BORDER,
+  DASH_BTN_SECONDARY,
+  DASH_CARD,
+  DASH_DIVIDE,
+  DASH_PILL,
+  DASH_PILL_ACCENT,
+  DASH_PILL_SUCCESS,
+  DASH_PILL_WARN,
+  DASH_SUBSECTION_TITLE,
+  DASH_TABLE_HEAD,
+} from "../dashboard-theme";
+import {
   CLASS_TYPE_OPTIONS,
   classTypeLabel,
   inWindow,
@@ -34,9 +46,9 @@ const STATUS_OPTIONS: { id: LedgerStatusFilter; label: string }[] = [
 ];
 
 const STATUS_PILL: Record<DashboardPaymentStatus, string> = {
-  PAID: "bg-emerald-50 text-emerald-700",
-  REFUNDED: "bg-amber-50 text-amber-800",
-  PENDING: "bg-gray-100 text-gray-600",
+  PAID: DASH_PILL_SUCCESS,
+  REFUNDED: DASH_PILL_WARN,
+  PENDING: DASH_PILL_ACCENT,
   CANCELLED: "bg-red-50 text-red-700",
 };
 
@@ -56,8 +68,8 @@ function sortValue(f: PaymentFact, key: LedgerSortKey): number {
 export function segmentClass(active: boolean): string {
   return `rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
     active
-      ? "!bg-white text-[#C1440E] shadow-sm ring-1 ring-gray-200"
-      : "!bg-transparent text-gray-600 hover:text-gray-900"
+      ? "!bg-white text-[#1F1B16] shadow-sm ring-1 ring-[#E3DDD4]"
+      : "!bg-transparent text-[#6B645B] hover:text-[#1F1B16]"
   }`;
 }
 
@@ -121,7 +133,7 @@ export function PaymentsLedger({
           type="button"
           onClick={() => toggleSort(key)}
           className={`inline-flex items-center gap-1 !bg-transparent uppercase tracking-wide ${
-            active ? "text-gray-900" : "text-gray-400 hover:text-gray-700"
+            active ? "text-[#1F1B16]" : "text-[#7A7268] hover:text-[#1F1B16]"
           }`}
         >
           {label}
@@ -134,21 +146,21 @@ export function PaymentsLedger({
   }
 
   return (
-    <section id="payments-ledger" className="scroll-mt-24 rounded-lg !border border-gray-200 bg-white p-5">
+    <section id="payments-ledger" className={`scroll-mt-24 ${DASH_CARD} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="!mb-0 !text-lg font-semibold !leading-7 text-gray-900">Payments</h2>
-          <div className="text-xs text-gray-500">
+          <h2 className={DASH_SUBSECTION_TITLE}>Payments</h2>
+          <div className="text-xs text-[#7A7268]">
             {filters.upcomingOnly ? "Paid seats in upcoming classes" : `${rangeLabel} · by payment date`}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="!mb-0 flex items-center gap-2 text-xs !font-medium text-gray-500">
+          <label className="!mb-0 flex items-center gap-2 text-xs !font-medium text-[#7A7268]">
             Class type
             <select
               value={filters.classType}
               onChange={(e) => onFiltersChange({ ...filters, classType: e.target.value })}
-              className="rounded-md !border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+              className="rounded-lg !border border-[#E3DDD4] bg-white px-2 py-1 text-sm text-[#1F1B16] focus:border-[#C1440E]/50 focus:outline-none focus:ring-2 focus:ring-[#C1440E]/15"
             >
               <option value="all">All class types</option>
               {CLASS_TYPE_OPTIONS.map((ct) => (
@@ -158,7 +170,7 @@ export function PaymentsLedger({
               ))}
             </select>
           </label>
-          <div role="group" aria-label="Status" className="flex gap-1 rounded-lg bg-gray-100 p-1">
+          <div role="group" aria-label="Status" className="flex gap-1 rounded-lg bg-[#F1ECE5] p-1">
             {STATUS_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
@@ -175,7 +187,7 @@ export function PaymentsLedger({
       </div>
 
       {filters.upcomingOnly && (
-        <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#C1440E]/10 px-3 py-1 text-xs font-medium text-[#C1440E]">
+        <div className={`mt-3 ${DASH_PILL} ${DASH_PILL_ACCENT} gap-2 !px-2.5 !py-1`}>
           Upcoming classes only
           <button
             type="button"
@@ -189,13 +201,13 @@ export function PaymentsLedger({
       )}
 
       {rows.length === 0 ? (
-        <div className="py-10 text-center text-sm text-gray-500">No payments in this range.</div>
+        <div className="py-10 text-center text-sm text-[#7A7268]">No payments in this range.</div>
       ) : (
         <>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                <tr className={`border-b ${DASH_BORDER} ${DASH_TABLE_HEAD}`}>
                   {sortHeader("paid", "Paid date")}
                   <th className="!py-3 !pr-4 whitespace-nowrap">Student</th>
                   <th className="!py-3 !pr-4 whitespace-nowrap">Class type</th>
@@ -204,19 +216,19 @@ export function PaymentsLedger({
                   <th className="!py-3 whitespace-nowrap">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={DASH_DIVIDE}>
                 {visible.map((f) => (
-                  <tr key={f.id} className="border-b border-gray-100 last:border-0">
-                    <td className="!py-3 !pr-4 whitespace-nowrap text-gray-900">{formatLongDate(f.paidAt)}</td>
-                    <td className="!py-3 !pr-4 text-gray-700">{f.studentName}</td>
-                    <td className="!py-3 !pr-4 whitespace-nowrap text-gray-700">
+                  <tr key={f.id}>
+                    <td className="!py-3 !pr-4 whitespace-nowrap text-[#1F1B16]">{formatLongDate(f.paidAt)}</td>
+                    <td className="!py-3 !pr-4 text-[#3D3730]">{f.studentName}</td>
+                    <td className="!py-3 !pr-4 whitespace-nowrap text-[#3D3730]">
                       {f.classType === "initial" || f.classType === "renewal" || f.classType === "add_a_gun"
                         ? classTypeLabel(f.classType)
                         : f.classTitle?.trim() || "Other class"}
                     </td>
-                    <td className="!py-3 !pr-4 whitespace-nowrap text-gray-700">{formatLongDate(f.classStartsAt)}</td>
+                    <td className="!py-3 !pr-4 whitespace-nowrap text-[#3D3730]">{formatLongDate(f.classStartsAt)}</td>
                     <td className="!py-3 !pr-4 whitespace-nowrap text-right tabular-nums">
-                      <span className={f.status === "REFUNDED" ? "text-gray-400 line-through" : "text-gray-900"}>
+                      <span className={f.status === "REFUNDED" ? "text-[#8A837A] line-through" : "text-[#1F1B16]"}>
                         {formatCurrency(f.classAmountCents)}
                       </span>
                       {f.status === "REFUNDED" && f.refundedClassCents > 0 && (
@@ -226,7 +238,7 @@ export function PaymentsLedger({
                       )}
                     </td>
                     <td className="!py-3 whitespace-nowrap">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_PILL[f.status]}`}>
+                      <span className={`${DASH_PILL} ${STATUS_PILL[f.status]}`}>
                         {STATUS_LABEL[f.status]}
                       </span>
                     </td>
@@ -235,7 +247,7 @@ export function PaymentsLedger({
               </tbody>
             </table>
           </div>
-          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+          <div className="mt-4 flex items-center justify-between text-xs text-[#7A7268]">
             <span>
               {current * PAGE_SIZE + 1}–{Math.min(rows.length, (current + 1) * PAGE_SIZE)} of {rows.length}
             </span>
@@ -245,7 +257,7 @@ export function PaymentsLedger({
                   type="button"
                   onClick={() => setPage(current - 1)}
                   disabled={current === 0}
-                  className="rounded-md !border border-gray-300 !bg-white px-2.5 py-1 font-medium text-gray-700 hover:!bg-gray-50 disabled:opacity-40"
+                  className={`${DASH_BTN_SECONDARY} !px-2.5 !py-1 !text-xs`}
                 >
                   Previous
                 </button>
@@ -253,7 +265,7 @@ export function PaymentsLedger({
                   type="button"
                   onClick={() => setPage(current + 1)}
                   disabled={current >= pageCount - 1}
-                  className="rounded-md !border border-gray-300 !bg-white px-2.5 py-1 font-medium text-gray-700 hover:!bg-gray-50 disabled:opacity-40"
+                  className={`${DASH_BTN_SECONDARY} !px-2.5 !py-1 !text-xs`}
                 >
                   Next
                 </button>

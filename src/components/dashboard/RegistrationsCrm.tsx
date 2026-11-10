@@ -5,7 +5,21 @@ import type { VendorClassType } from "@/lib/onboarding-db";
 import type { DashboardRegistration } from "@/lib/dashboard-db";
 import { getCountyDisplayName } from "@/data/counties";
 import { Drawer } from "./Drawer";
-import { formatLongDate, formatTime } from "./dashboard-format";
+import { formatLongDate, formatTime, sentenceCase } from "./dashboard-format";
+import {
+  DASH_BORDER,
+  DASH_BTN_SECONDARY,
+  DASH_CARD,
+  DASH_DIVIDE,
+  DASH_MUTED,
+  DASH_PILL,
+  DASH_PILL_ACCENT,
+  DASH_PILL_INFO,
+  DASH_PILL_NEUTRAL,
+  DASH_PILL_SUCCESS,
+  DASH_SUBSECTION_TITLE,
+  DASH_TABLE_HEAD,
+} from "./dashboard-theme";
 
 const PAGE_SIZE = 25;
 
@@ -55,11 +69,10 @@ function sessionKey(r: DashboardRegistration): string {
 
 function paymentPill(status: string) {
   const s = status.toUpperCase();
-  if (s === "PAID") return "bg-emerald-50 text-emerald-700";
-  if (s === "PENDING") return "bg-amber-50 text-amber-700";
-  if (s === "REFUNDED") return "bg-blue-50 text-blue-700";
-  if (s === "CANCELLED") return "bg-gray-100 text-gray-500";
-  return "bg-gray-100 text-gray-500";
+  if (s === "PAID") return DASH_PILL_SUCCESS;
+  if (s === "PENDING") return DASH_PILL_ACCENT;
+  if (s === "REFUNDED") return DASH_PILL_INFO;
+  return DASH_PILL_NEUTRAL;
 }
 
 function parseClassDate(iso: string | null): Date | null {
@@ -237,7 +250,7 @@ export function registrationsForDisplay(
 }
 
 const selectClass =
-  "rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:border-[#C1440E]/40 focus:outline-none focus:ring-1 focus:ring-[#C1440E]/30";
+  "rounded-lg border border-[#E3DDD4] bg-white px-2.5 py-1.5 text-sm text-[#1F1B16] focus:border-[#C1440E]/40 focus:outline-none focus:ring-1 focus:ring-[#C1440E]/30";
 
 export function RegistrationsCrm({
   registrations: liveRegistrations,
@@ -335,13 +348,13 @@ export function RegistrationsCrm({
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-gray-50 p-5 sm:p-6">
-      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <section className={`${DASH_CARD} p-5 sm:p-6`}>
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Registrations</h2>
-          <p className="text-sm text-gray-500">Students who booked through CarryClass.</p>
+          <h2 className={DASH_SUBSECTION_TITLE}>Registrations</h2>
+          <p className={`!mb-0 !mt-0.5 text-sm ${DASH_MUTED}`}>Students who booked through CarryClass.</p>
         </div>
-        <p className="shrink-0 text-sm text-gray-500">
+        <p className={`!m-0 shrink-0 text-sm tabular-nums ${DASH_MUTED}`}>
           {filtered.length === total
             ? `${total} ${total === 1 ? "student" : "students"}`
             : `${filtered.length} of ${total}`}
@@ -349,7 +362,7 @@ export function RegistrationsCrm({
       </div>
 
       {isSample && (
-        <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="!mb-3 !mt-0 rounded-lg border border-[#F0DCC8] bg-[#FDF6EE] px-3 py-2 text-sm text-[#8A4B1E]">
           Showing sample registrations so you can try filters. Live bookings will replace this list.
         </p>
       )}
@@ -359,7 +372,7 @@ export function RegistrationsCrm({
         <label className="relative min-w-[180px] flex-1">
           <span className="sr-only">Search students</span>
           <svg
-            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A837A]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -374,7 +387,7 @@ export function RegistrationsCrm({
             value={filters.query}
             onChange={(e) => patch({ query: e.target.value })}
             placeholder="Search name, email, or confirmation #"
-            className="w-full rounded-lg border border-gray-200 py-1.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#C1440E]/40 focus:outline-none focus:ring-1 focus:ring-[#C1440E]/30"
+            className="w-full rounded-lg border border-[#E3DDD4] py-1.5 pl-9 pr-3 text-sm text-[#1F1B16] placeholder:text-[#8A837A] focus:border-[#C1440E]/40 focus:outline-none focus:ring-1 focus:ring-[#C1440E]/30"
           />
         </label>
 
@@ -433,16 +446,16 @@ export function RegistrationsCrm({
             className={`rounded-lg border px-2.5 py-1.5 text-sm transition-colors ${
               moreFiltersActive(filters)
                 ? "border-[#C1440E]/30 bg-[#C1440E]/5 font-medium text-[#C1440E]"
-                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                : "border-[#E3DDD4] text-[#5C554C] hover:bg-[#FBF9F6]"
             }`}
           >
             More filters
           </button>
           {moreOpen && (
-            <div className="absolute left-0 top-full z-10 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+            <div className="absolute left-0 top-full z-10 mt-1 w-64 rounded-xl border border-[#ECE7E0] bg-white p-3 shadow-[0_12px_32px_-12px_rgba(31,27,22,0.25)]">
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500">When</label>
+                  <label className="mb-1 block text-xs font-medium text-[#7A7268]">When</label>
                   <select
                     value={filters.when}
                     onChange={(e) => patch({ when: e.target.value as WhenFilter })}
@@ -455,7 +468,7 @@ export function RegistrationsCrm({
                 </div>
                 {weekdayOptions.length > 0 && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">Day</label>
+                    <label className="mb-1 block text-xs font-medium text-[#7A7268]">Day</label>
                     <select
                       value={filters.weekday ?? ""}
                       onChange={(e) =>
@@ -474,7 +487,7 @@ export function RegistrationsCrm({
                 )}
                 {timeOptions.length > 0 && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">Time</label>
+                    <label className="mb-1 block text-xs font-medium text-[#7A7268]">Time</label>
                     <select
                       value={filters.timeLabel ?? ""}
                       onChange={(e) => patch({ timeLabel: e.target.value || null })}
@@ -506,12 +519,12 @@ export function RegistrationsCrm({
       </div>
 
       {registrations.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">
+        <p className="py-8 text-center text-sm text-[#7A7268]">
           No registrations yet. They&apos;ll appear here when students book through CarryClass.
         </p>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="text-sm font-medium text-gray-900">No students match these filters</p>
+          <p className="text-sm font-medium text-[#1F1B16]">No students match these filters</p>
           <button
             type="button"
             onClick={clearFilters}
@@ -534,7 +547,7 @@ export function RegistrationsCrm({
               <button
                 type="button"
                 onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className={DASH_BTN_SECONDARY}
               >
                 Show more ({filtered.length - visibleCount} remaining)
               </button>
@@ -576,48 +589,46 @@ function RegistrationsTable({
           <col className="w-[10%]" />
         </colgroup>
         <thead>
-          <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-            <th className="!py-4 !pr-4">Name</th>
-            <th className="!py-4 !pr-4">Class</th>
-            {showCounty && <th className="!py-4 !pr-4">County</th>}
-            <th className="!py-4 !pr-4">Date</th>
-            <th className="!py-4">Payment</th>
+          <tr className={`border-b ${DASH_BORDER} ${DASH_TABLE_HEAD}`}>
+            <th className="!py-3 !pr-4 font-medium">Name</th>
+            <th className="!py-3 !pr-4 font-medium">Class</th>
+            {showCounty && <th className="!py-3 !pr-4 font-medium">County</th>}
+            <th className="!py-3 !pr-4 font-medium">Date</th>
+            <th className="!py-3 font-medium">Payment</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className={DASH_DIVIDE}>
           {registrations.map((r) => (
             <tr
               key={r.id}
               onClick={() => onSelect(r.id)}
-              className={`cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50 ${
+              className={`cursor-pointer transition-colors hover:bg-[#FBF9F6] ${
                 selectedId === r.id ? "bg-[#C1440E]/5" : ""
               }`}
             >
               <td className="!py-5 !pr-4 align-top">
-                <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
-                <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerEmail}</p>
+                <p className="!m-0 font-medium leading-snug text-[#1F1B16] line-clamp-2">{r.customerName}</p>
+                <p className="!m-0 !mt-0.5 text-xs leading-snug text-[#7A7268] line-clamp-1">{r.customerEmail}</p>
                 {r.customerPhone && (
-                  <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerPhone}</p>
+                  <p className="!m-0 !mt-0.5 text-xs leading-snug text-[#7A7268] line-clamp-1">{r.customerPhone}</p>
                 )}
               </td>
-              <td className="!py-5 !pr-4 align-top text-gray-600">
+              <td className="!py-5 !pr-4 align-top text-[#5C554C]">
                 <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType, classTypes)}>
                   {classTypeLabel(r.classType, classTypes)}
                 </span>
               </td>
               {showCounty && (
-                <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">
+                <td className="!py-5 !pr-4 align-top leading-snug text-[#5C554C]">
                   {r.countySlug ? getCountyDisplayName(r.countySlug) : "—"}
                 </td>
               )}
-              <td className="!py-5 !pr-4 align-top leading-snug text-gray-900">
+              <td className="!py-5 !pr-4 align-top leading-snug text-[#1F1B16]">
                 <span className="line-clamp-2">{formatLongDate(r.classDate)}</span>
-                <span className="text-xs text-gray-500">{formatTime(r.classDate)}</span>
+                <span className="text-xs text-[#7A7268]">{formatTime(r.classDate)}</span>
               </td>
               <td className="!py-5 align-top">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
-                  {r.status}
-                </span>
+                <span className={`${DASH_PILL} ${paymentPill(r.status)}`}>{sentenceCase(r.status)}</span>
               </td>
             </tr>
           ))}
@@ -643,16 +654,16 @@ function StudentDrawer({
         <dl className="space-y-4 p-5 text-sm">
           {r.confirmationCode && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">
                 Confirmation #
               </dt>
-              <dd className="mt-1 font-mono font-semibold tracking-wider text-gray-900">
+              <dd className="mt-1 font-mono font-semibold tracking-wider text-[#1F1B16]">
                 {r.confirmationCode}
               </dd>
             </div>
           )}
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Email</dt>
+            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Email</dt>
             <dd className="mt-1">
               <a href={`mailto:${r.customerEmail}`} className="text-[#C1440E] hover:underline">
                 {r.customerEmail}
@@ -661,7 +672,7 @@ function StudentDrawer({
           </div>
           {r.customerPhone && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Phone</dt>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Phone</dt>
               <dd className="mt-1">
                 <a href={`tel:${r.customerPhone}`} className="text-[#C1440E] hover:underline">
                   {r.customerPhone}
@@ -670,37 +681,35 @@ function StudentDrawer({
             </div>
           )}
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Class</dt>
-            <dd className="mt-1 text-gray-900">{classTypeLabel(r.classType, classTypes)}</dd>
+            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class</dt>
+            <dd className="mt-1 text-[#1F1B16]">{classTypeLabel(r.classType, classTypes)}</dd>
           </div>
           {r.countySlug && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">County</dt>
-              <dd className="mt-1 text-gray-900">{getCountyDisplayName(r.countySlug)}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">County</dt>
+              <dd className="mt-1 text-[#1F1B16]">{getCountyDisplayName(r.countySlug)}</dd>
             </div>
           )}
           {r.location && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Location</dt>
-              <dd className="mt-1 text-gray-900">{r.location}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Location</dt>
+              <dd className="mt-1 text-[#1F1B16]">{r.location}</dd>
             </div>
           )}
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Class date</dt>
-            <dd className="mt-1 text-gray-900">
+            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class date</dt>
+            <dd className="mt-1 text-[#1F1B16]">
               {formatLongDate(r.classDate)} · {formatTime(r.classDate)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Registered</dt>
-            <dd className="mt-1 text-gray-900">{formatLongDate(r.registeredOn)}</dd>
+            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Registered</dt>
+            <dd className="mt-1 text-[#1F1B16]">{formatLongDate(r.registeredOn)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Payment</dt>
+            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Payment</dt>
             <dd className="mt-1">
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
-                {r.status}
-              </span>
+              <span className={`${DASH_PILL} ${paymentPill(r.status)}`}>{sentenceCase(r.status)}</span>
             </dd>
           </div>
         </dl>

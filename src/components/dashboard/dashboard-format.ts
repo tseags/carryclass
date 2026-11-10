@@ -10,6 +10,12 @@ export function formatStudentName(fullName: string): string {
   return lastInitial ? `${first} ${lastInitial}.` : first;
 }
 
+/** "PAID" → "Paid" */
+export function sentenceCase(value: string): string {
+  const lower = value.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 /** "Sat, Jul 12, 2026" */
 export function formatLongDate(iso: string | null): string {
   if (!iso) return "—";

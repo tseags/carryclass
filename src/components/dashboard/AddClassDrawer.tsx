@@ -5,6 +5,7 @@ import { isCustomClassKey } from "@/lib/instructor-catalog";
 import type { VendorCalendarClass, VendorClassType } from "@/lib/onboarding-db";
 import { Drawer } from "./Drawer";
 import { LocationInput } from "./LocationInput";
+import { DASH_BTN_PRIMARY, DASH_BTN_SECONDARY, DASH_INPUT } from "./dashboard-theme";
 
 interface Props {
   open: boolean;
@@ -153,9 +154,8 @@ function buildGunPricingPayload(form: GunPricingForm) {
   };
 }
 
-const inputClass =
-  "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
-const labelClass = "mb-1.5 block text-xs font-medium text-gray-600";
+const inputClass = DASH_INPUT;
+const labelClass = "mb-1.5 block text-xs font-medium text-[#5C554C]";
 
 export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
   // Always offer the three canonical types; merge in the vendor's own rows for
@@ -305,7 +305,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className={DASH_BTN_SECONDARY}
             >
               Cancel
             </button>
@@ -313,7 +313,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium !text-white hover:bg-black disabled:opacity-60 transition-colors"
+              className={DASH_BTN_PRIMARY}
             >
               {saving ? "Adding…" : "Add class"}
             </button>
@@ -336,7 +336,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             ))}
           </select>
           {recurrence !== "one-time" && date && summary && (
-            <p className="mt-1.5 text-xs text-gray-500">{summary}</p>
+            <p className="mt-1.5 text-xs text-[#7A7268]">{summary}</p>
           )}
         </div>
 
@@ -356,7 +356,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
           {recurrence !== "one-time" && (
             <div>
               <label className={labelClass}>
-                End date <span className="text-gray-400">(optional)</span>
+                End date <span className="text-[#8A837A]">(optional)</span>
               </label>
               <input
                 type="date"
@@ -416,14 +416,14 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="block text-xs font-medium text-gray-600">
+            <label className="block text-xs font-medium text-[#5C554C]">
               Class description
             </label>
             <button
               type="button"
               onClick={handlePolish}
               disabled={!description.trim() || polishing}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[#E3DDD4] bg-white px-2.5 py-1 text-xs font-medium text-[#3D3730] hover:bg-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
             >
               {polishing ? (
                 <Spinner />
@@ -455,12 +455,12 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             />
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+          <label className="flex items-center gap-2 text-xs font-medium text-[#5C554C]">
             <input
               type="checkbox"
               checked={sameLocation}
               onChange={(e) => setSameLocation(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-[#C1440E] focus:ring-[#C1440E]"
+              className="h-4 w-4 rounded border-[#D6CEC3] text-[#C1440E] focus:ring-[#C1440E]"
             />
             Range location is the same as the classroom
           </label>
@@ -507,8 +507,8 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         </div>
 
         {classType === "add_a_gun" && (
-          <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs font-medium text-gray-600">Add-a-Gun pricing</p>
+          <div className="space-y-4 rounded-xl bg-[#F6F3EE] p-4">
+            <p className="!m-0 text-xs font-medium text-[#5C554C]">Add-a-Gun pricing</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Range Fee Price ($)</label>
@@ -526,14 +526,14 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+            <label className="flex items-center gap-2 text-xs font-medium text-[#5C554C]">
               <input
                 type="checkbox"
                 checked={gunPricing.sameForAll}
                 onChange={(e) =>
                   setGunPricing((p) => ({ ...p, sameForAll: e.target.checked }))
                 }
-                className="h-4 w-4 rounded border-gray-300 text-[#C1440E] focus:ring-[#C1440E]"
+                className="h-4 w-4 rounded border-[#D6CEC3] text-[#C1440E] focus:ring-[#C1440E]"
               />
               Same price for every additional gun
             </label>
@@ -552,7 +552,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
                   placeholder="0.00"
                   className={inputClass}
                 />
-                <p className="mt-1.5 text-xs text-gray-500">
+                <p className="mt-1.5 text-xs text-[#7A7268]">
                   Applies to the 2nd through 6th gun.
                 </p>
               </div>
@@ -585,7 +585,7 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
 
 function Spinner() {
   return (
-    <svg className="h-3.5 w-3.5 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+    <svg className="h-3.5 w-3.5 animate-spin text-[#7A7268]" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { VendorCalendarClass } from "@/lib/onboarding-db";
 import { Drawer } from "./Drawer";
 import { LocationInput } from "./LocationInput";
+import { DASH_BTN_PRIMARY, DASH_BTN_SECONDARY, DASH_INPUT } from "./dashboard-theme";
 
 interface Props {
   open: boolean;
@@ -31,9 +32,8 @@ function toIso(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString();
 }
 
-const inputClass =
-  "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
-const labelClass = "mb-1.5 block text-xs font-medium text-gray-600";
+const inputClass = DASH_INPUT;
+const labelClass = "mb-1.5 block text-xs font-medium text-[#5C554C]";
 
 export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
   const [title, setTitle] = useState("");
@@ -145,7 +145,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className={DASH_BTN_SECONDARY}
             >
               Cancel
             </button>
@@ -153,7 +153,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-[#C1440E] px-4 py-2 text-sm font-medium text-white hover:bg-[#a53a0c] disabled:opacity-60 transition-colors"
+              className={DASH_BTN_PRIMARY}
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -175,14 +175,14 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="block text-xs font-medium text-gray-600">
+            <label className="block text-xs font-medium text-[#5C554C]">
               Class description
             </label>
             <button
               type="button"
               onClick={handlePolish}
               disabled={!description.trim() || polishing}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[#E3DDD4] bg-white px-2.5 py-1 text-xs font-medium text-[#3D3730] hover:bg-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
             >
               {polishing ? (
                 <Spinner />
@@ -214,12 +214,12 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
             />
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+          <label className="flex items-center gap-2 text-xs font-medium text-[#5C554C]">
             <input
               type="checkbox"
               checked={sameLocation}
               onChange={(e) => setSameLocation(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-[#C1440E] focus:ring-[#C1440E]"
+              className="h-4 w-4 rounded border-[#D6CEC3] text-[#C1440E] focus:ring-[#C1440E]"
             />
             Range location is the same as the classroom
           </label>
@@ -238,50 +238,50 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">Date</label>
+          <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Date</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+            className={inputClass}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Start time</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Start time</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">End time</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">End time</label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+              className={inputClass}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Max students</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Max students</label>
             <input
               type="number"
               min="0"
               value={maxStudents}
               onChange={(e) => setMaxStudents(e.target.value)}
               placeholder="—"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Price ($)</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Price ($)</label>
             <input
               type="number"
               min="0"
@@ -289,12 +289,12 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="—"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+              className={inputClass}
             />
           </div>
         </div>
 
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-[#8A837A]">
           {cls.is_recurring
             ? "This is a recurring class. Edits apply to this entry."
             : "This is a one-time class."}
@@ -306,7 +306,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
 
 function Spinner() {
   return (
-    <svg className="h-3.5 w-3.5 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+    <svg className="h-3.5 w-3.5 animate-spin text-[#7A7268]" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>

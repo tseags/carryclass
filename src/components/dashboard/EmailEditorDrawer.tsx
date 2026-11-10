@@ -12,6 +12,18 @@ import {
   type EmailTemplateType,
 } from "@/lib/email-templates-defaults";
 import { DEFAULT_FROM_EMAIL, VERIFIED_SENDING_DOMAIN } from "@/lib/email-from";
+import {
+  DASH_BTN_PRIMARY,
+  DASH_BTN_SECONDARY,
+  DASH_INPUT,
+  DASH_LINK,
+  DASH_MUTED,
+  DASH_PAGE_TITLE,
+  DASH_PILL,
+  DASH_PILL_SUCCESS,
+  DASH_SWITCH_OFF,
+  DASH_SWITCH_ON,
+} from "./dashboard-theme";
 
 export type { EmailTemplateType };
 
@@ -185,8 +197,7 @@ export function EmailEditorPanel({
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]";
+  const inputClass = DASH_INPUT;
 
   const previewValues = emailPreviewMergeValues({
     vendorName,
@@ -204,7 +215,7 @@ export function EmailEditorPanel({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className={`${DASH_BTN_SECONDARY} !px-3 !py-1.5`}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -212,8 +223,8 @@ export function EmailEditorPanel({
           Back
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{TYPE_LABELS[type]}</h1>
-          <p className="text-sm text-gray-500">{TYPE_DESCRIPTIONS[type]}</p>
+          <h1 className={DASH_PAGE_TITLE}>{TYPE_LABELS[type]}</h1>
+          <p className={`!mb-0 !mt-1 text-sm ${DASH_MUTED}`}>{TYPE_DESCRIPTIONS[type]}</p>
         </div>
       </div>
 
@@ -221,13 +232,13 @@ export function EmailEditorPanel({
         {/* ── Left: settings form ─────────────────────────────────────────── */}
         <div className="space-y-5">
           {usingDefaultContent && (
-            <p className="rounded-lg bg-[#C1440E]/5 px-3 py-2 text-xs text-[#C1440E]">
+            <p className="!m-0 rounded-lg bg-[#C1440E]/8 px-3 py-2 text-xs text-[#A93B0C]">
               Showing a generic default template. Edit it below and save to make it yours.
             </p>
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Send from</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Send from</label>
             <input
               type="email"
               value={fromEmail}
@@ -245,28 +256,26 @@ export function EmailEditorPanel({
           </div>
 
           {isConfirmation ? (
-            <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2.5">
-              <span className="text-sm font-medium text-gray-700">Status</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                Always on
-              </span>
+            <div className="flex items-center justify-between rounded-xl bg-[#F6F3EE] px-3.5 py-2.5">
+              <span className="text-sm font-medium text-[#3D3730]">Status</span>
+              <span className={`${DASH_PILL} ${DASH_PILL_SUCCESS}`}>Always on</span>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Email enabled</span>
+                <span className="text-sm font-medium text-[#3D3730]">Email enabled</span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={isActive}
                   aria-label="Toggle email enabled"
                   onClick={() => setIsActive((v) => !v)}
-                  className={`relative h-6 w-10 rounded-full transition-colors ${
-                    isActive ? "bg-[#C1440E]" : "bg-gray-200"
+                  className={`relative h-6 w-10 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E] ${
+                    isActive ? DASH_SWITCH_ON : DASH_SWITCH_OFF
                   }`}
                 >
                   <span
-                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                    className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
                       isActive ? "translate-x-4" : ""
                     }`}
                   />
@@ -274,17 +283,17 @@ export function EmailEditorPanel({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-600">
+                <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">
                   When should this send?
                 </label>
-                <div className="mb-3 inline-flex rounded-lg border border-gray-300 p-0.5">
+                <div className="mb-3 inline-flex rounded-lg bg-[#F1ECE5] p-0.5">
                   <button
                     type="button"
                     onClick={() => setSendMode("relative")}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       sendMode === "relative"
-                        ? "bg-gray-900 !text-white"
-                        : "!text-gray-600 hover:bg-gray-50"
+                        ? "!bg-white !text-[#1F1B16] shadow-sm"
+                        : "!bg-transparent !text-[#6B645B] hover:!text-[#1F1B16]"
                     }`}
                   >
                     Relative to class
@@ -294,8 +303,8 @@ export function EmailEditorPanel({
                     onClick={() => setSendMode("scheduled")}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       sendMode === "scheduled"
-                        ? "bg-gray-900 !text-white"
-                        : "!text-gray-600 hover:bg-gray-50"
+                        ? "!bg-white !text-[#1F1B16] shadow-sm"
+                        : "!bg-transparent !text-[#6B645B] hover:!text-[#1F1B16]"
                     }`}
                   >
                     Specific date &amp; time
@@ -334,11 +343,11 @@ export function EmailEditorPanel({
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="block text-xs font-medium text-gray-600">Subject</label>
+              <label className="block text-xs font-medium text-[#5C554C]">Subject</label>
               <button
                 type="button"
                 onClick={resetToDefault}
-                className="text-xs font-medium text-gray-400 hover:text-[#C1440E] transition-colors"
+                className="text-xs font-medium text-[#8A837A] hover:text-[#C1440E] transition-colors"
               >
                 Reset to default
               </button>
@@ -353,25 +362,25 @@ export function EmailEditorPanel({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Body</label>
+            <label className="mb-1.5 block text-xs font-medium text-[#5C554C]">Body</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={12}
               placeholder="Write your email body here…"
-              className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-[#C1440E] focus:outline-none focus:ring-1 focus:ring-[#C1440E]"
+              className={`${DASH_INPUT} resize-y font-mono`}
             />
           </div>
 
           <div>
-            <p className="mb-2 text-xs text-gray-400">Merge tags — click to insert:</p>
+            <p className="mb-2 text-xs text-[#8A837A]">Merge tags — click to insert:</p>
             <div className="flex flex-wrap gap-1.5">
               {MERGE_TAGS.map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => insertTag(tag)}
-                  className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="rounded-md !bg-[#F1ECE5] px-2 py-1 font-mono text-xs text-[#5C554C] transition-colors hover:!bg-[#E9E2D8] hover:text-[#1F1B16]"
                 >
                   {tag}
                 </button>
@@ -382,16 +391,16 @@ export function EmailEditorPanel({
 
         {/* ── Right: live preview ─────────────────────────────────────────── */}
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2.5">
-              <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+          <div className="overflow-hidden rounded-xl border border-[#ECE7E0] bg-white shadow-[0_1px_2px_rgba(31,27,22,0.04),0_8px_24px_-8px_rgba(31,27,22,0.12)]">
+            <div className="flex items-center justify-between border-b border-[#ECE7E0] bg-[#FBF9F6] px-4 py-2.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">
                 Email Preview
               </span>
               <button
                 type="button"
                 onClick={handleSendTest}
                 disabled={testStatus === "sending" || !subject || !body}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#C1440E] hover:underline disabled:opacity-50"
+                className={`inline-flex items-center gap-1.5 disabled:opacity-50 ${DASH_LINK}`}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M8 5v14l11-7z" />
@@ -401,26 +410,26 @@ export function EmailEditorPanel({
             </div>
 
             <div className="px-6 py-6">
-              <div className="border-b border-gray-100 pb-4">
-                <p className="text-xs text-gray-400">From</p>
-                <p className="text-sm text-gray-700">{resolvedFrom}</p>
-                <p className="mt-2 text-xs text-gray-400">Subject</p>
-                <p className="text-base font-semibold text-gray-900">
-                  {previewSubject || <span className="text-gray-300">(no subject)</span>}
+              <div className="border-b border-[#F1ECE5] pb-4">
+                <p className="text-xs text-[#8A837A]">From</p>
+                <p className="text-sm text-[#3D3730]">{resolvedFrom}</p>
+                <p className="mt-2 text-xs text-[#8A837A]">Subject</p>
+                <p className="text-base font-semibold text-[#1F1B16]">
+                  {previewSubject || <span className="text-[#C9C1B6]">(no subject)</span>}
                 </p>
               </div>
               {body ? (
                 <div
-                  className="pt-4 text-sm leading-relaxed text-gray-700 [&_a]:text-[#C1440E] [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-gray-900"
+                  className="pt-4 text-sm leading-relaxed text-[#3D3730] [&_a]:text-[#C1440E] [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-[#1F1B16]"
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
               ) : (
-                <p className="pt-4 text-sm text-gray-300">(empty body)</p>
+                <p className="pt-4 text-sm text-[#C9C1B6]">(empty body)</p>
               )}
             </div>
           </div>
 
-          <p className="!mt-6 !mb-0 text-xs text-gray-400">
+          <p className="!mt-6 !mb-0 text-xs text-[#8A837A]">
             Preview uses sample student details. Bold text and the What to Bring link
             appear the same way in the email a student receives.
           </p>
@@ -435,7 +444,7 @@ export function EmailEditorPanel({
             <button
               type="button"
               onClick={resetToDefault}
-              className="rounded-lg !border !border-gray-300 px-4 py-2 text-sm font-medium !text-gray-700 hover:bg-gray-50 transition-colors"
+              className={DASH_BTN_SECONDARY}
             >
               Reset to default
             </button>
@@ -443,7 +452,7 @@ export function EmailEditorPanel({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium !text-white hover:bg-black disabled:opacity-60 transition-colors"
+              className={`${DASH_BTN_PRIMARY} !px-6`}
             >
               {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
             </button>

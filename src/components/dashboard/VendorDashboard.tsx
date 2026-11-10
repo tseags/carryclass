@@ -32,9 +32,45 @@ import { Step2ClassTypes } from "@/components/onboarding/Step2ClassTypes";
 import { Step4Cancellation } from "@/components/onboarding/Step4Cancellation";
 import {
   formatLongDate,
+  formatShortDate,
   formatTime,
   formatCurrency,
+  sentenceCase,
 } from "./dashboard-format";
+import {
+  dashboardFont,
+  avatarTone,
+  initials,
+  DASH_PAGE_BG,
+  DASH_SIDEBAR_BG,
+  DASH_INK,
+  DASH_MUTED,
+  DASH_SUBTLE,
+  DASH_BORDER,
+  DASH_DIVIDE,
+  DASH_CARD,
+  DASH_SOFT_PANEL,
+  DASH_EYEBROW,
+  DASH_HERO_TITLE,
+  DASH_PAGE_TITLE,
+  DASH_SECTION_TITLE,
+  DASH_SUBSECTION_TITLE,
+  DASH_CARD_TITLE,
+  DASH_TABLE_HEAD,
+  DASH_LINK,
+  DASH_BTN_PRIMARY,
+  DASH_BTN_DARK,
+  DASH_BTN_SECONDARY,
+  DASH_BTN_DANGER,
+  DASH_PILL,
+  DASH_PILL_SUCCESS,
+  DASH_PILL_ACCENT,
+  DASH_PILL_NEUTRAL,
+  DASH_PILL_INFO,
+  DASH_INPUT,
+  DASH_SWITCH_ON,
+  DASH_SWITCH_OFF,
+} from "./dashboard-theme";
 import { describeStoredRecurrence } from "@/lib/expand-recurrence";
 import {
   applyMergeTags,
@@ -79,11 +115,11 @@ const LISTING_SUBSECTIONS: { id: string; label: string }[] = [
 function NavIcon({ active, path }: { active: boolean; path: string }) {
   return (
     <svg
-      className={`h-5 w-5 ${active ? "text-[#C1440E]" : "text-gray-500"}`}
+      className={`h-[18px] w-[18px] shrink-0 ${active ? "text-[#1F1B16]" : DASH_SUBTLE}`}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -113,6 +149,40 @@ function classTypeLabel(
   if (CLASS_TYPE_LABELS[type]) return CLASS_TYPE_LABELS[type];
   const named = classTypes?.find((ct) => ct.class_type === type)?.display_name?.trim();
   return named || "Other class";
+}
+
+const CLASS_TYPE_SHORT_LABELS: Record<string, string> = {
+  initial: "Initial CCW",
+  renewal: "CCW Renewal",
+  add_a_gun: "Add a Gun",
+};
+
+function classTypeShortLabel(
+  type: string | null | undefined,
+  classTypes?: VendorClassType[],
+  fallbackTitle?: string | null
+): string {
+  if (type && CLASS_TYPE_SHORT_LABELS[type]) return CLASS_TYPE_SHORT_LABELS[type];
+  const named = classTypes?.find((ct) => ct.class_type === type)?.display_name?.trim();
+  return named || fallbackTitle?.trim() || "Other class";
+}
+
+/** "Sat, Nov 7" */
+function formatDayDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+/** "Orange County, California" from a county name or slug. */
+function vendorLocationLabel(county: string | null): string | null {
+  const name = county
+    ?.trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+county$/i, "")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return name ? `${name} County, California` : null;
 }
 
 function feeClassOptions(classTypes: VendorClassType[]) {
@@ -284,10 +354,14 @@ export function VendorDashboard(props: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-white pt-[var(--header-height)]">
+    <div
+      className={`${dashboardFont.className} flex min-h-screen pt-[var(--header-height)] text-[#1F1B16] antialiased ${DASH_PAGE_BG}`}
+    >
       {/* Sidebar (desktop) */}
-      <aside className="sticky top-[var(--header-height)] hidden h-[calc(100vh-var(--header-height))] w-[220px] shrink-0 flex-col self-start overflow-y-auto border-r border-gray-200 bg-[#F9FAFB] md:flex">
-        <nav className="flex-1 py-4">
+      <aside
+        className={`sticky top-[var(--header-height)] hidden h-[calc(100vh-var(--header-height))] w-[232px] shrink-0 flex-col self-start overflow-y-auto md:flex ${DASH_SIDEBAR_BG}`}
+      >
+        <nav className="flex-1 space-y-0.5 px-3 py-5">
           {NAV_ITEMS.map((item) => {
             const active = tab === item.id;
             return (
@@ -295,19 +369,18 @@ export function VendorDashboard(props: Props) {
                 <button
                   type="button"
                   onClick={() => setTab(item.id)}
-                  className={`flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-sm transition-colors ${
+                  aria-current={active ? "page" : undefined}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#C1440E] ${
                     active
-                      ? "border-[#C1440E] bg-[#C1440E]/5"
-                      : "border-transparent hover:bg-gray-100"
+                      ? "bg-[#C1440E]/8 font-medium text-[#1F1B16]"
+                      : "text-[#6B645B] hover:bg-[#F1ECE5] hover:text-[#1F1B16]"
                   }`}
                 >
                   {item.icon(active)}
-                  <span className={active ? "font-bold text-[#C1440E]" : "text-gray-600"}>
-                    {item.label}
-                  </span>
+                  <span>{item.label}</span>
                 </button>
                 {item.id === "listing" && active && (
-                  <ul className="border-l-2 border-[#C1440E]/30 py-1">
+                  <ul className={`!mb-1 !ml-[22px] !mt-1 !block !p-0 border-l ${DASH_BORDER}`}>
                     {LISTING_SUBSECTIONS.map((sub) => {
                       const subActive = activeSection === sub.id;
                       return (
@@ -315,17 +388,13 @@ export function VendorDashboard(props: Props) {
                           <button
                             type="button"
                             onClick={() => scrollToSection(sub.id)}
-                            className="group flex w-full items-center py-1.5 pl-0.5 pr-1 text-left text-[13px] transition-colors"
+                            className={`-ml-px flex w-full items-center border-l py-1.5 pl-3 pr-1 text-left text-[13px] leading-snug transition-colors ${
+                              subActive
+                                ? "border-[#C1440E] font-medium text-[#1F1B16]"
+                                : "border-transparent text-[#7A7268] hover:text-[#1F1B16]"
+                            }`}
                           >
-                            <span
-                              className={
-                                subActive
-                                  ? "font-bold text-gray-900"
-                                  : "text-gray-400 transition-colors group-hover:text-gray-700"
-                              }
-                            >
-                              {sub.label}
-                            </span>
+                            {sub.label}
                           </button>
                         </li>
                       );
@@ -336,25 +405,26 @@ export function VendorDashboard(props: Props) {
             );
           })}
         </nav>
-        <div className="flex items-center gap-3 border-t border-gray-200 px-5 py-4">
+        <div className={`mx-3 flex items-center gap-3 border-t px-2 py-4 ${DASH_BORDER}`}>
           {user?.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- Clerk-hosted avatar, fixed tiny size
             <img src={user.imageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C1440E]/10 text-sm font-medium text-[#C1440E]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C1440E] text-sm font-semibold text-white">
               {firstName.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-gray-900">{firstName}</p>
-            <p className="truncate text-xs text-gray-500">Instructor</p>
+            <p className={`!m-0 truncate text-sm font-medium leading-tight ${DASH_INK}`}>{firstName}</p>
+            <p className={`!m-0 truncate text-xs leading-tight ${DASH_MUTED}`}>Instructor</p>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 bg-white">
-        <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
+      <main className="min-w-0 flex-1 p-2 sm:p-3 md:p-4">
+        <div className="min-h-full rounded-2xl bg-white shadow-[0_1px_2px_rgba(31,27,22,0.04),0_10px_30px_-12px_rgba(31,27,22,0.10)] ring-1 ring-[#ECE7E0]">
+        <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
           {!bookingsEnabled && (
             <div className="mb-6">
               <ConnectStripeBanner error={props.stripeError} />
@@ -373,6 +443,7 @@ export function VendorDashboard(props: Props) {
               onEditClass={setEditingClass}
               onCancelClass={handleCancelClass}
               onAddClass={() => setAddingClass(true)}
+              onViewAllRegistrations={() => setTab("registrations")}
               onViewPayoutHistory={() => {
                 setFocusPayouts(true);
                 setTab("payments");
@@ -406,12 +477,12 @@ export function VendorDashboard(props: Props) {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <StatCard
-                  label="Total Registrations"
+                  label="Total registrations"
                   sublabel="via CarryClass"
                   value={props.stats.totalRegistrations}
                 />
-                <StatCard label="This Month" value={props.stats.registrationsThisMonth} />
-                <StatCard label="Upcoming Classes" value={classes.length} />
+                <StatCard label="This month" value={props.stats.registrationsThisMonth} />
+                <StatCard label="Upcoming classes" value={classes.length} />
               </div>
               <RegistrationsCrm registrations={props.registrations} classTypes={classTypes} />
             </div>
@@ -457,6 +528,7 @@ export function VendorDashboard(props: Props) {
             <SettingsTab vendor={vendor} onVendorSaved={handleProfileSaved} />
           )}
         </div>
+        </div>
       </main>
 
       <ReviewsDrawer open={reviewsOpen} onClose={() => setReviewsOpen(false)} reviews={props.reviews} />
@@ -480,6 +552,7 @@ export function VendorDashboard(props: Props) {
 
 function OverviewTab({
   vendor,
+  firstName,
   classes,
   classTypes,
   registrations,
@@ -494,9 +567,11 @@ function OverviewTab({
   onEditClass,
   onCancelClass,
   onAddClass,
+  onViewAllRegistrations,
   onViewPayoutHistory,
 }: Props & {
   onViewPayoutHistory: () => void;
+  onViewAllRegistrations: () => void;
   onOpenReviews: () => void;
   onEditTemplate: (t: EmailTemplateType) => void;
   onToggleTemplate: (t: EmailTemplateType, next: boolean) => void;
@@ -505,35 +580,44 @@ function OverviewTab({
   onCancelClass: (cls: VendorCalendarClass) => void;
   onAddClass: () => void;
 }) {
+  const vendorName = vendor.name ?? vendor.canonical_name;
+  const location = vendorLocationLabel(vendor.county);
+  const nextClass = classes[0];
+
   return (
     <div className="space-y-8">
       {/* Header row */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {vendor.name ?? vendor.canonical_name}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage your listing, classes, and student communications.
+          <p className={DASH_EYEBROW}>Instructor dashboard</p>
+          <h1 className={`mt-2 ${DASH_HERO_TITLE}`}>Welcome back, {firstName}</h1>
+          <p className={`!mb-0 !mt-1.5 text-sm ${DASH_MUTED}`}>
+            {location
+              ? `${vendorName} · ${location}`
+              : "Manage your listing, classes, and student communications."}
           </p>
         </div>
         {publicProfileUrl && (
-          <Link
-            href={publicProfileUrl}
-            target="_blank"
-            className="text-sm font-medium text-[#C1440E] hover:underline"
-          >
+          <Link href={publicProfileUrl} target="_blank" className={`mt-0.5 ${DASH_LINK}`}>
             Preview my listing →
           </Link>
         )}
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total Registrations" sublabel="via CarryClass" value={stats.totalRegistrations} />
-        <StatCard label="This Month" value={stats.registrationsThisMonth} />
-        <StatCard label="Upcoming Classes" value={classes.length} />
-        <ReviewsStatCard count={stats.totalReviews} onClick={onOpenReviews} />
+      <div className="space-y-4">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard label="Total registrations" sublabel="via CarryClass" value={stats.totalRegistrations} />
+          <StatCard label="This month" value={stats.registrationsThisMonth} />
+          <StatCard
+            label="Upcoming classes"
+            sublabel={nextClass ? `Next: ${formatDayDate(nextClass.start_time)}` : undefined}
+            value={classes.length}
+          />
+          <ReviewsStatCard count={stats.totalReviews} onClick={onOpenReviews} />
+        </div>
+
+        {nextClass && <NextClassCard cls={nextClass} classTypes={classTypes} />}
       </div>
 
       <ClassesPanel
@@ -544,7 +628,11 @@ function OverviewTab({
         onCancelClass={onCancelClass}
         onAddClass={onAddClass}
       />
-      <RecentRegistrationsPanel registrations={registrationsForDisplay(registrations)} />
+      <RecentRegistrationsPanel
+        registrations={registrationsForDisplay(registrations)}
+        classTypes={classTypes}
+        onViewAll={onViewAllRegistrations}
+      />
       <EmailTemplatesPanel
         templates={templates}
         onEdit={onEditTemplate}
@@ -595,12 +683,18 @@ function PaymentsTab({
   );
 }
 
+function StatValue({ value }: { value: number }) {
+  return (
+    <div className={`text-3xl font-bold leading-none tracking-tight tabular-nums ${DASH_INK}`}>{value}</div>
+  );
+}
+
 function StatCard({ label, sublabel, value }: { label: string; sublabel?: string; value: number }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="mt-1 text-sm font-medium text-gray-700">{label}</p>
-      {sublabel && <p className="text-xs text-gray-400">{sublabel}</p>}
+    <div className={`${DASH_CARD} p-5`}>
+      <StatValue value={value} />
+      <div className={`mt-3 text-sm font-medium ${DASH_INK}`}>{label}</div>
+      {sublabel && <div className={`mt-0.5 text-xs ${DASH_MUTED}`}>{sublabel}</div>}
     </div>
   );
 }
@@ -610,32 +704,69 @@ function ReviewsStatCard({ count, onClick }: { count: number; onClick: () => voi
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-gray-200 bg-gray-50 p-5 text-left transition-colors hover:border-[#C1440E] hover:bg-[#C1440E]/5"
+      className={`${DASH_CARD} !bg-white p-5 text-left transition-all hover:-translate-y-px hover:border-[#C1440E]/40 hover:shadow-[0_6px_18px_-10px_rgba(193,68,14,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E]`}
     >
       {count > 0 ? (
         <>
-          <p className="text-2xl font-bold text-gray-900">{count}</p>
-          <p className="mt-1 text-sm font-medium text-gray-700">Total Reviews</p>
-          <p className="text-xs text-[#C1440E]">via CarryClass · View all →</p>
+          <StatValue value={count} />
+          <div className={`mt-3 text-sm font-medium ${DASH_INK}`}>Total reviews</div>
+          <div className="mt-0.5 text-xs text-[#A93B0C]">via CarryClass · View all →</div>
         </>
       ) : (
         <>
-          <p className="text-sm font-medium text-gray-900">No reviews yet</p>
-          <p className="mt-1 text-xs text-gray-400">
+          <div className={`text-sm font-medium ${DASH_INK}`}>No reviews yet</div>
+          <div className={`mt-1 text-xs ${DASH_MUTED}`}>
             Reviews appear after students complete a class
-          </p>
+          </div>
         </>
       )}
     </button>
   );
 }
 
+function NextClassCard({ cls, classTypes }: { cls: DashboardClass; classTypes: VendorClassType[] }) {
+  const hours = Math.round(
+    (new Date(cls.end_time).getTime() - new Date(cls.start_time).getTime()) / 3_600_000
+  );
+  const title = [
+    formatDayDate(cls.start_time),
+    classTypeShortLabel(cls.class_type, classTypes, cls.title),
+    Number.isFinite(hours) && hours > 0 ? `${hours} hr` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const seatsLeft =
+    cls.max_students != null ? Math.max(cls.max_students - (cls.registrationCount ?? 0), 0) : null;
+  const detail = [
+    formatTime(cls.start_time),
+    cls.location?.trim() || null,
+    seatsLeft != null ? `${seatsLeft} ${seatsLeft === 1 ? "seat" : "seats"} left` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <div className={`${DASH_CARD} flex items-center justify-between gap-4 px-5 py-4`}>
+      <div className="min-w-0">
+        <div className={`truncate text-sm font-semibold ${DASH_INK}`}>
+          <span className="sr-only">Next class: </span>
+          {title}
+        </div>
+        <div className={`mt-0.5 truncate text-xs ${DASH_MUTED}`}>{detail}</div>
+      </div>
+      {cls.price != null && (
+        <span className={`${DASH_PILL} ${DASH_PILL_ACCENT} font-semibold`}>
+          {formatCurrency(Math.round(cls.price * 100)).replace(/\.00$/, "")}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Classes & Schedule ──────────────────────────────────────────────────────
 
 function statusPill(active: boolean) {
-  return active
-    ? "bg-emerald-50 text-emerald-700"
-    : "bg-gray-100 text-gray-500";
+  return active ? DASH_PILL_SUCCESS : DASH_PILL_NEUTRAL;
 }
 
 function ClassesPanel({
@@ -656,93 +787,85 @@ function ClassesPanel({
   onAddClass: () => void;
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className={heading ? "text-lg font-semibold text-gray-900" : "text-sm font-semibold text-gray-900"}>
-          Classes &amp; Schedule
-        </h2>
-        <button
-          type="button"
-          onClick={onAddClass}
-          className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white hover:bg-black transition-colors"
-        >
-          Add Class
+    <section>
+      <div className={`flex items-center justify-between gap-3 ${heading ? "mb-5" : "mb-3"}`}>
+        <h2 className={heading ? DASH_PAGE_TITLE : DASH_SECTION_TITLE}>Classes &amp; schedule</h2>
+        <button type="button" onClick={onAddClass} className={heading ? DASH_BTN_PRIMARY : `${DASH_BTN_PRIMARY} !px-3 !py-1.5`}>
+          Add class
         </button>
       </div>
 
       {!bookingsEnabled && (
         <ConnectStripeNotice
-          className="mb-5"
+          className="mb-4"
           title="These classes aren't bookable yet"
           body="Your schedule shows on your listing, but students can't reserve a seat or pay online until you connect Stripe."
         />
       )}
 
-      {classes.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">
-          No upcoming classes.{" "}
-          <button
-            type="button"
-            onClick={onAddClass}
-            className="font-medium text-[#C1440E] hover:underline"
-          >
-            Add your first →
-          </button>
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                <th className="!py-4 !pr-4 whitespace-nowrap">Date</th>
-                <th className="!py-4 !pr-4 whitespace-nowrap">Time</th>
-                <th className="!py-4 !pr-4 w-44">Location</th>
-                <th className="!py-4 !pr-4">Class type</th>
-                <th className="!py-4 !pr-4">Spots</th>
-                <th className="!py-4 !pr-4">Registrations</th>
-                <th className="!py-4 !pr-4">Status</th>
-                <th className="!py-4 w-10" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {classes.map((c) => (
-                <tr key={c.id} className="border-b border-gray-100 last:border-0">
-                  <td className="!py-5 !pr-4 align-top font-medium leading-snug text-gray-900 whitespace-nowrap">
-                    {formatLongDate(c.start_time)}
-                    {c.is_recurring ? (
-                      <span className="mt-0.5 block text-xs font-normal text-gray-500">
-                        {describeStoredRecurrence(c.recurrence_rule)}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600 whitespace-nowrap">{formatTime(c.start_time)}</td>
-                  <td className="!py-5 !pr-4 align-top text-gray-600">
-                    <span className="block max-w-44 leading-snug line-clamp-2" title={c.location || undefined}>
-                      {c.location || "—"}
-                    </span>
-                  </td>
-                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">
-                    {classTypeLabel(c.class_type, classTypes)}
-                  </td>
-                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.max_students ?? "—"}</td>
-                  <td className="!py-5 !pr-4 align-top leading-snug text-gray-600">{c.registrationCount ?? 0}</td>
-                  <td className="!py-5 !pr-4 align-top">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusPill(c.is_active)}`}>
-                      {c.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="!py-5 align-top text-right">
-                    <ClassRowMenu
-                      onEdit={() => onEditClass(c)}
-                      onCancel={() => onCancelClass(c)}
-                    />
-                  </td>
+      <div className={DASH_CARD}>
+        {classes.length === 0 ? (
+          <p className={`!m-0 px-5 py-10 text-center text-sm ${DASH_MUTED}`}>
+            No upcoming classes.{" "}
+            <button type="button" onClick={onAddClass} className={DASH_LINK}>
+              Add your first →
+            </button>
+          </p>
+        ) : (
+          <div className="overflow-x-auto px-5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className={`border-b ${DASH_BORDER} ${DASH_TABLE_HEAD}`}>
+                  <th className="!py-3 !pr-4 font-medium whitespace-nowrap">Date</th>
+                  <th className="!py-3 !pr-4 font-medium whitespace-nowrap">Time</th>
+                  <th className="!py-3 !pr-4 w-44 font-medium">Location</th>
+                  <th className="!py-3 !pr-4 font-medium">Class type</th>
+                  <th className="!py-3 !pr-4 font-medium">Spots</th>
+                  <th className="!py-3 !pr-4 font-medium">Registrations</th>
+                  <th className="!py-3 !pr-4 font-medium">Status</th>
+                  <th className="!py-3 w-10" aria-label="Actions" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className={DASH_DIVIDE}>
+                {classes.map((c) => (
+                  <tr key={c.id}>
+                    <td className={`!py-4 !pr-4 align-top font-medium leading-snug whitespace-nowrap ${DASH_INK}`}>
+                      {formatLongDate(c.start_time)}
+                      {c.is_recurring ? (
+                        <span className={`mt-0.5 block text-xs font-normal ${DASH_MUTED}`}>
+                          {describeStoredRecurrence(c.recurrence_rule)}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="!py-4 !pr-4 align-top leading-snug text-[#5C554C] whitespace-nowrap">{formatTime(c.start_time)}</td>
+                    <td className="!py-4 !pr-4 align-top text-[#5C554C]">
+                      <span className="block max-w-44 leading-snug line-clamp-2" title={c.location || undefined}>
+                        {c.location || "—"}
+                      </span>
+                    </td>
+                    <td className="!py-4 !pr-4 align-top leading-snug text-[#5C554C]">
+                      {classTypeLabel(c.class_type, classTypes)}
+                    </td>
+                    <td className="!py-4 !pr-4 align-top leading-snug tabular-nums text-[#5C554C]">{c.max_students ?? "—"}</td>
+                    <td className="!py-4 !pr-4 align-top leading-snug tabular-nums text-[#5C554C]">{c.registrationCount ?? 0}</td>
+                    <td className="!py-4 !pr-4 align-top">
+                      <span className={`${DASH_PILL} ${statusPill(c.is_active)}`}>
+                        {c.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="!py-3 align-top text-right">
+                      <ClassRowMenu
+                        onEdit={() => onEditClass(c)}
+                        onCancel={() => onCancelClass(c)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -796,7 +919,7 @@ function ClassRowMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () =
         aria-label="Class actions"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        className="rounded-md !bg-transparent p-1.5 text-[#A39B91] transition-colors hover:!bg-[#F1ECE5] hover:text-[#1F1B16] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C1440E]"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <circle cx="12" cy="5" r="1.6" />
@@ -810,7 +933,7 @@ function ClassRowMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () =
             ref={menuRef}
             role="menu"
             style={{ position: "fixed", top: coords.top, right: coords.right }}
-            className="z-[60] w-36 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            className={`${dashboardFont.className} z-[60] w-40 overflow-hidden rounded-xl border bg-white p-1 shadow-[0_12px_32px_-12px_rgba(31,27,22,0.25)] ${DASH_BORDER}`}
           >
             <button
               type="button"
@@ -819,7 +942,7 @@ function ClassRowMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () =
                 setOpen(false);
                 onEdit();
               }}
-              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+              className="block w-full rounded-lg !bg-transparent px-3 py-2 text-left text-sm text-[#1F1B16] hover:!bg-[#F6F3EE]"
             >
               Edit class
             </button>
@@ -830,7 +953,7 @@ function ClassRowMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () =
                 setOpen(false);
                 onCancel();
               }}
-              className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+              className="block w-full rounded-lg !bg-transparent px-3 py-2 text-left text-sm text-red-700 hover:!bg-red-50"
             >
               Cancel class
             </button>
@@ -845,84 +968,84 @@ function ClassRowMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () =
 
 function paymentPill(status: string) {
   const s = status.toUpperCase();
-  if (s === "PAID") return "bg-emerald-50 text-emerald-700";
-  if (s === "PENDING") return "bg-amber-50 text-amber-700";
-  if (s === "REFUNDED") return "bg-blue-50 text-blue-700";
-  return "bg-gray-100 text-gray-500";
+  if (s === "PAID") return DASH_PILL_SUCCESS;
+  if (s === "PENDING") return DASH_PILL_ACCENT;
+  if (s === "REFUNDED") return DASH_PILL_INFO;
+  return DASH_PILL_NEUTRAL;
 }
 
-function RegistrationsTable({ registrations }: { registrations: DashboardRegistration[] }) {
+function RegistrationsTable({
+  registrations,
+  classTypes,
+}: {
+  registrations: DashboardRegistration[];
+  classTypes: VendorClassType[];
+}) {
   if (registrations.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-gray-500">
+      <p className={`!m-0 px-5 py-10 text-center text-sm ${DASH_MUTED}`}>
         No registrations yet. They&apos;ll appear here when students book through CarryClass.
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-fixed text-sm">
-        <colgroup>
-          <col className="w-[26%]" />
-          <col className="w-[24%]" />
-          <col className="w-[14%]" />
-          <col className="w-[10%]" />
-          <col className="w-[14%]" />
-          <col className="w-[12%]" />
-        </colgroup>
-        <thead>
-          <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-            <th className="!py-4 !pr-6">Student</th>
-            <th className="!py-4 !pr-6">Class</th>
-            <th className="!py-4 !pr-6">Date</th>
-            <th className="!py-4 !pr-6">Time</th>
-            <th className="!py-4 !pr-6">Registered</th>
-            <th className="!py-4">Payment</th>
-          </tr>
-        </thead>
-        <tbody>
-          {registrations.map((r) => (
-            <tr key={r.id} className="border-b border-gray-100 last:border-0">
-              <td className="!py-5 !pr-6 align-top">
-                <p className="!m-0 font-medium leading-snug text-gray-900 line-clamp-2">{r.customerName}</p>
-                <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-2">{r.customerEmail}</p>
-                {r.customerPhone && (
-                  <p className="!m-0 !mt-0.5 text-xs leading-snug text-gray-500 line-clamp-1">{r.customerPhone}</p>
-                )}
-              </td>
-              <td className="!py-5 !pr-6 align-top text-gray-600">
-                <span className="block leading-snug line-clamp-2" title={r.classType && CLASS_TYPE_LABELS[r.classType] ? CLASS_TYPE_LABELS[r.classType] : r.classTitle?.trim() || "Other class"}>
-                  {r.classType && CLASS_TYPE_LABELS[r.classType] ? CLASS_TYPE_LABELS[r.classType] : r.classTitle?.trim() || "Other class"}
-                </span>
-              </td>
-              <td className="!py-5 !pr-6 align-top font-medium leading-snug text-gray-900">
-                <span className="line-clamp-2">{formatLongDate(r.classDate)}</span>
-              </td>
-              <td className="!py-5 !pr-6 align-top leading-snug text-gray-600">{formatTime(r.classDate)}</td>
-              <td className="!py-5 !pr-6 align-top leading-snug text-gray-600">
-                <span className="line-clamp-2">{formatLongDate(r.registeredOn)}</span>
-              </td>
-              <td className="!py-5 align-top">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentPill(r.status)}`}>
-                  {r.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className={`!m-0 !block !p-0 ${DASH_DIVIDE}`}>
+      {registrations.map((r) => {
+        const classLabel = classTypeShortLabel(r.classType, classTypes, r.classTitle);
+        const contact = [r.customerEmail, r.customerPhone].filter(Boolean).join(" · ");
+        return (
+          <li key={r.id} className="flex items-center gap-3 px-5 py-3.5">
+            <span
+              aria-hidden
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${avatarTone(r.customerName)}`}
+            >
+              {initials(r.customerName)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className={`truncate text-sm font-medium ${DASH_INK}`}>{r.customerName}</span>
+                {contact && <span className={`truncate text-xs ${DASH_MUTED}`}>{contact}</span>}
+              </div>
+              <div className={`mt-0.5 truncate text-xs ${DASH_MUTED}`} title={classLabel}>
+                {[classLabel, formatDayDate(r.classDate), formatTime(r.classDate)].join(" · ")}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className={`${DASH_PILL} ${paymentPill(r.status)}`}>{sentenceCase(r.status)}</span>
+              <span className={`text-[11px] ${DASH_MUTED}`}>
+                Booked {formatShortDate(r.registeredOn)}
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-function RecentRegistrationsPanel({ registrations }: { registrations: DashboardRegistration[] }) {
+function RecentRegistrationsPanel({
+  registrations,
+  classTypes,
+  onViewAll,
+}: {
+  registrations: DashboardRegistration[];
+  classTypes: VendorClassType[];
+  onViewAll: () => void;
+}) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className={DASH_SECTION_TITLE}>Recent registrations</h2>
+        {registrations.length > 0 && (
+          <button type="button" onClick={onViewAll} className={DASH_LINK}>
+            View all →
+          </button>
+        )}
       </div>
-      <RegistrationsTable registrations={registrations.slice(0, 8)} />
+      <div className={DASH_CARD}>
+        <RegistrationsTable registrations={registrations.slice(0, 8)} classTypes={classTypes} />
+      </div>
     </section>
   );
 }
@@ -952,9 +1075,9 @@ function timingSummary(
 function EmailCardStat({ label, value, note }: { label: string; value: number | string; note?: string }) {
   return (
     <div className="flex flex-col">
-      <span className="text-sm font-semibold text-gray-900">{value}</span>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</span>
-      {note && <span className="text-[11px] text-gray-400">{note}</span>}
+      <span className={`text-sm font-semibold tabular-nums ${DASH_INK}`}>{value}</span>
+      <span className={`text-[11px] font-medium uppercase tracking-wider ${DASH_MUTED}`}>{label}</span>
+      {note && <span className={`text-[11px] ${DASH_MUTED}`}>{note}</span>}
     </div>
   );
 }
@@ -975,15 +1098,15 @@ function EmailCardPreview({
 }) {
   return (
     <div className={`flex w-full shrink-0 flex-col items-stretch gap-3 lg:w-[380px] ${muted ? "opacity-60" : ""}`}>
-      <div className="group relative h-[240px] overflow-hidden rounded-xl bg-white text-left shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-6px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.05),0_14px_32px_-8px_rgba(0,0,0,0.18)]">
+      <div className="group relative h-[240px] overflow-hidden rounded-xl bg-white text-left shadow-[0_1px_2px_rgba(31,27,22,0.04),0_8px_24px_-8px_rgba(31,27,22,0.14)] ring-1 ring-[#ECE7E0] transition-shadow hover:shadow-[0_1px_2px_rgba(31,27,22,0.05),0_14px_32px_-10px_rgba(31,27,22,0.20)]">
         <div className="pointer-events-none h-full overflow-hidden px-4 pt-3.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Preview</span>
-          <p className="!mb-0 !mt-1 line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">
+          <span className={`text-[10px] font-semibold uppercase tracking-wider ${DASH_MUTED}`}>Preview</span>
+          <p className={`!mb-0 !mt-1 line-clamp-2 text-[13px] font-semibold leading-snug ${DASH_INK}`}>
             {subject || "(no subject)"}
           </p>
-          <div className="my-2.5 h-px bg-gray-100" />
+          <div className="my-2.5 h-px bg-[#F1ECE5]" />
           <div
-            className="text-xs leading-relaxed text-gray-600 [&_a]:!text-[#C1440E] [&_div]:!text-xs [&_div]:!leading-relaxed [&_p]:!mb-2.5 [&_p]:!mt-0 [&_p]:!text-xs [&_p]:!leading-relaxed [&_p]:!text-gray-600 [&_strong]:font-semibold [&_strong]:!text-gray-900"
+            className="text-xs leading-relaxed text-[#5C554C] [&_a]:!text-[#C1440E] [&_div]:!text-xs [&_div]:!leading-relaxed [&_p]:!mb-2.5 [&_p]:!mt-0 [&_p]:!text-xs [&_p]:!leading-relaxed [&_p]:!text-[#5C554C] [&_strong]:font-semibold [&_strong]:!text-[#1F1B16]"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
@@ -998,7 +1121,7 @@ function EmailCardPreview({
       <button
         type="button"
         onClick={onOpen}
-        className="self-end rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white transition-colors hover:bg-black"
+        className={`self-end ${DASH_BTN_DARK} !px-3 !py-1.5`}
       >
         View / Edit
       </button>
@@ -1025,8 +1148,8 @@ function EmailTemplatesPanel({
 
   return (
     <section>
-      <h2 className={heading ? "mb-4 text-2xl font-bold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
-        {heading ? "Emails" : "Email Templates"}
+      <h2 className={heading ? `mb-5 ${DASH_PAGE_TITLE}` : `mb-3 ${DASH_SECTION_TITLE}`}>
+        {heading ? "Emails" : "Email templates"}
       </h2>
 
       <div className="flex flex-col gap-4">
@@ -1046,14 +1169,14 @@ function EmailTemplatesPanel({
           return (
             <div
               key={type}
-              className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-gray-50 p-5 lg:flex-row lg:items-center lg:justify-between"
+              className={`${DASH_CARD} flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
+                  <h3 className={DASH_CARD_TITLE}>{name}</h3>
                   {isConfirmation ? (
-                    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className={`${DASH_PILL} ${DASH_PILL_SUCCESS}`}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#3F8A5A]" />
                       Always on
                     </span>
                   ) : (
@@ -1063,19 +1186,19 @@ function EmailTemplatesPanel({
                       aria-checked={active}
                       aria-label={`Toggle ${name}`}
                       onClick={() => onToggle(type, !active)}
-                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-                        active ? "bg-[#C1440E]" : "bg-gray-200"
+                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E] ${
+                        active ? DASH_SWITCH_ON : DASH_SWITCH_OFF
                       }`}
                     >
                       <span
-                        className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                        className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
                           active ? "translate-x-4" : ""
                         }`}
                       />
                     </button>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-gray-400">{timingLabel}</p>
+                <p className={`!mb-0 !mt-1 text-xs ${DASH_MUTED}`}>{timingLabel}</p>
 
                 {metrics && (
                   <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-2">
@@ -1159,72 +1282,74 @@ function PaymentsPanel({
   const sectionTitle = showConnectionControls ? "Stripe & payouts" : "Payments";
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-gray-50 p-5">
-      <h2 className={heading ? "mb-4 text-lg font-semibold text-gray-900" : "mb-4 text-sm font-semibold text-gray-900"}>
-        {sectionTitle}
-      </h2>
+    <section>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className={heading ? DASH_SUBSECTION_TITLE : DASH_SECTION_TITLE}>{sectionTitle}</h2>
+          {connected && (
+            <span className={`${DASH_PILL} ${DASH_PILL_SUCCESS}`}>Stripe connected ✓</span>
+          )}
+        </div>
+        {connected && (
+          <button
+            type="button"
+            onClick={() =>
+              onViewPayoutHistory
+                ? onViewPayoutHistory()
+                : document.getElementById("payouts")?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className={DASH_LINK}
+          >
+            View payout history →
+          </button>
+        )}
+      </div>
       {connected ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-              Stripe connected ✓
+          <div className={`${DASH_SOFT_PANEL} flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4`}>
+            <span className="text-sm text-[#6B645B]">
+              Last payout · {formatLongDate(payout.lastPayoutDate)}
             </span>
-            {vendor.stripe_account_id && showConnectionControls && (
-              <span className="text-xs text-gray-500">Account {vendor.stripe_account_id}</span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs text-gray-400">Last payout</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(payout.lastAmountCents)}</p>
-              <p className="text-xs text-gray-500">{formatLongDate(payout.lastPayoutDate)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                onViewPayoutHistory
-                  ? onViewPayoutHistory()
-                  : document.getElementById("payouts")?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-              className="!bg-transparent text-sm font-medium text-[#C1440E] hover:underline"
-            >
-              View payout history →
-            </button>
+            <span className={`text-lg font-bold tracking-tight tabular-nums ${DASH_INK}`}>
+              {formatCurrency(payout.lastAmountCents)}
+            </span>
           </div>
 
           {showConnectionControls && (
-            <div className="space-y-3 border-t border-gray-200 pt-4">
-              <p className="text-sm font-medium text-gray-900">Stripe connection</p>
-              <p className="text-sm text-gray-600">
+            <div className={`${DASH_CARD} space-y-3 p-5 sm:p-6`}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className={DASH_CARD_TITLE}>Stripe connection</h3>
+                {vendor.stripe_account_id && (
+                  <span className={`text-xs ${DASH_MUTED}`}>Account {vendor.stripe_account_id}</span>
+                )}
+              </div>
+              <p className="!m-0 text-sm text-[#5C554C]">
                 Update bank details in Stripe, switch to a different Stripe account, or disconnect
                 to turn off online bookings.
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 <a
                   href="https://dashboard.stripe.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className={DASH_BTN_SECONDARY}
                 >
                   Manage in Stripe
                 </a>
-                <a
-                  href={STRIPE_CONNECT_HREF}
-                  className="inline-flex rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
+                <a href={STRIPE_CONNECT_HREF} className={DASH_BTN_SECONDARY}>
                   Switch Stripe account
                 </a>
                 <button
                   type="button"
                   onClick={handleDisconnect}
                   disabled={disconnecting}
-                  className="inline-flex rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-60"
+                  className={DASH_BTN_DANGER}
                 >
                   {disconnecting ? "Disconnecting…" : "Disconnect Stripe"}
                 </button>
               </div>
               {disconnectError && (
-                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p className="!m-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {disconnectError}
                 </p>
               )}
@@ -1232,14 +1357,11 @@ function PaymentsPanel({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600">
+        <div className={`${DASH_CARD} space-y-4 p-5 sm:p-6`}>
+          <p className="!m-0 text-sm text-[#5C554C]">
             Connect Stripe to accept paid bookings from students. Your listing stays live either way.
           </p>
-          <a
-            href={STRIPE_CONNECT_HREF}
-            className="inline-block rounded-lg !bg-[#C1440E] px-4 py-2 text-sm font-medium !text-white !no-underline hover:!bg-[#a53a0c] transition-colors"
-          >
+          <a href={STRIPE_CONNECT_HREF} className={DASH_BTN_PRIMARY}>
             Connect Stripe →
           </a>
         </div>
@@ -1277,13 +1399,13 @@ function ListingTab({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Listing</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className={DASH_PAGE_TITLE}>My Listing</h1>
+          <p className={`!mb-0 !mt-1.5 text-sm ${DASH_MUTED}`}>
             Edit everything students see on your public listing.
           </p>
         </div>
         {publicProfileUrl && (
-          <Link href={publicProfileUrl} target="_blank" className="text-sm font-medium text-[#C1440E] hover:underline">
+          <Link href={publicProfileUrl} target="_blank" className={`mt-0.5 ${DASH_LINK}`}>
             Preview my listing →
           </Link>
         )}
@@ -1344,10 +1466,10 @@ function ListingSection({
   return (
     <section
       id={id}
-      className="scroll-mt-[calc(var(--header-height)+1rem)] rounded-lg border border-gray-200 bg-gray-50 p-6"
+      className={`scroll-mt-[calc(var(--header-height)+1rem)] ${DASH_CARD} p-5 sm:p-6`}
     >
-      {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
-      {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
+      {title && <h2 className={DASH_SUBSECTION_TITLE}>{title}</h2>}
+      {description && <p className={`!mb-0 !mt-1 text-sm ${DASH_MUTED}`}>{description}</p>}
       <div className={title || description ? "mt-5" : ""}>{children}</div>
     </section>
   );
@@ -1416,32 +1538,30 @@ function BookingNotificationsPanel({
   return (
     <section>
       {heading ? (
-        <h2 className="mb-4 text-2xl font-bold text-gray-900">Booking notifications</h2>
+        <h2 className={`mb-5 ${DASH_PAGE_TITLE}`}>Booking notifications</h2>
       ) : (
-        <h2 className="mb-1 text-sm font-semibold text-gray-900">Booking notifications</h2>
+        <h2 className={`mb-1 ${DASH_SECTION_TITLE}`}>Booking notifications</h2>
       )}
       {!heading && (
-        <p className="mb-4 text-xs text-gray-500">
+        <p className={`!mb-3 !mt-0 text-xs ${DASH_MUTED}`}>
           Email yourself when a student books online. Student confirmation emails are separate.
         </p>
       )}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
+      <div className={`${DASH_CARD} p-5 sm:p-6`}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-900">New booking alerts</h3>
+              <h3 className={DASH_CARD_TITLE}>New booking alerts</h3>
               {enabled ? (
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className={`${DASH_PILL} ${DASH_PILL_SUCCESS}`}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3F8A5A]" />
                   On
                 </span>
               ) : (
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                  Off
-                </span>
+                <span className={`${DASH_PILL} ${DASH_PILL_NEUTRAL}`}>Off</span>
               )}
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className={`!mb-0 !mt-1 text-xs ${DASH_MUTED}`}>
               Sent immediately when someone completes online checkout.
             </p>
           </div>
@@ -1451,20 +1571,20 @@ function BookingNotificationsPanel({
             aria-checked={enabled}
             aria-label="Toggle new booking alerts"
             onClick={() => setEnabled((v) => !v)}
-            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-              enabled ? "bg-[#C1440E]" : "bg-gray-200"
+            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C1440E] ${
+              enabled ? DASH_SWITCH_ON : DASH_SWITCH_OFF
             }`}
           >
             <span
-              className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+              className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
                 enabled ? "translate-x-4" : ""
               }`}
             />
           </button>
         </div>
 
-        <div className={`mt-4 space-y-2 ${enabled ? "" : "opacity-60"}`}>
-          <label htmlFor="booking-notification-emails" className="block text-xs font-medium text-gray-700">
+        <div className={`mt-5 space-y-2 ${enabled ? "" : "opacity-60"}`}>
+          <label htmlFor="booking-notification-emails" className={`block text-xs font-medium ${DASH_INK}`}>
             Send alerts to
           </label>
           <input
@@ -1474,9 +1594,9 @@ function BookingNotificationsPanel({
             onChange={(e) => setEmailsText(e.target.value)}
             disabled={!enabled}
             placeholder={fallback ?? "you@example.com"}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+            className={DASH_INPUT}
           />
-          <p className="text-xs text-gray-500">
+          <p className={`!m-0 text-xs ${DASH_MUTED}`}>
             Comma-separated, up to 5 addresses.
             {fallback
               ? ` Leave blank to use your account email (${fallback}).`
@@ -1484,14 +1604,14 @@ function BookingNotificationsPanel({
           </p>
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="!mb-0 !mt-3 text-sm text-red-700">{error}</p>}
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-5 flex items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium !text-white transition-colors hover:bg-black disabled:opacity-60"
+            className={DASH_BTN_PRIMARY}
           >
             {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
           </button>
@@ -1512,29 +1632,28 @@ function SettingsTab({
 }) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-      <section className="rounded-lg border border-gray-200 bg-gray-50 p-5">
-        <h2 className="text-sm font-semibold text-gray-900">Account</h2>
-        <dl className="mt-3 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-gray-500">Business name</dt>
-            <dd className="text-gray-900">{vendor.name ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-gray-500">Email</dt>
-            <dd className="text-gray-900">{vendor.email ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-gray-500">Phone</dt>
-            <dd className="text-gray-900">{vendor.phone ?? "—"}</dd>
-          </div>
-        </dl>
-        <Link
-          href="/onboard/step/1"
-          className="mt-4 inline-block rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          Edit account details
-        </Link>
+      <h1 className={DASH_PAGE_TITLE}>Settings</h1>
+      <section>
+        <h2 className={`mb-3 ${DASH_SECTION_TITLE}`}>Account</h2>
+        <div className={`${DASH_CARD} p-5 sm:p-6`}>
+          <dl className={`!m-0 text-sm ${DASH_DIVIDE}`}>
+            <div className="flex justify-between gap-4 py-2.5 first:pt-0">
+              <dt className={DASH_MUTED}>Business name</dt>
+              <dd className={`!m-0 text-right font-medium ${DASH_INK}`}>{vendor.name ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className={DASH_MUTED}>Email</dt>
+              <dd className={`!m-0 text-right font-medium ${DASH_INK}`}>{vendor.email ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2.5 last:pb-0">
+              <dt className={DASH_MUTED}>Phone</dt>
+              <dd className={`!m-0 text-right font-medium ${DASH_INK}`}>{vendor.phone ?? "—"}</dd>
+            </div>
+          </dl>
+          <Link href="/onboard/step/1" className={`mt-5 ${DASH_BTN_SECONDARY} !px-3 !py-1.5`}>
+            Edit account details
+          </Link>
+        </div>
       </section>
 
       <BookingNotificationsPanel vendor={vendor} onSaved={onVendorSaved} heading={false} />

@@ -92,9 +92,9 @@ export function LineChart({
 export function NoData({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`flex items-center justify-center rounded-lg !border-2 border-dashed !border-gray-200 ${className}`}
+      className={`flex items-center justify-center rounded-lg !border-2 border-dashed !border-[#E3DDD4] ${className}`}
     >
-      <span className="rounded-md bg-gray-100 px-3 py-2 text-xs font-medium text-gray-500">No data</span>
+      <span className="rounded-md bg-[#F1ECE5] px-3 py-2 text-xs font-medium text-[#7A7268]">No data</span>
     </div>
   );
 }

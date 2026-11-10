@@ -5,6 +5,20 @@ import type { DashboardPayout, DashboardPayments } from "@/lib/dashboard-db";
 import { pacificHour } from "@/lib/payments-time";
 import { STRIPE_CONNECT_HREF } from "../ConnectStripePrompt";
 import { formatCurrency, formatLongDate, formatTime } from "../dashboard-format";
+import {
+  DASH_BORDER,
+  DASH_BTN_PRIMARY,
+  DASH_BTN_SECONDARY,
+  DASH_CARD,
+  DASH_CARD_TITLE,
+  DASH_DIVIDE,
+  DASH_INK,
+  DASH_LINK,
+  DASH_MUTED,
+  DASH_PAGE_TITLE,
+  DASH_SUBSECTION_TITLE,
+  DASH_TABLE_HEAD,
+} from "../dashboard-theme";
 import { LineChart, NoData } from "./PaymentsCharts";
 import {
   DEFAULT_LEDGER_FILTERS,
@@ -176,8 +190,8 @@ export function PaymentsDashboard({
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="!mb-0 !text-2xl font-bold !leading-8 text-gray-900">Payments</h1>
-        <div className="mt-1 text-sm text-gray-600">
+        <h1 className={DASH_PAGE_TITLE}>Payments</h1>
+        <div className={`mt-1.5 text-sm ${DASH_MUTED}`}>
           Class revenue, refunds, and payouts from CarryClass bookings. Amounts are class tuition — the
           CarryClass booking fee is never included.
         </div>
@@ -186,7 +200,7 @@ export function PaymentsDashboard({
       <CheckoutFeesCard fees={checkoutFees} onEdit={onEditFees} />
 
       {sample && (
-        <div className="rounded-lg !border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-xl !border border-[#F0DCC8] bg-[#FDF6EE] px-4 py-3 text-sm text-[#6E3510]">
           Sample bookings so you can preview this page on localhost. None of these students, amounts, or
           payouts are real. Set <span className="font-mono">PAYMENTS_DUMMY=0</span> to use live data.
         </div>
@@ -207,8 +221,8 @@ export function PaymentsDashboard({
 
       {/* ── Today ─────────────────────────────────────────────────────────── */}
       <section aria-labelledby="payments-today">
-        <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
-          <h2 id="payments-today" className="!mb-0 !text-xl font-bold !leading-7 text-gray-900">
+        <div className={`flex items-center justify-between gap-3 border-b pb-3 ${DASH_BORDER}`}>
+          <h2 id="payments-today" className={DASH_SUBSECTION_TITLE}>
             Today
           </h2>
           {connected && (
@@ -216,7 +230,7 @@ export function PaymentsDashboard({
               href="https://dashboard.stripe.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md !border border-gray-300 !bg-white px-3 py-1.5 text-xs font-medium !text-gray-700 !no-underline hover:!bg-gray-50"
+              className={`${DASH_BTN_SECONDARY} !px-3 !py-1.5 !text-xs`}
             >
               Manage in Stripe ↗
             </a>
@@ -225,23 +239,23 @@ export function PaymentsDashboard({
 
         {loading && !data ? (
           <div className="mt-5 grid gap-6 lg:grid-cols-3">
-            <div className="h-40 animate-pulse rounded-lg bg-gray-100 lg:col-span-2" />
-            <div className="h-40 animate-pulse rounded-lg bg-gray-100" />
+            <div className="h-40 animate-pulse rounded-lg bg-[#F1ECE5] lg:col-span-2" />
+            <div className="h-40 animate-pulse rounded-lg bg-[#F1ECE5]" />
           </div>
         ) : (
           <div className="mt-5 grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <div className="flex flex-wrap gap-10">
                 <div>
-                  <div className="text-xs font-medium text-gray-500">Class revenue</div>
-                  <div className="text-xl font-semibold tabular-nums text-gray-900">
+                  <div className="text-xs font-medium text-[#7A7268]">Class revenue</div>
+                  <div className="text-xl font-semibold tabular-nums text-[#1F1B16]">
                     {formatCurrency(data?.today.tuitionCents ?? 0)}
                   </div>
-                  <div className="text-xs text-gray-400">{formatTime(now.toISOString())}</div>
+                  <div className="text-xs text-[#8A837A]">{formatTime(now.toISOString())}</div>
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-gray-500">Yesterday</div>
-                  <div className="text-xl font-semibold tabular-nums text-gray-500">
+                  <div className="text-xs font-medium text-[#7A7268]">Yesterday</div>
+                  <div className="text-xl font-semibold tabular-nums text-[#7A7268]">
                     {formatCurrency(data?.yesterday.tuitionCents ?? 0)}
                   </div>
                 </div>
@@ -253,17 +267,17 @@ export function PaymentsDashboard({
                   height={64}
                   ariaLabel={`Class revenue today so far: ${formatCurrency(data?.today.tuitionCents ?? 0)}`}
                 />
-                <div className="mt-1 flex justify-between text-[11px] text-gray-400">
+                <div className="mt-1 flex justify-between text-[11px] text-[#8A837A]">
                   <span>12:00 AM</span>
                   <span>11:59 PM</span>
                 </div>
               </div>
             </div>
 
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-[#ECE7E0]">
               <div className="pb-5">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-medium text-gray-500">Stripe balance</div>
+                  <div className="text-xs font-medium text-[#7A7268]">Stripe balance</div>
                   {showStripe && data?.balance && (
                     <button
                       type="button"
@@ -279,24 +293,24 @@ export function PaymentsDashboard({
                   <ConnectCta text="Connect Stripe to see your balance." />
                 ) : data?.balance ? (
                   <>
-                    <div className="text-xl font-semibold tabular-nums text-gray-900">
+                    <div className="text-xl font-semibold tabular-nums text-[#1F1B16]">
                       {formatCurrency(data.balance.availableCents)}
                     </div>
-                    <div className="text-xs text-gray-400">Available</div>
+                    <div className="text-xs text-[#8A837A]">Available</div>
                     {showPending && (
-                      <div className="mt-2 text-sm text-gray-700">
+                      <div className="mt-2 text-sm text-[#3D3730]">
                         <span className="tabular-nums">{formatCurrency(data.balance.pendingCents)}</span>{" "}
-                        <span className="text-xs text-gray-400">pending</span>
+                        <span className="text-xs text-[#8A837A]">pending</span>
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="mt-1 text-sm text-gray-500">Balance unavailable right now.</div>
+                  <div className="mt-1 text-sm text-[#7A7268]">Balance unavailable right now.</div>
                 )}
               </div>
               <div className="pt-5">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-medium text-gray-500">Latest payout</div>
+                  <div className="text-xs font-medium text-[#7A7268]">Latest payout</div>
                   {showStripe && (
                     <button
                       type="button"
@@ -311,16 +325,16 @@ export function PaymentsDashboard({
                   <ConnectCta text="Payouts start after you connect Stripe." />
                 ) : latestPayout ? (
                   <>
-                    <div className="text-xl font-semibold tabular-nums text-gray-900">
+                    <div className="text-xl font-semibold tabular-nums text-[#1F1B16]">
                       {formatCurrency(latestPayout.amountCents)}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-[#8A837A]">
                       {PAYOUT_STATUS_LABEL[latestPayout.status] ?? latestPayout.status} ·{" "}
                       {formatLongDate(latestPayout.arrivalDate)}
                     </div>
                   </>
                 ) : (
-                  <div className="text-xl font-semibold text-gray-300">—</div>
+                  <div className="text-xl font-semibold text-[#C9C1B6]">—</div>
                 )}
               </div>
             </div>
@@ -330,11 +344,11 @@ export function PaymentsDashboard({
 
       {/* ── Your overview ─────────────────────────────────────────────────── */}
       <section aria-labelledby="payments-overview" className="space-y-4">
-        <h2 id="payments-overview" className="!mb-0 !text-xl font-bold !leading-7 text-gray-900">
+        <h2 id="payments-overview" className={DASH_SUBSECTION_TITLE}>
           Your overview
         </h2>
-        <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 pb-3">
-          <div role="group" aria-label="Date range" className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+        <div className={`flex flex-wrap items-center gap-3 border-b pb-3 ${DASH_BORDER}`}>
+          <div role="group" aria-label="Date range" className="flex flex-wrap gap-1 rounded-lg bg-[#F1ECE5] p-1">
             {RANGES.map((r) => (
               <button
                 key={r.id}
@@ -348,7 +362,7 @@ export function PaymentsDashboard({
             ))}
           </div>
           {RANGES.find((r) => r.id === range)!.buckets.length > 1 && (
-            <div role="group" aria-label="Group by" className="flex gap-1 rounded-lg bg-gray-100 p-1">
+            <div role="group" aria-label="Group by" className="flex gap-1 rounded-lg bg-[#F1ECE5] p-1">
               {RANGES.find((r) => r.id === range)!.buckets.map((b) => (
                 <button
                   key={b}
@@ -368,8 +382,8 @@ export function PaymentsDashboard({
             onClick={() => setCompare((v) => !v)}
             className={`rounded-lg !border px-3 py-1.5 text-xs font-medium transition-colors ${
               compare
-                ? "!border-[#C1440E]/40 !bg-[#C1440E]/5 text-[#C1440E]"
-                : "!border-gray-300 !bg-white text-gray-600 hover:text-gray-900"
+                ? "!border-[#C1440E]/40 !bg-[#C1440E]/8 text-[#A93B0C]"
+                : "!border-[#E3DDD4] !bg-white text-[#5C554C] hover:text-[#1F1B16]"
             }`}
           >
             {compare ? "✓ " : ""}Compare to previous period
@@ -379,7 +393,7 @@ export function PaymentsDashboard({
         {loading && !data ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-lg bg-gray-100" />
+              <div key={i} className="h-56 animate-pulse rounded-lg bg-[#F1ECE5]" />
             ))}
           </div>
         ) : (
@@ -459,7 +473,7 @@ export function PaymentsDashboard({
         )}
 
         {data?.truncated && (
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-[#7A7268]">
             Showing your most recent 5,000 bookings. Older history is available in Stripe.
           </div>
         )}
@@ -478,9 +492,9 @@ export function PaymentsDashboard({
       )}
 
       {/* ── Payouts ───────────────────────────────────────────────────────── */}
-      <section id="payouts" className="scroll-mt-24 rounded-lg !border border-gray-200 bg-white p-5">
-        <h2 className="!mb-0 !text-lg font-semibold !leading-7 text-gray-900">Payouts</h2>
-        <div className="text-xs text-gray-500">
+      <section id="payouts" className={`scroll-mt-24 ${DASH_CARD} p-5 sm:p-6`}>
+        <h2 className={DASH_SUBSECTION_TITLE}>Payouts</h2>
+        <div className={`mt-0.5 text-xs ${DASH_MUTED}`}>
           Stripe sends payouts to your bank automatically on your payout schedule.
         </div>
         <PayoutsList connected={showStripe} state={payouts} onRetry={() => void loadPayouts()} />
@@ -494,10 +508,10 @@ export function PaymentsDashboard({
 function ConnectCta({ text }: { text: string }) {
   return (
     <div className="mt-1 space-y-2">
-      <div className="text-sm text-gray-600">{text}</div>
+      <div className="text-sm text-[#5C554C]">{text}</div>
       <a
         href={STRIPE_CONNECT_HREF}
-        className="inline-block rounded-lg !bg-[#C1440E] px-3 py-1.5 text-xs font-medium !text-white !no-underline hover:!bg-[#a53a0c]"
+        className={`${DASH_BTN_PRIMARY} !px-3 !py-1.5 !text-xs`}
       >
         Connect Stripe →
       </a>
@@ -523,19 +537,19 @@ function MetricCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-56 flex-col rounded-lg !border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-sm font-semibold text-gray-700">{title}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums text-gray-900">{value}</div>
-      {subtitle && <div className="text-xs text-gray-500">{subtitle}</div>}
-      {previous && <div className="text-xs text-gray-400">{previous}</div>}
+    <div className={`flex min-h-56 flex-col ${DASH_CARD} p-5`}>
+      <div className={`text-sm font-medium ${DASH_INK}`}>{title}</div>
+      <div className={`mt-1.5 text-2xl font-bold tracking-tight tabular-nums ${DASH_INK}`}>{value}</div>
+      {subtitle && <div className="text-xs text-[#7A7268]">{subtitle}</div>}
+      {previous && <div className="text-xs text-[#8A837A]">{previous}</div>}
       <div className="mt-3 flex-1">{children}</div>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-gray-400">
+      <div className="mt-3 flex items-center justify-between text-[11px] text-[#8A837A]">
         <span>Updated {formatTime(updatedAt.toISOString())}</span>
         {onMore && (
           <button
             type="button"
             onClick={onMore}
-            className="!bg-transparent font-medium text-[#C1440E] hover:underline"
+            className={`${DASH_LINK} !text-[11px]`}
           >
             More details
           </button>
@@ -561,7 +575,7 @@ function ChartWithAxis({
   return (
     <div>
       <LineChart values={values} compare={compare} height={72} fill={fill} ariaLabel={ariaLabel} />
-      <div className="mt-1 flex justify-between gap-2 text-[11px] text-gray-400">
+      <div className="mt-1 flex justify-between gap-2 text-[11px] text-[#8A837A]">
         <span className="truncate">{labels[0]}</span>
         {labels.length > 1 && <span className="truncate text-right">{labels[labels.length - 1]}</span>}
       </div>
@@ -594,13 +608,13 @@ function ClassTypeBreakdown({
               aria-label={`${row.label}: ${formatCurrency(row.cents)} from ${row.count} booking${row.count === 1 ? "" : "s"}. Show in payments table.`}
             >
               <div className="flex items-baseline justify-between gap-2 text-sm">
-                <span className="text-gray-700 group-hover:text-[#C1440E]">{row.label}</span>
-                <span className="tabular-nums text-gray-900">{formatCurrency(row.cents)}</span>
+                <span className="text-[#3D3730] group-hover:text-[#C1440E]">{row.label}</span>
+                <span className="tabular-nums text-[#1F1B16]">{formatCurrency(row.cents)}</span>
               </div>
-              <div className="mt-1 h-1.5 rounded-full bg-gray-100">
+              <div className="mt-1 h-1.5 rounded-full bg-[#F1ECE5]">
                 <div className="h-1.5 rounded-full bg-[#C1440E]" style={{ width: `${pct}%` }} />
               </div>
-              <div className="mt-0.5 flex justify-between text-[11px] text-gray-400">
+              <div className="mt-0.5 flex justify-between text-[11px] text-[#8A837A]">
                 <span>
                   {row.count} booking{row.count === 1 ? "" : "s"}
                 </span>
@@ -630,7 +644,7 @@ function PayoutsList({
     return (
       <div className="mt-4 space-y-2">
         {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="h-8 animate-pulse rounded bg-gray-100" />
+          <div key={i} className="h-8 animate-pulse rounded bg-[#F1ECE5]" />
         ))}
       </div>
     );
@@ -650,24 +664,24 @@ function PayoutsList({
     );
   }
   if (state.payouts.length === 0) {
-    return <div className="py-8 text-center text-sm text-gray-500">No payouts yet.</div>;
+    return <div className="py-8 text-center text-sm text-[#7A7268]">No payouts yet.</div>;
   }
   return (
     <div className="mt-4 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-            <th className="!py-3 !pr-4">Arrival date</th>
-            <th className="!py-3 !pr-4 text-right">Amount</th>
-            <th className="!py-3">Status</th>
+          <tr className={`border-b ${DASH_BORDER} ${DASH_TABLE_HEAD}`}>
+            <th className="!py-3 !pr-4 font-medium">Arrival date</th>
+            <th className="!py-3 !pr-4 text-right font-medium">Amount</th>
+            <th className="!py-3 font-medium">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className={DASH_DIVIDE}>
           {state.payouts.map((p) => (
-            <tr key={p.id} className="border-b border-gray-100 last:border-0">
-              <td className="!py-3 !pr-4 whitespace-nowrap text-gray-900">{formatLongDate(p.arrivalDate)}</td>
-              <td className="!py-3 !pr-4 text-right tabular-nums text-gray-900">{formatCurrency(p.amountCents)}</td>
-              <td className="!py-3 text-gray-700">{PAYOUT_STATUS_LABEL[p.status] ?? p.status}</td>
+            <tr key={p.id}>
+              <td className="!py-3 !pr-4 whitespace-nowrap text-[#1F1B16]">{formatLongDate(p.arrivalDate)}</td>
+              <td className="!py-3 !pr-4 text-right tabular-nums text-[#1F1B16]">{formatCurrency(p.amountCents)}</td>
+              <td className="!py-3 text-[#3D3730]">{PAYOUT_STATUS_LABEL[p.status] ?? p.status}</td>
             </tr>
           ))}
         </tbody>
@@ -685,17 +699,17 @@ function CheckoutFeesCard({
 }) {
   const active = fees.filter((fee) => fee.is_active);
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4">
+    <section className={`${DASH_CARD} p-5`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="!mb-0 text-sm font-semibold text-gray-900">Checkout fees</h2>
+          <h2 className={DASH_CARD_TITLE}>Checkout fees</h2>
           {active.length === 0 ? (
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-[#5C554C]">
               You can add range, ammo, or similar fees you already charge.
             </p>
           ) : (
             <>
-              <ul className="mt-2 max-w-md space-y-1 text-sm text-gray-800">
+              <ul className="mt-2 max-w-md space-y-1 text-sm text-[#2B2520]">
                 {active.map((fee, index) => (
                   <li key={`${fee.name}-${index}`} className="flex justify-between gap-4">
                     <span>{fee.name}</span>
@@ -703,12 +717,12 @@ function CheckoutFeesCard({
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-[#5C554C]">
                 These are added at checkout on top of the class price and paid to you.
               </p>
             </>
           )}
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-[#5C554C]">
             The 6% CarryClass transaction fee applies to every class and is not included in these amounts.
           </p>
         </div>
@@ -716,7 +730,7 @@ function CheckoutFeesCard({
           <button
             type="button"
             onClick={onEdit}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            className={`${DASH_BTN_SECONDARY} !px-3 !py-1.5`}
           >
             Edit fees
           </button>
