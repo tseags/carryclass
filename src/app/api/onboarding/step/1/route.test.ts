@@ -46,7 +46,6 @@ describe("onboarding step 1 what to bring", () => {
       post({
         name: "Acme",
         whatToBring: [" holster ", "Notebook"],
-        requireApplicationAck: true,
       })
     );
 
@@ -55,7 +54,6 @@ describe("onboarding step 1 what to bring", () => {
       "v1",
       expect.objectContaining({
         what_to_bring: ["Holster", "Notebook"],
-        require_application_ack: true,
       })
     );
     expect(revalidatePathMock).toHaveBeenCalledWith("/instructors/acme-training");

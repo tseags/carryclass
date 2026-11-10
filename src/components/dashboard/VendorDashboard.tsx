@@ -106,7 +106,6 @@ const LISTING_SUBSECTIONS: { id: string; label: string }[] = [
   { id: "listing-certifications", label: "Certifications & specializations" },
   { id: "listing-photos", label: "Photos" },
   { id: "listing-what-to-bring", label: "What to bring" },
-  { id: "listing-application-ack", label: "Application acknowledgment" },
   { id: "listing-class-types", label: "Class types & pricing" },
   { id: "listing-fees", label: "Checkout fees" },
   { id: "listing-cancellation", label: "Cancellation policy" },

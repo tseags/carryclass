@@ -71,7 +71,6 @@ export type BookingPaymentSummary = {
   totalCents: number;
   refundPolicy: string | null;
   vendorName: string;
-  requireApplicationAck?: boolean;
 };
 
 type Props = {
@@ -109,9 +108,7 @@ function PaymentLayout({
   const [expressState, setExpressState] = useState<"pending" | "ready" | "none">("pending");
   const [legalAcked, setLegalAcked] = useState(false);
   const [applicationAcked, setApplicationAcked] = useState(false);
-  const needsApplicationAck = Boolean(summary.requireApplicationAck);
-  const acknowledgmentsComplete =
-    legalAcked && (!needsApplicationAck || applicationAcked);
+  const acknowledgmentsComplete = legalAcked && applicationAcked;
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-10">
@@ -210,19 +207,17 @@ function PaymentLayout({
                   .
                 </span>
               </label>
-              {needsApplicationAck && (
-                <label className={ACK_LABEL_CLASS}>
-                  <input
-                    type="checkbox"
-                    checked={applicationAcked}
-                    onChange={(e) => setApplicationAcked(e.target.checked)}
-                    className={ACK_CHECKBOX_CLASS}
-                  />
-                  <span className="text-xs leading-relaxed text-zinc-700">
-                    {APPLICATION_ACK_LABEL}
-                  </span>
-                </label>
-              )}
+              <label className={ACK_LABEL_CLASS}>
+                <input
+                  type="checkbox"
+                  checked={applicationAcked}
+                  onChange={(e) => setApplicationAcked(e.target.checked)}
+                  className={ACK_CHECKBOX_CLASS}
+                />
+                <span className="text-xs leading-relaxed text-zinc-700">
+                  {APPLICATION_ACK_LABEL}
+                </span>
+              </label>
               <div className={expressState === "none" ? "hidden" : "block"}>
                 <ExpressCheckoutElement
                   onReady={(event) => {

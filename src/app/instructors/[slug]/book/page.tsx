@@ -138,7 +138,6 @@ export default async function VendorBookPage({ params, searchParams }: PageProps
             vendorName={vendor.name}
             sessions={sessions}
             refundPolicy={refundPolicy}
-            requireApplicationAck={Boolean(profile?.require_application_ack)}
             extraClassChoices={extraClassChoices}
             initialClassKey={requestedClass}
             checkoutFees={catalog?.fees ?? []}

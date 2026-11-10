@@ -28,8 +28,6 @@ type Props = {
   vendorName: string;
   sessions: SerializableSession[];
   refundPolicy: string | null;
-  /** When true, payment step requires the application-timing acknowledgment. */
-  requireApplicationAck?: boolean;
   /** Active classes besides the three CCW types. CCW choices stay in the list. */
   extraClassChoices?: { key: string; label: string }[];
   initialClassKey?: string | null;
@@ -211,7 +209,6 @@ export function VendorBookForm({
   vendorName,
   sessions,
   refundPolicy,
-  requireApplicationAck = false,
   extraClassChoices = [],
   initialClassKey = null,
   checkoutFees = [],
@@ -388,7 +385,6 @@ export function VendorBookForm({
           totalCents: amounts.totalCents,
           refundPolicy,
           vendorName,
-          requireApplicationAck,
         }}
       />
     );
