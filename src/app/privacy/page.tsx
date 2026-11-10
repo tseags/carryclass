@@ -7,7 +7,7 @@ import { CONTACT_EMAIL, SITE_URL } from "@/lib/site-url";
 export const metadata = pageMetadata({
   title: "Privacy Policy",
   description:
-    "Privacy Policy for CarryClass (CarryClass LLC) — California's CCW classes directory, including Google user data and SMS practices.",
+    "Privacy Policy for CarryClass (CarryClass LLC) — California's CCW classes directory, including Google user data, Stripe payments, and SMS practices.",
   path: "/privacy",
 });
 
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
       <main className="mx-auto max-w-3xl px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
         <h1 className="text-3xl font-bold text-zinc-900">Privacy Policy</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Effective date: September 22, 2026 · Last updated: September 22, 2026
+          Effective date: September 22, 2026 · Last updated: November 10, 2026
         </p>
 
         <section className="mt-8 space-y-3 text-zinc-700">
@@ -68,8 +68,53 @@ export default function PrivacyPage() {
             following categories of personal data when you use or interact with
             CarryClass: account identifiers, contact details, listing and business
             profile information, booking and payment-related metadata (processed via
-            our payment provider), calendar and scheduling data you choose to connect,
-            and communications preferences.
+            Stripe), calendar and scheduling data you choose to connect, and
+            communications preferences.
+          </p>
+        </section>
+
+        <section className="mt-8 space-y-3 text-zinc-700">
+          <h2 className="text-xl font-semibold text-zinc-900">
+            Payments and Stripe
+          </h2>
+          <p>
+            All online payments on CarryClass are processed directly by{" "}
+            <a
+              href="https://stripe.com"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Stripe, Inc.
+            </a>{" "}
+            (&quot;Stripe&quot;), our third-party payment processor. When you book and
+            pay for a class, your payment card or other payment details are submitted
+            to Stripe — not stored as full card numbers on CarryClass servers.
+          </p>
+          <p>
+            Instructors who accept online bookings connect a Stripe account. Class
+            tuition and amounts owed to the instructor are paid out to that
+            instructor&apos;s Stripe account. CarryClass may receive a platform or
+            service fee through Stripe as part of the same transaction. We may receive
+            limited payment-related information from Stripe needed to confirm bookings,
+            show payment status, issue receipts or confirmations, prevent fraud, and
+            support customer service (for example, payment status, last four digits of
+            a card, billing name or email, amount charged, and Stripe transaction
+            identifiers).
+          </p>
+          <p>
+            Stripe processes payment data under its own privacy practices. Please
+            review Stripe&apos;s{" "}
+            <a
+              href="https://stripe.com/privacy"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>{" "}
+            for details on how Stripe collects, uses, and protects payment
+            information.
           </p>
         </section>
 
@@ -238,8 +283,9 @@ export default function PrivacyPage() {
           </p>
           <p>
             Enrollment, booking, or payment with an instructor may occur on or through
-            the Site. When you book with a third-party instructor, that provider may
-            have its own privacy practices.
+            the Site. Online payments are processed by Stripe as described above.
+            When you book with a third-party instructor, that provider may have its
+            own privacy practices in addition to Stripe&apos;s and ours.
           </p>
         </section>
 
@@ -249,8 +295,12 @@ export default function PrivacyPage() {
             We do not sell personal information. We may share limited data with
             service providers that help host, secure, analyze, deliver email or SMS,
             process payments, and otherwise operate the Site (for example, hosting,
-            authentication, payment, and messaging providers). These providers may
-            use your information only to perform services on our behalf. We do not
+            authentication, Stripe for payments, and messaging providers). Payment
+            card details for online bookings are handled by Stripe; we share booking
+            and customer details with Stripe and the relevant instructor as needed to
+            complete the transaction and deliver the class. These providers may use
+            your information only to perform services on our behalf or as otherwise
+            described in their own policies (including Stripe&apos;s). We do not
             transfer or disclose your information to third parties for purposes other
             than those described in this Privacy Policy.
           </p>

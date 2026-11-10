@@ -7,7 +7,7 @@ import { CONTACT_EMAIL, SITE_URL } from "@/lib/site-url";
 export const metadata = pageMetadata({
   title: "Terms of Service",
   description:
-    "Terms of Service for CarryClass (CarryClass LLC) — California's CCW classes directory, including SMS messaging terms.",
+    "Terms of Service for CarryClass (CarryClass LLC) — California's CCW classes directory, including Stripe payments and SMS messaging terms.",
   path: "/terms",
 });
 
@@ -20,7 +20,7 @@ export default function TermsPage() {
       <main className="mx-auto max-w-3xl px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
         <h1 className="text-3xl font-bold text-zinc-900">Terms of Service</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Effective date: September 22, 2026 · Last updated: September 22, 2026
+          Effective date: September 22, 2026 · Last updated: November 10, 2026
         </p>
 
         <section className="mt-8 space-y-3 text-zinc-700">
@@ -143,6 +143,62 @@ export default function TermsPage() {
             transaction with the applicable instructor or provider. CarryClass LLC may
             facilitate scheduling and payment processing but is not the training
             provider unless stated otherwise.
+          </p>
+          <p>
+            <strong>Payments are processed by Stripe.</strong> All online payments
+            for bookings on CarryClass are processed directly through{" "}
+            <a
+              href="https://stripe.com"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Stripe
+            </a>
+            , a third-party payment processor. CarryClass does not collect, store, or
+            process your full payment card number on its own servers. When you pay,
+            your payment information is submitted securely to Stripe.
+          </p>
+          <p>
+            Instructors who accept online bookings connect their own Stripe account
+            (Stripe Connect). Class tuition and other amounts owed to the instructor
+            are paid out to that instructor&apos;s Stripe account — not held by
+            CarryClass as the training provider. CarryClass may charge a separate
+            platform or service fee at checkout, which is collected through Stripe as
+            part of the same payment. Stripe&apos;s fees and payout timing are
+            governed by Stripe&apos;s terms and the instructor&apos;s Stripe account
+            settings.
+          </p>
+          <p>
+            By making a payment on the Site, you also agree to Stripe&apos;s{" "}
+            <a
+              href="https://stripe.com/legal/consumer"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Services Agreement
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://stripe.com/privacy"
+              className="font-medium text-zinc-900 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+            , as applicable. Questions about a charge, refund, or payout should be
+            directed first to the instructor for class-related amounts, or to us at{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="font-medium text-zinc-900 underline underline-offset-2"
+            >
+              {CONTACT_EMAIL}
+            </a>{" "}
+            for platform-fee questions. Refunds and disputes may also be handled
+            through Stripe according to Stripe&apos;s and applicable card-network
+            rules.
           </p>
         </section>
 
