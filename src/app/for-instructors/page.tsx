@@ -43,7 +43,7 @@ const STEPS = [
     step: "1",
     title: "Verify your profile",
     description:
-      "Find your existing sheriff-approved page and verify with the email or phone already on that listing. We do not create duplicate listings.",
+      "Find your existing sheriff-approved page and verify with the email already on that listing. We do not create duplicate listings.",
   },
   {
     step: "2",
@@ -73,7 +73,7 @@ const FAQS = [
   {
     question: "How do you verify that I own the listing?",
     answer:
-      "We send a one-time code to the email or phone already stored on your listing (from the sheriff-approved vendor data). You cannot enter a different contact to claim someone else’s page.",
+      "We send a one-time code to the email already stored on your listing (from the sheriff-approved vendor data). You cannot enter a different contact to claim someone else’s page.",
   },
   {
     question: "Do I need Stripe to get started?",

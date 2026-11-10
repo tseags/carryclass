@@ -13,7 +13,7 @@ import { redirect } from "next/navigation";
 export const metadata = pageMetadata({
   title: "Claim Your CCW Listing",
   description:
-    "Verify ownership of your existing sheriff-approved CCW listing by email or phone, then manage your CarryClass profile.",
+    "Verify ownership of your existing sheriff-approved CCW listing by email, then manage your CarryClass profile.",
   path: "/instructors/claim",
 });
 
@@ -48,7 +48,7 @@ export default async function ClaimVendorListingPage() {
                     </h1>
                     <p className="mt-2 text-sm text-zinc-500">
                       We already have all sheriff-approved instructors listed but need
-                      you to verify ownership with the email or phone number on file.
+                      you to verify ownership with the email on file.
                     </p>
                   </div>
                   <div className="buttons-row center">

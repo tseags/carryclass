@@ -84,27 +84,20 @@ export default function TermsPage() {
           </h2>
           <p>
             By choosing to receive text messages from CarryClass — for example, by
-            selecting phone verification when claiming a listing at{" "}
-            <Link
-              href="/instructors/claim"
-              className="font-medium text-zinc-900 underline underline-offset-2"
-            >
-              /instructors/claim
-            </Link>{" "}
-            — you agree to receive SMS messages at the mobile number on file for your
-            listing or account.
+            providing a mobile number and agreeing to SMS for a specific service —
+            you agree to receive SMS messages at that number. Listing claims are
+            verified by email, not SMS.
           </p>
           <p>
             <strong>Message types:</strong> Text messages are transactional and
-            service-related. They may include one-time verification codes, account
-            notifications, booking confirmations, class reminders, and similar service
-            updates.
+            service-related. They may include account notifications, booking
+            confirmations, class reminders, and similar service updates.
           </p>
           <p>
             <strong>Message frequency:</strong> Message frequency varies. You may
-            receive one or more messages when you request verification or when
-            service-related events occur (such as a booking). We do not send recurring
-            promotional SMS campaigns unless you separately opt in.
+            receive messages when service-related events occur (such as a booking).
+            We do not send recurring promotional SMS campaigns unless you separately
+            opt in.
           </p>
           <p>
             <strong>Message and data rates may apply.</strong> Carriers are not liable
@@ -114,12 +107,12 @@ export default function TermsPage() {
             <strong>Opt out:</strong> You can stop receiving text messages at any time
             by replying <strong>STOP</strong> to any CarryClass message. Reply{" "}
             <strong>HELP</strong> for help. After opting out, you may still use the
-            Site using other verification methods where available.
+            Site; SMS is optional.
           </p>
           <p>
             Consent to receive text messages is not required as a condition of
             purchasing any goods or services. You represent that you are the owner or
-            authorized user of the mobile number you use for verification.
+            authorized user of the mobile number you provide for SMS.
           </p>
         </section>
 

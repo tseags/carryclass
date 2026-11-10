@@ -214,29 +214,22 @@ export default function PrivacyPage() {
           </p>
           <p>
             <strong>How you opt in:</strong> You consent to receive text messages
-            when you choose phone verification on the Site — for example, by clicking
-            &quot;Text code&quot; on the{" "}
-            <Link
-              href="/instructors/claim"
-              className="font-medium text-zinc-900 underline underline-offset-2"
-            >
-              claim your listing
-            </Link>{" "}
-            page to receive a one-time verification code at the phone number already
-            on file for your business. Consent is not a condition of purchase.
+            when you provide a mobile number and agree to SMS for a specific
+            service on the Site. Listing claims are verified by email, not SMS.
+            Consent is not a condition of purchase.
           </p>
           <p>
             <strong>Types of messages:</strong> Messages are transactional and
-            service-related. They may include one-time verification codes, account
-            notifications, booking confirmations, class reminders, and similar
-            service updates. We do not send marketing or promotional text messages
-            unless you separately opt in.
+            service-related. They may include account notifications, booking
+            confirmations, class reminders, and similar service updates. We do not
+            send marketing or promotional text messages unless you separately opt
+            in.
           </p>
           <p>
             <strong>Message frequency:</strong> Message frequency varies depending
-            on your activity. You may receive one or more messages when you request
-            phone verification, and occasional messages related to bookings or account
-            activity. We do not send recurring promotional message campaigns.
+            on your activity. You may receive occasional messages related to
+            bookings or account activity. We do not send recurring promotional
+            message campaigns.
           </p>
           <p>
             <strong>Message and data rates may apply.</strong> Carriers are not liable

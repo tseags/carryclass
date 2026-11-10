@@ -60,7 +60,7 @@ export function ClaimListingFlow() {
   /** Query string that produced the current results (null = no search run yet). */
   const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
   const [listing, setListing] = useState<ListingDetail | null>(null);
-  const [channel, setChannel] = useState<"email" | "phone" | null>(null);
+  const [channel, setChannel] = useState<"email" | null>(null);
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [destinationMasked, setDestinationMasked] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -138,16 +138,16 @@ export function ClaimListingFlow() {
     }
   }
 
-  async function startVerify(nextChannel: "email" | "phone") {
+  async function startVerify() {
     if (!listing) return;
     setBusy(true);
     setError(null);
-    setChannel(nextChannel);
+    setChannel("email");
     try {
       const res = await fetch("/api/claim/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: listing.slug, channel: nextChannel }),
+        body: JSON.stringify({ slug: listing.slug, channel: "email" }),
       });
       const data = await res.json();
       if (data.alreadyClaimed) {
@@ -203,7 +203,7 @@ export function ClaimListingFlow() {
                     .filter(Boolean)
                     .join(", ")})`
                 : null}
-              . We'll send a one-time code to the email or phone already on this listing.
+              . We&apos;ll send a one-time code to the email already on this listing.
             </>
           ),
         }
@@ -212,7 +212,8 @@ export function ClaimListingFlow() {
             title: "Enter your code",
             subtitle: (
               <>
-                Sent via {channel} to <strong className="font-semibold text-zinc-700">{destinationMasked}</strong>.
+                Sent via email to{" "}
+                <strong className="font-semibold text-zinc-700">{destinationMasked}</strong>.
               </>
             ),
           }
@@ -224,11 +225,8 @@ export function ClaimListingFlow() {
           : {
               title: "Claim your instructor profile.",
               subtitle:
-                "We already have all sheriff-approved instructors listed but need you to verify ownership with the email or phone number on file.",
+                "We already have all sheriff-approved instructors listed but need you to verify ownership with the email on file.",
             };
-
-  const showSmsNote =
-    step === "channel" && listing?.channels.phone.available === true;
 
   return (
     <>
@@ -293,9 +291,7 @@ export function ClaimListingFlow() {
                         ? " · Already claimed by you"
                         : " · Already claimed"
                       : ""}
-                    {!hit.hasEmail && !hit.hasPhone
-                      ? " · No email/phone on file"
-                      : ""}
+                    {!hit.hasEmail ? " · No email on file" : ""}
                   </span>
                 </button>
               </li>
@@ -312,45 +308,21 @@ export function ClaimListingFlow() {
                 type="button"
                 className="btn-primary w-button"
                 disabled={busy || !listing.channels.email.ready}
-                onClick={() => void startVerify("email")}
+                onClick={() => void startVerify()}
               >
                 Email code to {listing.channels.email.masked}
                 {!listing.channels.email.ready ? " (not configured)" : ""}
               </button>
-            ) : null}
-            {listing.channels.phone.available ? (
-              <button
-                type="button"
-                className="btn-secondary w-button"
-                disabled={busy || !listing.channels.phone.ready}
-                onClick={() => void startVerify("phone")}
-              >
-                Text code to {listing.channels.phone.masked}
-                {!listing.channels.phone.ready ? " (not configured)" : ""}
-              </button>
-            ) : null}
+            ) : (
+              <p className="paragraph-small color-neutral-600 mg-bottom-16px">
+                This listing has no email on file.{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
+                  Contact us
+                </a>{" "}
+                to claim it manually.
+              </p>
+            )}
           </div>
-          {!listing.channels.email.available && !listing.channels.phone.available ? (
-            <p className="paragraph-small color-neutral-600 mg-bottom-16px">
-              This listing has no email or phone on file.{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-decoration-none">
-                Contact us
-              </a>{" "}
-              to claim it manually.
-            </p>
-          ) : null}
-          {showSmsNote ? (
-            <p className="mb-4 text-xs leading-relaxed text-zinc-400">
-              Text rates may apply. Reply STOP to opt out.{" "}
-              <a href="/privacy" className="text-decoration-none">
-                Privacy
-              </a>{" "}
-              ·{" "}
-              <a href="/terms" className="text-decoration-none">
-                Terms
-              </a>
-            </p>
-          ) : null}
           {error ? <ClaimFlowError message={error} /> : null}
           <p className="mb-4 text-sm text-zinc-600">
             Having trouble verifying? Email{" "}
@@ -407,7 +379,7 @@ export function ClaimListingFlow() {
                 type="button"
                 className="btn-secondary w-button"
                 disabled={busy || !channel}
-                onClick={() => channel && void startVerify(channel)}
+                onClick={() => void startVerify()}
               >
                 Resend code
               </button>
@@ -423,7 +395,7 @@ export function ClaimListingFlow() {
               setError(null);
             }}
           >
-            ← Choose a different method
+            ← Back
           </button>
         </>
       ) : null}

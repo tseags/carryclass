@@ -9,12 +9,7 @@ import {
   recentStartTooSoon,
   type ClaimChannel,
 } from "@/lib/claim-db";
-import {
-  isClaimEmailConfigured,
-  isTwilioConfigured,
-  sendClaimEmailCode,
-  sendClaimSmsCode,
-} from "@/lib/claim-send";
+import { isClaimEmailConfigured, sendClaimEmailCode } from "@/lib/claim-send";
 
 export const runtime = "nodejs";
 
@@ -33,9 +28,14 @@ export async function POST(req: NextRequest) {
 
   const slug = (body.slug ?? "").trim();
   const channel = (body.channel ?? "").trim() as ClaimChannel;
-  if (!slug || (channel !== "email" && channel !== "phone")) {
+  if (!slug || channel !== "email") {
     return NextResponse.json(
-      { error: "slug and channel (email|phone) are required." },
+      {
+        error:
+          channel === "phone"
+            ? "Phone verification is no longer available. Use email instead."
+            : "slug and channel (email) are required.",
+      },
       { status: 400 }
     );
   }
@@ -60,30 +60,19 @@ export async function POST(req: NextRequest) {
   }
 
   const contacts = getListingClaimContacts(listing);
-  if (!contacts.channels.includes(channel)) {
+  if (!contacts.channels.includes("email")) {
     return NextResponse.json(
       {
         error:
-          channel === "email"
-            ? "This listing has no email on file from the sheriff/directory record."
-            : "This listing has no phone on file from the sheriff/directory record.",
+          "This listing has no email on file from the sheriff/directory record.",
       },
       { status: 400 }
     );
   }
 
-  if (channel === "email" && !isClaimEmailConfigured()) {
+  if (!isClaimEmailConfigured()) {
     return NextResponse.json(
       { error: "Email verification is not configured (RESEND_API_KEY)." },
-      { status: 503 }
-    );
-  }
-  if (channel === "phone" && !isTwilioConfigured()) {
-    return NextResponse.json(
-      {
-        error:
-          "Phone verification is not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER.",
-      },
       { status: 503 }
     );
   }
@@ -96,27 +85,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Destination ALWAYS from DB contacts — never from the request body.
-  const destinationNormalized =
-    channel === "email" ? contacts.email! : contacts.phoneE164!;
-  const destinationMasked =
-    channel === "email" ? contacts.emailMasked! : contacts.phoneMasked!;
+  const destinationNormalized = contacts.email!;
+  const destinationMasked = contacts.emailMasked!;
 
   const code = generateClaimCode();
 
   try {
-    if (channel === "email") {
-      await sendClaimEmailCode({
-        to: contacts.email!,
-        code,
-        listingName: listing.name,
-      });
-    } else {
-      await sendClaimSmsCode({
-        toE164: contacts.phoneE164!,
-        code,
-        listingName: listing.name,
-      });
-    }
+    await sendClaimEmailCode({
+      to: contacts.email!,
+      code,
+      listingName: listing.name,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to send code";
     console.error("[claim/start] send failed", err);
