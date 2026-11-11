@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { VendorProfile } from "@/lib/onboarding-db";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
@@ -51,6 +52,9 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const [saved, setSaved] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
   const [bioError, setBioError] = useState("");
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const bioExpandButtonRef = useRef<HTMLButtonElement>(null);
+  const bioEditorRef = useRef<HTMLTextAreaElement>(null);
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [error, setError] = useState("");
@@ -80,6 +84,27 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       ? vendor.counties_served[0]
       : null)
   );
+
+  useEffect(() => {
+    if (!bioExpanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const editor = bioEditorRef.current;
+    if (editor) {
+      editor.focus();
+      const end = editor.value.length;
+      editor.setSelectionRange(end, end);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setBioExpanded(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+      bioExpandButtonRef.current?.focus();
+    };
+  }, [bioExpanded]);
 
   useEffect(() => {
     if (form.countiesServed.length <= 1) {
@@ -371,7 +396,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8" inert={bioExpanded}>
       {prefilled && (
         <div className="flex items-start gap-2 rounded-lg border border-[#c96442]/30 bg-[#c96442]/10 px-4 py-3">
           <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#c96442]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -644,60 +669,105 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
         <p className="text-sm text-zinc-500 mb-3">
           This is what students see on your listing.
         </p>
-        <textarea
-          value={form.bio}
-          onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-          rows={5}
-          className="input-field w-full resize-none"
-          placeholder="Tell students about your experience, certifications, and teaching style..."
-        />
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="relative">
+          <textarea
+            value={form.bio}
+            onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+            rows={5}
+            className="input-field w-full resize-none pr-11"
+            placeholder="Tell students about your experience, certifications, and teaching style..."
+          />
           <button
+            ref={bioExpandButtonRef}
             type="button"
-            onClick={handlePolish}
-            disabled={!form.bio.trim() || bioLoading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md border border-zinc-300 bg-zinc-100 text-zinc-700 shadow-sm hover:bg-zinc-200/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            onClick={() => setBioExpanded(true)}
+            aria-label="Expand description"
+            aria-expanded={bioExpanded}
+            aria-controls="public-description-editor"
+            className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
           >
-            {bioLoading ? (
-              <Spinner />
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
-                />
-              </svg>
-            )}
-            Polish with AI
+            <ExpandIcon />
           </button>
-          <span className="relative inline-flex group">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-full p-0.5 text-zinc-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-              aria-label="About Polish with AI"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </button>
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute left-1/2 bottom-full z-10 mb-2 w-52 -translate-x-1/2 rounded-md bg-zinc-800 px-2.5 py-1.5 text-xs leading-snug text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-            >
-              Use AI to rewrite or optimize your writing.
-            </span>
-          </span>
+        </div>
+        <div className="mt-2">
+          <PolishWithAi
+            disabled={!form.bio.trim() || bioLoading}
+            loading={bioLoading}
+            onClick={handlePolish}
+          />
         </div>
         {bioError && (
           <p className="mt-2 text-sm text-red-600">{bioError}</p>
         )}
+        {bioExpanded &&
+          createPortal(
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 sm:p-8">
+              <button
+                type="button"
+                className="absolute inset-0 bg-zinc-900/50 backdrop-blur-[1px]"
+                aria-label="Close description editor"
+                onClick={() => setBioExpanded(false)}
+              />
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="public-description-editor-title"
+                className="relative z-[211] h-[min(820px,92vh)] w-full max-w-3xl rounded-xl border border-zinc-200 bg-white shadow-2xl"
+                style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
+              >
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-200 px-5 py-4">
+                  <div>
+                    <h2
+                      id="public-description-editor-title"
+                      className="!m-0 text-base font-semibold text-zinc-900"
+                    >
+                      Your public description
+                    </h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      This is what students see on your listing.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBioExpanded(false)}
+                    aria-label="Collapse description"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                  >
+                    <CollapseIcon />
+                  </button>
+                </div>
+                <textarea
+                  id="public-description-editor"
+                  ref={bioEditorRef}
+                  value={form.bio}
+                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  className="w-full resize-none border-0 bg-transparent px-5 py-4 text-sm leading-relaxed text-zinc-900 outline-none placeholder:text-zinc-400"
+                  style={{ flex: "1 1 auto", minHeight: 0 }}
+                  placeholder="Tell students about your experience, certifications, and teaching style..."
+                />
+                <div className="flex shrink-0 items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3">
+                  <div>
+                    <PolishWithAi
+                      disabled={!form.bio.trim() || bioLoading}
+                      loading={bioLoading}
+                      onClick={handlePolish}
+                    />
+                    {bioError && (
+                      <p className="mt-2 text-sm text-red-600">{bioError}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBioExpanded(false)}
+                    className="inline-flex shrink-0 items-center rounded-md bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
       </section>
 
       {/* Badge tags */}
@@ -902,6 +972,89 @@ function Field({
       {children}
       {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
     </div>
+  );
+}
+
+function PolishWithAi({
+  disabled,
+  loading,
+  onClick,
+}: {
+  disabled: boolean;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md border border-zinc-300 bg-zinc-100 text-zinc-700 shadow-sm hover:bg-zinc-200/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        {loading ? (
+          <Spinner />
+        ) : (
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
+            />
+          </svg>
+        )}
+        Polish with AI
+      </button>
+      <span className="relative inline-flex group">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-full p-0.5 text-zinc-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          aria-label="About Polish with AI"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </button>
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 bottom-full z-10 mb-2 w-52 -translate-x-1/2 rounded-md bg-zinc-800 px-2.5 py-1.5 text-xs leading-snug text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          Use AI to rewrite or optimize your writing.
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function ExpandIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+      />
+    </svg>
+  );
+}
+
+function CollapseIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+      />
+    </svg>
   );
 }
 
