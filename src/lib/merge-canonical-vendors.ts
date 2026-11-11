@@ -236,8 +236,10 @@ function buildCountyContacts(group: Vendor[]): VendorCountyContact[] {
   type Block = {
     addressKey: string;
     phoneKey: string;
+    emailKey: string;
     address?: string;
     phone?: string;
+    email?: string;
     city?: string;
     counties: Set<string>;
   };
@@ -250,26 +252,31 @@ function buildCountyContacts(group: Vendor[]): VendorCountyContact[] {
 
     const address = trimOrEmpty(vendor.address) || undefined;
     const phone = trimOrEmpty(vendor.phone) || undefined;
+    const email = trimOrEmpty(vendor.email) || undefined;
     const city = trimOrEmpty(vendor.city) || undefined;
 
-    if (!address && !phone) continue;
+    if (!address && !phone && !email) continue;
 
     const addressKey = normalizeAddress(address);
     const phoneKey = normalizePhone(phone);
-    const blockKey = `${addressKey}||${phoneKey}`;
+    const emailKey = normalizeEmail(email);
+    const blockKey = `${addressKey}||${phoneKey}||${emailKey}`;
 
     const existing = blocks.get(blockKey);
     if (existing) {
       existing.counties.add(county);
       existing.address ??= address;
       existing.phone ??= phone;
+      existing.email ??= email;
       existing.city ??= city;
     } else {
       blocks.set(blockKey, {
         addressKey,
         phoneKey,
+        emailKey,
         address,
         phone,
+        email,
         city,
         counties: new Set([county]),
       });
@@ -280,6 +287,7 @@ function buildCountyContacts(group: Vendor[]): VendorCountyContact[] {
     counties: [...block.counties].sort(),
     address: block.address,
     phone: block.phone,
+    email: block.email,
     city: block.city,
   }));
 }

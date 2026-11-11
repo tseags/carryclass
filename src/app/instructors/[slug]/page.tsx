@@ -11,6 +11,7 @@ import {
   formatCountyContactLabel,
   sortVendorCountyContacts,
 } from "@/lib/merge-canonical-vendors";
+import { buildContactBlocksFromOverrides } from "@/lib/county-contacts";
 import { getCountyDisplayName } from "@/data/counties";
 import type { VendorCountyContact } from "@/types";
 import type { Metadata } from "next";
@@ -111,14 +112,33 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
     counties: vendor.county ? [vendor.county] : vendor.countiesServed.slice(0, 1),
     address: vendor.address,
     phone: vendor.phone,
+    email: vendor.email,
     city: vendor.city,
   };
+  const onboardingCounties = onboardingProfile?.counties_served?.filter(Boolean) ?? [];
+  const onboardingOverrideBlocks =
+    onboardingProfile && onboardingCounties.length > 1
+      ? buildContactBlocksFromOverrides(
+          onboardingCounties,
+          {
+            address: onboardingProfile.address ?? vendor.address,
+            phone: onboardingProfile.phone ?? vendor.phone,
+            email: onboardingProfile.email ?? vendor.email,
+            city: vendor.city,
+          },
+          onboardingProfile.county_contacts
+        )
+      : [];
   const contactBlocksRaw =
-    vendor.countyContacts && vendor.countyContacts.length > 0
-      ? vendor.countyContacts
-      : fallbackContactBlock.address || fallbackContactBlock.phone
-        ? [fallbackContactBlock]
-        : [];
+    onboardingOverrideBlocks.length > 0
+      ? onboardingOverrideBlocks
+      : vendor.countyContacts && vendor.countyContacts.length > 0
+        ? vendor.countyContacts
+        : fallbackContactBlock.address ||
+            fallbackContactBlock.phone ||
+            fallbackContactBlock.email
+          ? [fallbackContactBlock]
+          : [];
   const contactBlocks = sortVendorCountyContacts(contactBlocksRaw);
   const showCountyLabels = contactBlocks.length > 1;
   const vendorWebsiteHeroUrl = vendor.website
@@ -377,6 +397,27 @@ export default async function VendorProfilePage({ params, searchParams }: PagePr
                                 </span>
                                 <a href={`tel:${block.phone}`} className="hover:underline">
                                   {block.phone}
+                                </a>
+                              </p>
+                            )}
+                            {block.email && (
+                              <p className="flex items-start gap-2.5 text-[15px] leading-[1.45] text-[#595853]">
+                                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-[#8a8881]" aria-hidden>
+                                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M4 7.5A1.5 1.5 0 015.5 6h13A1.5 1.5 0 0120 7.5v9a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 16.5v-9z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 8l7 5 7-5"
+                                    />
+                                  </svg>
+                                </span>
+                                <a href={`mailto:${block.email}`} className="hover:underline break-all">
+                                  {block.email}
                                 </a>
                               </p>
                             )}

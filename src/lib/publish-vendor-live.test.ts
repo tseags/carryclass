@@ -58,6 +58,7 @@ function profile(overrides: Partial<VendorProfile> = {}): VendorProfile {
     google_calendar_id: null,
     google_refresh_token: null,
     what_to_bring: null,
+    county_contacts: null,
     require_application_ack: false,
     booking_notification_enabled: true,
     booking_notification_emails: null,

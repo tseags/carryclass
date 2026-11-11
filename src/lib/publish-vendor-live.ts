@@ -23,8 +23,9 @@ import {
   revalidateInstructorSchedulePaths,
   revalidatePublishedVendorPaths,
 } from "@/lib/publish-vendor-revalidate";
+import { resolveCountyContact } from "@/lib/county-contacts";
 import {
-  findCarryClassSourceRowIdsForSlug,
+  findCarryClassSourceRowsForSlug,
   getVendorBySlug,
   updateCarryClassVendorListingRows,
 } from "@/lib/vendors-db";
@@ -177,18 +178,37 @@ export async function syncPublishedVendorToLive(input: {
     throw new Error(`Claimed listing not found for slug: ${slug}`);
   }
 
-  const rowIds = await findCarryClassSourceRowIdsForSlug(slug);
-  if (rowIds.length === 0) {
+  const sourceRows = await findCarryClassSourceRowsForSlug(slug);
+  if (sourceRows.length === 0) {
     throw new Error(
       `No carry_class_vendor_data rows found for claimed slug: ${slug}`
     );
   }
 
   const listingPatch = buildListingPatch(input.profile, input.classTypes);
-  const listingRowsUpdated = await updateCarryClassVendorListingRows(
-    rowIds,
-    listingPatch
-  );
+  const primaryContact = {
+    address: listingPatch.address ?? undefined,
+    phone: listingPatch.phone ?? undefined,
+    email: listingPatch.email ?? undefined,
+  };
+  let listingRowsUpdated = 0;
+  for (const row of sourceRows) {
+    const resolved = resolveCountyContact(
+      row.county,
+      primaryContact,
+      input.profile.county_contacts
+    );
+    const rowPatch = {
+      ...listingPatch,
+      address: resolved.address ?? null,
+      phone: resolved.phone ?? null,
+      email: resolved.email ?? null,
+    };
+    listingRowsUpdated += await updateCarryClassVendorListingRows(
+      [row.id],
+      rowPatch
+    );
+  }
   if (listingRowsUpdated < 1) {
     throw new Error(
       `Failed to update carry_class_vendor_data rows for slug: ${slug}`

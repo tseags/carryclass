@@ -12,6 +12,7 @@ export interface VendorCountyContact {
   counties: string[];
   address?: string;
   phone?: string;
+  email?: string;
   city?: string;
 }
 

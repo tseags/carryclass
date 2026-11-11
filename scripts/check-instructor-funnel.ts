@@ -290,6 +290,7 @@ const ONBOARDING_VENDOR_COLUMNS = [
   "google_calendar_id",
   "google_refresh_token",
   "what_to_bring",
+  "county_contacts",
   "require_application_ack",
   "booking_notification_enabled",
   "booking_notification_emails",

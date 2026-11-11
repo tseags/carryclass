@@ -1376,11 +1376,24 @@ export async function getAllUniqueCities(options?: VendorQueryOptions): Promise<
 export async function findCarryClassSourceRowIdsForSlug(
   slug: string
 ): Promise<string[]> {
+  const rows = await findCarryClassSourceRowsForSlug(slug);
+  return rows.map((row) => row.id);
+}
+
+/** Source listing rows for a canonical slug, with each row's primary county. */
+export async function findCarryClassSourceRowsForSlug(
+  slug: string
+): Promise<Array<{ id: string; county: string }>> {
   const rows = await fetchRawVendorRowsViaDatabase();
   const mapped = rows.map(mapRow).filter((v): v is Vendor => v != null);
-  return findSourceRowIdsForCanonicalSlug(mapped, slug, {
+  const ids = findSourceRowIdsForCanonicalSlug(mapped, slug, {
     overrides: VENDOR_MERGE_OVERRIDES,
   });
+  const byId = new Map(mapped.map((vendor) => [vendor.id, vendor]));
+  return ids.map((id) => ({
+    id,
+    county: (byId.get(id)?.county ?? "").toLowerCase(),
+  }));
 }
 
 /** Public `/instructors/[slug]` slug keyed by raw `carry_class_vendor_data.id`. */

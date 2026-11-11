@@ -30,4 +30,15 @@ describe("WhatToBringFields", () => {
       items: ["Holster", "Closed-toe shoes"],
     });
   });
+
+  it("adds a custom item into the main checklist", () => {
+    render(<WhatToBringFields items={null} />);
+    fireEvent.change(screen.getByLabelText("Additional item"), {
+      target: { value: "Lunch" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(screen.getByRole("checkbox", { name: "Lunch" })).toBeChecked();
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+  });
 });

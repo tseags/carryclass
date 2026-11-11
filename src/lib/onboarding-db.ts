@@ -18,6 +18,11 @@ export interface VendorProfile {
   address: string | null;
   county: string | null;
   counties_served: string[] | null;
+  /**
+   * Optional per-county contact overrides keyed by county slug.
+   * Empty / missing fields inherit primary address / phone / email.
+   */
+  county_contacts: Record<string, { address?: string; phone?: string; email?: string }> | null;
   bio: string | null;
   photo_url: string | null;
   gallery_urls: string[] | null;

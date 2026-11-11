@@ -40,6 +40,11 @@ function splitItems(stored: string[] | null): {
   return { selected, custom };
 }
 
+const checkboxClassName =
+  "mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-[#141413] focus:ring-[#141413]";
+const itemLabelClassName = "flex min-w-0 cursor-pointer items-start gap-3";
+const itemTextClassName = "min-w-0 break-words text-sm text-zinc-700";
+
 export const WhatToBringFields = forwardRef<WhatToBringFieldsHandle, Props>(
   function WhatToBringFields({ items }, ref) {
     const initial = useMemo(() => splitItems(items), [items]);
@@ -85,6 +90,11 @@ export const WhatToBringFields = forwardRef<WhatToBringFieldsHandle, Props>(
       );
     }
 
+    function removeCustom(item: string) {
+      setError("");
+      setCustom((current) => current.filter((entry) => entry !== item));
+    }
+
     function addCustom(raw: string): boolean {
       const text = raw.trim().replace(/\s+/g, " ");
       if (!text) return false;
@@ -111,9 +121,9 @@ export const WhatToBringFields = forwardRef<WhatToBringFieldsHandle, Props>(
 
     return (
       <div className="space-y-4">
-        <fieldset className="space-y-2">
-          <legend className="sr-only">Default items</legend>
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-zinc-900 bg-zinc-50 px-4 py-3">
+        <fieldset>
+          <legend className="sr-only">Packing list items</legend>
+          <label className={`${itemLabelClassName} mb-3`}>
             <input
               type="checkbox"
               checked={allSelected}
@@ -121,31 +131,37 @@ export const WhatToBringFields = forwardRef<WhatToBringFieldsHandle, Props>(
                 setError("");
                 setSelected(allSelected ? [] : [...DEFAULT_WHAT_TO_BRING_ITEMS]);
               }}
-              className="h-4 w-4 border-zinc-300 text-zinc-900"
+              className={checkboxClassName}
             />
-            <span className="font-medium text-zinc-800">Select all</span>
+            <span className="text-sm font-medium text-zinc-800">Select all</span>
           </label>
-          {DEFAULT_WHAT_TO_BRING_ITEMS.map((item) => {
-            const checked = selected.includes(item);
-            return (
-              <label
-                key={item}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 px-4 py-3 transition-colors ${
-                  checked
-                    ? "border-zinc-900 bg-zinc-50"
-                    : "border-zinc-200 bg-white hover:border-zinc-300"
-                }`}
-              >
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {DEFAULT_WHAT_TO_BRING_ITEMS.map((item) => {
+              const checked = selected.includes(item);
+              return (
+                <label key={item} className={itemLabelClassName}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleDefault(item)}
+                    className={checkboxClassName}
+                  />
+                  <span className={itemTextClassName}>{item}</span>
+                </label>
+              );
+            })}
+            {custom.map((item) => (
+              <label key={`custom-${item}`} className={itemLabelClassName}>
                 <input
                   type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleDefault(item)}
-                  className="mt-0.5 h-4 w-4 border-zinc-300 text-zinc-900"
+                  checked
+                  onChange={() => removeCustom(item)}
+                  className={checkboxClassName}
                 />
-                <span className="text-sm font-medium text-zinc-800">{item}</span>
+                <span className={itemTextClassName}>{item}</span>
               </label>
-            );
-          })}
+            ))}
+          </div>
         </fieldset>
 
         <div>
@@ -184,25 +200,6 @@ export const WhatToBringFields = forwardRef<WhatToBringFieldsHandle, Props>(
               Add
             </button>
           </div>
-          {custom.length > 0 && (
-            <ul className="m-0 mt-3 list-none space-y-2 p-0">
-              {custom.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3"
-                >
-                  <span className="text-sm font-medium text-zinc-800">{item}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCustom((current) => current.filter((entry) => entry !== item))}
-                    className="text-xs font-medium text-zinc-500 underline hover:text-zinc-800"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         {error && (

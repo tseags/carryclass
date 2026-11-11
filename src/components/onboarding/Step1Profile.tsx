@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { VendorProfile } from "@/lib/onboarding-db";
 import { CALIFORNIA_COUNTIES, COUNTY_DISPLAY_NAMES } from "@/data/counties";
 import { LocationInput } from "@/components/dashboard/LocationInput";
+import type { CountyContactFields, CountyContactsMap } from "@/lib/county-contacts";
 import { parseWebsiteInput } from "@/lib/vendor-website-url";
 import { WhatToBringFields, type WhatToBringFieldsHandle } from "@/components/onboarding/WhatToBringFields";
 
@@ -64,6 +65,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
     address: vendor.address ?? "",
     county: vendor.county ?? "",
     countiesServed: vendor.counties_served ?? ([] as string[]),
+    countyContacts: (vendor.county_contacts ?? {}) as CountyContactsMap,
     bio: vendor.bio ?? "",
     badgeTags: vendor.badge_tags ?? ([] as string[]),
     photoUrl: vendor.photo_url ?? "",
@@ -73,6 +75,23 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   const [countyQuery, setCountyQuery] = useState("");
   const [countyOpen, setCountyOpen] = useState(false);
   const [countyHighlight, setCountyHighlight] = useState(0);
+  const [expandedCounty, setExpandedCounty] = useState<string | null>(
+    () => (vendor.counties_served && vendor.counties_served.length > 1
+      ? vendor.counties_served[0]
+      : null)
+  );
+
+  useEffect(() => {
+    if (form.countiesServed.length <= 1) {
+      setExpandedCounty(null);
+      return;
+    }
+    setExpandedCounty((current) =>
+      current && form.countiesServed.includes(current)
+        ? current
+        : form.countiesServed[0]
+    );
+  }, [form.countiesServed]);
 
   const countyMatches = useMemo(() => {
     const q = countyQuery.trim().toLowerCase();
@@ -82,19 +101,49 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
   }, [countyQuery]);
 
   function toggleCounty(slug: string) {
-    setForm((f) => ({
-      ...f,
-      countiesServed: f.countiesServed.includes(slug)
+    setForm((f) => {
+      const removing = f.countiesServed.includes(slug);
+      const countiesServed = removing
         ? f.countiesServed.filter((c) => c !== slug)
-        : [...f.countiesServed, slug],
-    }));
+        : [...f.countiesServed, slug];
+      const countyContacts = { ...f.countyContacts };
+      if (removing) delete countyContacts[slug];
+      return { ...f, countiesServed, countyContacts };
+    });
   }
 
   function removeCounty(slug: string) {
-    setForm((f) => ({
-      ...f,
-      countiesServed: f.countiesServed.filter((c) => c !== slug),
-    }));
+    setForm((f) => {
+      const countyContacts = { ...f.countyContacts };
+      delete countyContacts[slug];
+      return {
+        ...f,
+        countiesServed: f.countiesServed.filter((c) => c !== slug),
+        countyContacts,
+      };
+    });
+  }
+
+  function updateCountyContact(
+    slug: string,
+    field: keyof CountyContactFields,
+    value: string
+  ) {
+    setForm((f) => {
+      const current = f.countyContacts[slug] ?? {};
+      const nextFields: CountyContactFields = { ...current, [field]: value };
+      const countyContacts = { ...f.countyContacts };
+      if (
+        !nextFields.address?.trim() &&
+        !nextFields.phone?.trim() &&
+        !nextFields.email?.trim()
+      ) {
+        delete countyContacts[slug];
+      } else {
+        countyContacts[slug] = nextFields;
+      }
+      return { ...f, countyContacts };
+    });
   }
 
   function handleCountyKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -274,6 +323,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           address: form.address,
           county: form.county,
           countiesServed: form.countiesServed,
+          countyContacts: form.countyContacts,
           bio: form.bio,
           badgeTags: form.badgeTags,
           photoUrl: form.photoUrl,
@@ -284,8 +334,9 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         if (res.status === 400 && typeof data?.error === "string") {
-          if (data.field === "whatToBring") setError(data.error);
-          else setWebsiteError(data.error);
+          if (data.field === "whatToBring" || data.field === "countyContacts") {
+            setError(data.error);
+          } else setWebsiteError(data.error);
           return;
         }
         throw new Error("Save failed");
@@ -301,6 +352,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
           address: form.address || null,
           county: form.county || null,
           counties_served: form.countiesServed,
+          county_contacts: form.countyContacts,
           bio: form.bio || null,
           badge_tags: form.badgeTags,
           photo_url: form.photoUrl || null,
@@ -381,7 +433,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
               placeholder="mysite.com or https://mysite.com"
             />
           </Field>
-          <Field label="Address" className="sm:col-span-2">
+          <Field label="Primary address" className="sm:col-span-2">
             <LocationInput
               value={form.address}
               onChange={(address) => setForm((f) => ({ ...f, address }))}
@@ -487,6 +539,99 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                 </button>
               </span>
             ))}
+          </div>
+        )}
+
+        {form.countiesServed.length > 1 && (
+          <div className="mt-5 space-y-2">
+            <div>
+              <h3 className="text-sm font-medium text-zinc-800">
+                Contact info by county
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                Optional. Leave blank to use your primary address, phone, and email.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {form.countiesServed.map((slug) => {
+                const open = expandedCounty === slug;
+                const contact = form.countyContacts[slug] ?? {};
+                const countyLabel = COUNTY_DISPLAY_NAMES[slug] ?? slug;
+                return (
+                  <div
+                    key={slug}
+                    className="overflow-hidden rounded-lg border border-zinc-200 bg-white"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedCounty((current) => (current === slug ? null : slug))
+                      }
+                      aria-expanded={open}
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                    >
+                      <span className="text-sm font-medium text-zinc-800">
+                        {countyLabel} County
+                      </span>
+                      <svg
+                        className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+                          open ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    {open && (
+                      <div className="space-y-3 border-t border-zinc-100 px-4 py-3">
+                        <Field label="Address">
+                          <LocationInput
+                            value={contact.address ?? ""}
+                            onChange={(address) =>
+                              updateCountyContact(slug, "address", address)
+                            }
+                            className="input-field"
+                            placeholder="Street address, city, CA ZIP"
+                          />
+                        </Field>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Field label="Phone">
+                            <input
+                              type="tel"
+                              value={contact.phone ?? ""}
+                              onChange={(e) =>
+                                updateCountyContact(slug, "phone", e.target.value)
+                              }
+                              className="input-field"
+                              placeholder="(555) 555-5555"
+                            />
+                          </Field>
+                          <Field label="Email">
+                            <input
+                              type="email"
+                              value={contact.email ?? ""}
+                              onChange={(e) =>
+                                updateCountyContact(slug, "email", e.target.value)
+                              }
+                              className="input-field"
+                              placeholder="you@example.com"
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>

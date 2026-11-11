@@ -68,4 +68,31 @@ describe("onboarding step 1 what to bring", () => {
     await expect(res.json()).resolves.toMatchObject({ field: "whatToBring" });
     expect(updateVendorProfileMock).not.toHaveBeenCalled();
   });
+
+  it("saves per-county contact overrides for selected counties", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(
+      post({
+        name: "Acme",
+        countiesServed: ["alameda", "contra-costa"],
+        countyContacts: {
+          alameda: { phone: "510-555-0100", email: "ala@test.com" },
+          orange: { phone: "714-555-0100" },
+          "contra-costa": { address: "  ", phone: "" },
+        },
+        whatToBring: ["Holster"],
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(updateVendorProfileMock).toHaveBeenCalledWith(
+      "v1",
+      expect.objectContaining({
+        counties_served: ["alameda", "contra-costa"],
+        county_contacts: {
+          alameda: { phone: "510-555-0100", email: "ala@test.com" },
+        },
+      })
+    );
+  });
 });
