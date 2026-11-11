@@ -8,6 +8,7 @@ import { organizationJsonLd } from "@/lib/json-ld";
 import {
   DEFAULT_OG_IMAGE_PATH,
   DEFAULT_SITE_DESCRIPTION,
+  SITE_NAME,
   buildOpenGraph,
   buildTwitter,
 } from "@/lib/seo";
@@ -19,9 +20,10 @@ const defaultTitle = "CarryClass | Find CCW Classes & Instructors Near Me";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
     default: defaultTitle,
-    template: "%s | CarryClass",
+    template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_SITE_DESCRIPTION,
   icons: {

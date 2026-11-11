@@ -17,6 +17,8 @@ import { HeroSearchBar } from "@/components/HeroSearchBar";
 import { pageMetadata } from "@/lib/seo";
 import { pickHomePopularVendors } from "@/lib/home-featured-vendors";
 import { getCountyStats } from "@/lib/county-stats";
+import { JsonLd } from "@/components/JsonLd";
+import { websiteJsonLd } from "@/lib/json-ld";
 
 export const revalidate = 86400;
 
@@ -45,6 +47,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={websiteJsonLd()} />
       <Header />
       <main className="home-page-sections">
       {/* Hero - section-2 */}

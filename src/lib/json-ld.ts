@@ -1,5 +1,5 @@
 import { SITE_URL } from "@/lib/site-url";
-import { DEFAULT_SITE_DESCRIPTION } from "@/lib/seo";
+import { DEFAULT_SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 import type { Vendor } from "@/types";
 import { getCountyDisplayName } from "@/data/counties";
 
@@ -12,10 +12,25 @@ export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "CarryClass",
+    name: SITE_NAME,
     legalName: "CarryClass LLC",
     url: SITE_URL,
     description: DEFAULT_SITE_DESCRIPTION,
+  };
+}
+
+/**
+ * Google site-name preference (favicon line in SERPs).
+ * Must live on the domain home page — see
+ * https://developers.google.com/search/docs/appearance/site-names
+ */
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    alternateName: ["getcarryclass.com", "www.getcarryclass.com"],
+    url: `${SITE_URL}/`,
   };
 }
 

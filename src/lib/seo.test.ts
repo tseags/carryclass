@@ -4,7 +4,7 @@ import {
   canonicalForFilteredListing,
   hasActiveSearchParams,
 } from "@/lib/seo";
-import { serializeJsonLd } from "@/lib/json-ld";
+import { serializeJsonLd, websiteJsonLd } from "@/lib/json-ld";
 
 describe("seo helpers", () => {
   it("builds absolute URLs from paths", () => {
@@ -36,5 +36,17 @@ describe("serializeJsonLd", () => {
     const raw = serializeJsonLd({ note: "</script>" });
     expect(raw).not.toContain("</script>");
     expect(raw).toContain("\\u003c");
+  });
+});
+
+describe("websiteJsonLd", () => {
+  it("declares CarryClass as the preferred Google site name", () => {
+    expect(websiteJsonLd()).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "CarryClass",
+      alternateName: ["getcarryclass.com", "www.getcarryclass.com"],
+      url: "https://www.getcarryclass.com/",
+    });
   });
 });
