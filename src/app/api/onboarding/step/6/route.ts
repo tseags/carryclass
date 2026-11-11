@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { sendAdminInstructorFunnelEmail } from "@/lib/admin-instructor-funnel-email";
 import {
   getCalendarClasses,
   getClassTypes,
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const firstPublish = !vendor.is_published;
 
     try {
       const [classTypes, calendarClasses] = await Promise.all([
@@ -54,6 +57,20 @@ export async function POST(req: NextRequest) {
     });
 
     revalidatePublishedVendorPaths(vendor.slug);
+
+    if (firstPublish) {
+      void sendAdminInstructorFunnelEmail({
+        event: "published",
+        listingName: vendor.name || vendor.canonical_name || vendor.slug,
+        listingSlug: vendor.slug,
+        instructorEmail: vendor.email,
+        instructorPhone: vendor.phone,
+        county: vendor.county,
+        clerkUserId: userId,
+      }).catch((err) => {
+        console.error("[onboarding/step/6] admin notify failed", err);
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

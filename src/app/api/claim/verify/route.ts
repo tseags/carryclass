@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { sendAdminInstructorFunnelEmail } from "@/lib/admin-instructor-funnel-email";
 import { getVendorBySlug } from "@/lib/vendors-db";
 import {
   attachClaimedListing,
@@ -7,6 +8,7 @@ import {
   markClaimVerified,
   type ClaimChannel,
 } from "@/lib/claim-db";
+import { getVendorProfile } from "@/lib/onboarding-db";
 import { VENDOR_ROLE } from "@/lib/auth/roles";
 import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
 
@@ -47,6 +49,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const existingProfile = await getVendorProfile(userId);
+  const isNewClaim = !existingProfile?.slug?.trim();
+
   const user = await currentUser();
   try {
     await attachClaimedListing({
@@ -69,6 +74,22 @@ export async function POST(req: NextRequest) {
     const client = await clerkClient();
     await client.users.updateUser(userId, {
       publicMetadata: { ...user?.publicMetadata, role: VENDOR_ROLE },
+    });
+  }
+
+  if (isNewClaim) {
+    void sendAdminInstructorFunnelEmail({
+      event: "claimed",
+      listingName: listing.name,
+      listingSlug: listing.slug,
+      instructorEmail:
+        listing.email ?? user?.emailAddresses[0]?.emailAddress ?? null,
+      instructorPhone: listing.phone ?? null,
+      county: listing.county || null,
+      clerkUserId: userId,
+      channel: result.verification.channel,
+    }).catch((err) => {
+      console.error("[claim/verify] admin notify failed", err);
     });
   }
 
