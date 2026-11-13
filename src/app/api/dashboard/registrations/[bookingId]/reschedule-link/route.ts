@@ -15,7 +15,7 @@ export async function POST(_req: Request, context: RouteContext) {
   }
 
   const vendor = await getVendorProfile(userId);
-  if (!vendor) {
+  if (!vendor?.slug?.trim()) {
     return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
   }
 
@@ -26,7 +26,7 @@ export async function POST(_req: Request, context: RouteContext) {
 
   const created = await createRescheduleLink({
     bookingId: bookingId.trim(),
-    vendorSlug: vendor.slug,
+    vendorSlug: vendor.slug.trim(),
     createdByUserId: userId,
   });
   if (!created.ok) {
