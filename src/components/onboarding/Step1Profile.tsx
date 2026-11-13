@@ -759,6 +759,7 @@ export function Step1Profile({ vendor, prefilled, mode = "onboarding", onSaved }
                   <button
                     type="button"
                     onClick={() => setBioExpanded(false)}
+                    style={{ color: "#ffffff" }}
                     className="inline-flex shrink-0 items-center rounded-md bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
                   >
                     Done
