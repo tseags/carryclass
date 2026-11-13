@@ -6,8 +6,10 @@ import type { DashboardRegistration } from "@/lib/dashboard-db";
 import { getCountyDisplayName } from "@/data/counties";
 import { Drawer } from "./Drawer";
 import { formatLongDate, formatTime, sentenceCase } from "./dashboard-format";
+import { canOfferRescheduleLink } from "@/lib/reschedule-eligibility";
 import {
   DASH_BORDER,
+  DASH_BTN_PRIMARY,
   DASH_BTN_SECONDARY,
   DASH_CARD,
   DASH_DIVIDE,
@@ -612,6 +614,15 @@ function RegistrationsTable({
                 {r.customerPhone && (
                   <p className="!m-0 !mt-0.5 text-xs leading-snug text-[#7A7268] line-clamp-1">{r.customerPhone}</p>
                 )}
+                {canOfferRescheduleLink({
+                  status: r.status,
+                  customerEmail: r.customerEmail,
+                  classDateIso: r.classDate,
+                }) && (
+                  <p className="!m-0 !mt-1.5 text-[11px] font-medium text-[#C1440E]">
+                    Reschedule available
+                  </p>
+                )}
               </td>
               <td className="!py-5 !pr-4 align-top text-[#5C554C]">
                 <span className="block leading-snug line-clamp-2" title={classTypeLabel(r.classType, classTypes)}>
@@ -648,71 +659,137 @@ function StudentDrawer({
   onClose: () => void;
 }) {
   const r = registration;
+  const [sendState, setSendState] = useState<
+    null | "sending" | { ok: true; sentTo: string } | { ok: false; error: string }
+  >(null);
+
+  useEffect(() => {
+    setSendState(null);
+  }, [r?.id]);
+
+  const canReschedule =
+    r != null &&
+    canOfferRescheduleLink({
+      status: r.status,
+      customerEmail: r.customerEmail,
+      classDateIso: r.classDate,
+    });
+
+  async function sendRescheduleLink() {
+    if (!r || sendState === "sending") return;
+    setSendState("sending");
+    try {
+      const res = await fetch(`/api/dashboard/registrations/${encodeURIComponent(r.id)}/reschedule-link`, {
+        method: "POST",
+      });
+      const data = (await res.json()) as { error?: string; sentTo?: string };
+      if (!res.ok) {
+        setSendState({ ok: false, error: data.error || "Failed to send reschedule link." });
+        return;
+      }
+      setSendState({ ok: true, sentTo: data.sentTo || r.customerEmail });
+    } catch {
+      setSendState({ ok: false, error: "Failed to send reschedule link. Try again." });
+    }
+  }
+
   return (
     <Drawer open={r !== null} onClose={onClose} title={r?.customerName ?? "Student"}>
       {r && (
-        <dl className="space-y-4 p-5 text-sm">
-          {r.confirmationCode && (
+        <div className="p-5">
+          <dl className="space-y-4 text-sm">
+            {r.confirmationCode && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">
+                  Confirmation #
+                </dt>
+                <dd className="mt-1 font-mono font-semibold tracking-wider text-[#1F1B16]">
+                  {r.confirmationCode}
+                </dd>
+              </div>
+            )}
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">
-                Confirmation #
-              </dt>
-              <dd className="mt-1 font-mono font-semibold tracking-wider text-[#1F1B16]">
-                {r.confirmationCode}
-              </dd>
-            </div>
-          )}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Email</dt>
-            <dd className="mt-1">
-              <a href={`mailto:${r.customerEmail}`} className="text-[#C1440E] hover:underline">
-                {r.customerEmail}
-              </a>
-            </dd>
-          </div>
-          {r.customerPhone && (
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Phone</dt>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Email</dt>
               <dd className="mt-1">
-                <a href={`tel:${r.customerPhone}`} className="text-[#C1440E] hover:underline">
-                  {r.customerPhone}
+                <a href={`mailto:${r.customerEmail}`} className="text-[#C1440E] hover:underline">
+                  {r.customerEmail}
                 </a>
               </dd>
             </div>
-          )}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class</dt>
-            <dd className="mt-1 text-[#1F1B16]">{classTypeLabel(r.classType, classTypes)}</dd>
-          </div>
-          {r.countySlug && (
+            {r.customerPhone && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Phone</dt>
+                <dd className="mt-1">
+                  <a href={`tel:${r.customerPhone}`} className="text-[#C1440E] hover:underline">
+                    {r.customerPhone}
+                  </a>
+                </dd>
+              </div>
+            )}
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">County</dt>
-              <dd className="mt-1 text-[#1F1B16]">{getCountyDisplayName(r.countySlug)}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class</dt>
+              <dd className="mt-1 text-[#1F1B16]">{classTypeLabel(r.classType, classTypes)}</dd>
+            </div>
+            {r.countySlug && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">County</dt>
+                <dd className="mt-1 text-[#1F1B16]">{getCountyDisplayName(r.countySlug)}</dd>
+              </div>
+            )}
+            {r.location && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Location</dt>
+                <dd className="mt-1 text-[#1F1B16]">{r.location}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class date</dt>
+              <dd className="mt-1 text-[#1F1B16]">
+                {formatLongDate(r.classDate)} · {formatTime(r.classDate)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Registered</dt>
+              <dd className="mt-1 text-[#1F1B16]">{formatLongDate(r.registeredOn)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Payment</dt>
+              <dd className="mt-1">
+                <span className={`${DASH_PILL} ${paymentPill(r.status)}`}>{sentenceCase(r.status)}</span>
+              </dd>
+            </div>
+          </dl>
+
+          {canReschedule && (
+            <div className="mt-6 border-t border-[#ECE7E0] pt-5">
+              <p className="!m-0 text-sm font-medium text-[#1F1B16]">Need to move this student?</p>
+              <p className="!m-0 !mt-1 text-xs text-[#7A7268]">
+                Send a link so they can pick another upcoming class of the same type. No refund or new
+                charge.
+              </p>
+              <button
+                type="button"
+                onClick={() => void sendRescheduleLink()}
+                disabled={sendState === "sending" || (sendState != null && sendState.ok === true)}
+                className={`mt-3 w-full ${DASH_BTN_PRIMARY}`}
+              >
+                {sendState === "sending"
+                  ? "Sending…"
+                  : sendState != null && sendState.ok === true
+                    ? "Reschedule link sent"
+                    : "Send reschedule link"}
+              </button>
+              {sendState != null && sendState !== "sending" && sendState.ok === true && (
+                <p className="!m-0 !mt-2 text-xs text-emerald-700">
+                  Reschedule link sent to {sendState.sentTo}
+                </p>
+              )}
+              {sendState != null && sendState !== "sending" && sendState.ok === false && (
+                <p className="!m-0 !mt-2 text-xs text-red-700">{sendState.error}</p>
+              )}
             </div>
           )}
-          {r.location && (
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Location</dt>
-              <dd className="mt-1 text-[#1F1B16]">{r.location}</dd>
-            </div>
-          )}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Class date</dt>
-            <dd className="mt-1 text-[#1F1B16]">
-              {formatLongDate(r.classDate)} · {formatTime(r.classDate)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Registered</dt>
-            <dd className="mt-1 text-[#1F1B16]">{formatLongDate(r.registeredOn)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#8A837A]">Payment</dt>
-            <dd className="mt-1">
-              <span className={`${DASH_PILL} ${paymentPill(r.status)}`}>{sentenceCase(r.status)}</span>
-            </dd>
-          </div>
-        </dl>
+        </div>
       )}
     </Drawer>
   );

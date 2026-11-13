@@ -55,6 +55,22 @@ model Vendor {
   @@index([featured])
 }
 
+/// Instructor-issued one-time link for a student to move a PAID booking
+/// to another upcoming same-type/same-price class (no new Stripe charge).
+model BookingRescheduleToken {
+  id              String    @id @default(cuid())
+  bookingId       String
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+
+  @@index([bookingId])
+  @@index([expiresAt])
+}
+
 model SavedVendor {
   id        String   @id @default(cuid())
   userId    String
@@ -271,8 +287,14 @@ model Booking {
   confirmationEmailSentAt DateTime?
   /// Set once the instructor new-booking notification is accepted by Resend.
   instructorNotificationSentAt DateTime?
+  /// Last successful instructor-initiated reschedule (seat transfer).
+  rescheduledAt DateTime?
+  /// ClassSession the student left on the most recent reschedule.
+  previousClassSessionId String?
 
   createdAt DateTime @default(now())
+
+  rescheduleTokens BookingRescheduleToken[]
 
   @@index([vendorId])
   @@index([classSessionId])
