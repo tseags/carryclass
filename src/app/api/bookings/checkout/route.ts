@@ -3,18 +3,22 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 import { Prisma } from "@prisma/client";
-import {
-  applicableFeeSnapshots,
-  buildCheckoutAmounts,
-  buildCheckoutLines,
-} from "@/lib/instructor-catalog";
+import { buildCheckoutLines } from "@/lib/instructor-catalog";
 import { getOnboardingPublicCatalog } from "@/lib/public-instructor-classes";
 import { normalizeListingPhone } from "@/lib/claim-contacts";
+import {
+  buildCartCheckoutAmounts,
+  normalizeClassSessionIds,
+  sessionDisplayTitle,
+  validateCheckoutCart,
+  type CartSessionLike,
+} from "@/lib/booking-cart";
 
 export const runtime = "nodejs";
 
 type Body = {
   classSessionId?: string;
+  classSessionIds?: string[];
   firstName?: string;
   lastName?: string;
   customerName?: string;
@@ -44,14 +48,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const classSessionId = body.classSessionId?.trim();
+  const classSessionIds = normalizeClassSessionIds(body);
   const firstName = body.firstName?.trim();
   const lastName = body.lastName?.trim();
   const customerEmail = body.customerEmail?.trim()?.toLowerCase();
   const customerPhone = formatUsPhone(body.customerPhone ?? "");
   const vendorSlug = body.vendorSlug?.trim();
 
-  if (!classSessionId || !firstName || !lastName || !customerEmail || !vendorSlug) {
+  if (classSessionIds.length === 0 || !firstName || !lastName || !customerEmail || !vendorSlug) {
     return NextResponse.json(
       { error: "Missing class, first name, last name, email, or instructor." },
       { status: 400 }
@@ -70,42 +74,94 @@ export async function POST(req: Request) {
 
   const { userId } = await auth();
 
-  const classSession = await prisma.classSession.findFirst({
-    where: { id: classSessionId },
+  const classSessions = await prisma.classSession.findMany({
+    where: { id: { in: classSessionIds } },
     include: { vendor: true },
   });
 
-  if (!classSession) {
+  if (classSessions.length !== classSessionIds.length) {
     return NextResponse.json({ error: "Class session not found." }, { status: 404 });
   }
-  if (classSession.vendor.slug !== vendorSlug) {
+
+  const vendor = classSessions[0]!.vendor;
+  if (classSessions.some((s) => s.vendorId !== vendor.id)) {
+    return NextResponse.json({ error: "Sessions must belong to one instructor." }, { status: 400 });
+  }
+  if (vendor.slug !== vendorSlug) {
     return NextResponse.json({ error: "Session does not match vendor." }, { status: 400 });
   }
-  if (!classSession.vendor.acceptsBookings) {
+  if (!vendor.acceptsBookings) {
     return NextResponse.json({ error: "Booking is not enabled for this vendor." }, { status: 400 });
   }
-  if (!classSession.vendor.stripeConnectAccountId) {
+  if (!vendor.stripeConnectAccountId) {
     return NextResponse.json(
       { error: "This vendor is not set up to accept payments yet." },
       { status: 503 }
     );
   }
-  if (classSession.vendor.stripeConnectAccountId.startsWith("acct_") === false) {
+  if (vendor.stripeConnectAccountId.startsWith("acct_") === false) {
     return NextResponse.json(
       { error: "Invalid vendor Stripe Connect account." },
       { status: 503 }
     );
   }
-  if (classSession.enrolled >= classSession.capacity) {
-    return NextResponse.json({ error: "This class is full." }, { status: 409 });
-  }
-  if (classSession.startsAt <= new Date()) {
-    return NextResponse.json({ error: "This class has already started." }, { status: 400 });
+
+  const cartSessions: CartSessionLike[] = classSessionIds.map((id) => {
+    const row = classSessions.find((s) => s.id === id)!;
+    return {
+      id: row.id,
+      classType: row.classType,
+      startsAt: row.startsAt,
+      timezone: row.timezone,
+      priceCents: row.priceCents,
+      dayIndex: row.dayIndex,
+      enrolled: row.enrolled,
+      capacity: row.capacity,
+      title: row.title,
+    };
+  });
+
+  const vendorInitialRows = await prisma.classSession.findMany({
+    where: {
+      vendorId: vendor.id,
+      classType: "initial",
+      startsAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      classType: true,
+      startsAt: true,
+      timezone: true,
+      priceCents: true,
+      dayIndex: true,
+      enrolled: true,
+      capacity: true,
+      title: true,
+    },
+  });
+  const availableInitial: CartSessionLike[] = vendorInitialRows.map((row) => ({
+    id: row.id,
+    classType: row.classType,
+    startsAt: row.startsAt,
+    timezone: row.timezone,
+    priceCents: row.priceCents,
+    dayIndex: row.dayIndex,
+    enrolled: row.enrolled,
+    capacity: row.capacity,
+    title: row.title,
+  }));
+
+  const validated = validateCheckoutCart(cartSessions, availableInitial);
+  if (!validated.ok) {
+    return NextResponse.json(
+      { error: validated.error },
+      { status: validated.status ?? 400 }
+    );
   }
 
   let catalog: Awaited<ReturnType<typeof getOnboardingPublicCatalog>> = null;
   try {
-    catalog = await getOnboardingPublicCatalog(classSession.vendor.slug);
+    catalog = await getOnboardingPublicCatalog(vendor.slug);
   } catch (error) {
     console.error("[bookings/checkout] class catalog failed", error);
     return NextResponse.json(
@@ -115,34 +171,47 @@ export async function POST(req: Request) {
   }
   if (catalog) {
     const offered = [...catalog.ccw, ...catalog.other];
-    if (offered.length > 0 && !offered.some((card) => card.key === classSession.classType)) {
-      return NextResponse.json({ error: "This class is not available." }, { status: 400 });
+    if (offered.length > 0) {
+      for (const session of validated.sessions) {
+        if (!offered.some((card) => card.key === session.classType)) {
+          return NextResponse.json({ error: "This class is not available." }, { status: 400 });
+        }
+      }
     }
   }
 
-  const classAmountCents = classSession.priceCents;
+  const catalogInitialPriceCents =
+    catalog?.ccw.find((card) => card.key === "initial")?.priceCents ??
+    vendor.priceInitial ??
+    null;
+
   const feeRules = catalog?.fees ?? [];
-  const passThrough = applicableFeeSnapshots(feeRules, classSession.classType);
-  const amounts = buildCheckoutAmounts(classAmountCents, passThrough);
+  const amounts = buildCartCheckoutAmounts(
+    validated.sessions,
+    feeRules,
+    catalogInitialPriceCents
+  );
+
+  const tuitionNameParts = validated.sessions.map((s) => sessionDisplayTitle(s));
+  const tuitionName =
+    validated.sessions.length === 1
+      ? `${vendor.name} — ${tuitionNameParts[0]}`
+      : `${vendor.name} — ${tuitionNameParts.join(" + ")}`;
+  const tuitionDescription = validated.sessions
+    .map((s) => `${sessionDisplayTitle(s)}: ${s.startsAt.toISOString()}`)
+    .join("; ");
+
   const lines = buildCheckoutLines({
-    tuitionName: `${classSession.vendor.name} — ${
-      classSession.title ??
-      (classSession.classType === "initial"
-        ? "16hr Initial CCW"
-        : classSession.classType === "add_a_gun"
-          ? "Add a gun"
-          : classSession.classType === "renewal"
-            ? "8hr Renewal"
-            : "Class")
-    }`,
-    tuitionDescription: `Class date: ${classSession.startsAt.toISOString()}`,
+    tuitionName,
+    tuitionDescription,
     feeNotes: feeRules.map((fee) => ({ id: fee.id, note: fee.note })),
     amounts,
   }).filter((line) => line.unitAmountCents > 0);
 
+  const primary = validated.primary;
   const snapshot = await prisma.checkoutFeeSnapshot.create({
     data: {
-      classSessionId: classSession.id,
+      classSessionId: primary.id,
       classAmountCents: amounts.classTuitionCents,
       serviceFeeCents: amounts.platformFeeCents,
       passThroughFees: amounts.passThrough as Prisma.InputJsonValue,
@@ -154,6 +223,7 @@ export async function POST(req: Request) {
     new URL(req.url).origin;
 
   const stripe = getStripe();
+  const orderedIds = validated.sessions.map((s) => s.id);
 
   let checkoutSession;
   try {
@@ -177,13 +247,14 @@ export async function POST(req: Request) {
         application_fee_amount: amounts.platformFeeCents,
         receipt_email: customerEmail,
         transfer_data: {
-          destination: classSession.vendor.stripeConnectAccountId,
+          destination: vendor.stripeConnectAccountId,
         },
       },
-      return_url: `${origin}/instructors/${classSession.vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${origin}/instructors/${vendor.slug}/book/success?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
-        classSessionId: classSession.id,
-        vendorId: classSession.vendorId,
+        classSessionId: primary.id,
+        classSessionIds: orderedIds.join(","),
+        vendorId: vendor.id,
         customerName,
         customerFirstName: firstName,
         customerEmail,

@@ -11,6 +11,7 @@ type DemoSessionSeed = {
   durationHours: number;
   title: string;
   priceCents: number;
+  dayIndex?: 1 | 2 | null;
 };
 
 export const DEMO_CLASS_SESSIONS: DemoSessionSeed[] = [
@@ -19,9 +20,20 @@ export const DEMO_CLASS_SESSIONS: DemoSessionSeed[] = [
     daysFromNow: 32,
     startHour: 9,
     classType: "initial",
-    durationHours: 16,
-    title: "Demo — 16hr Initial CCW (sandbox)",
+    durationHours: 8,
+    title: "Demo — Initial CCW Day 1 (sandbox)",
     priceCents: 175_00,
+    dayIndex: 1,
+  },
+  {
+    id: "seed_demo_ccw_session_1b",
+    daysFromNow: 33,
+    startHour: 9,
+    classType: "initial",
+    durationHours: 8,
+    title: "Demo — Initial CCW Day 2 (sandbox)",
+    priceCents: 175_00,
+    dayIndex: 2,
   },
   {
     id: "seed_demo_ccw_session_2",
@@ -37,9 +49,20 @@ export const DEMO_CLASS_SESSIONS: DemoSessionSeed[] = [
     daysFromNow: 46,
     startHour: 9,
     classType: "initial",
-    durationHours: 16,
-    title: "Demo — 16hr Initial CCW (sandbox)",
+    durationHours: 8,
+    title: "Demo — Initial CCW Day 1 (sandbox)",
     priceCents: 175_00,
+    dayIndex: 1,
+  },
+  {
+    id: "seed_demo_ccw_session_3b",
+    daysFromNow: 47,
+    startHour: 9,
+    classType: "initial",
+    durationHours: 8,
+    title: "Demo — Initial CCW Day 2 (sandbox)",
+    priceCents: 175_00,
+    dayIndex: 2,
   },
   {
     id: "seed_demo_ccw_session_4",
@@ -49,15 +72,6 @@ export const DEMO_CLASS_SESSIONS: DemoSessionSeed[] = [
     durationHours: 8,
     title: "Demo — 8hr Renewal CCW (sandbox)",
     priceCents: 95_00,
-  },
-  {
-    id: "seed_demo_ccw_session_5",
-    daysFromNow: 60,
-    startHour: 9,
-    classType: "initial",
-    durationHours: 16,
-    title: "Demo — 16hr Initial CCW (sandbox)",
-    priceCents: 175_00,
   },
 ];
 
@@ -113,6 +127,7 @@ export async function upsertDemoClassSessions(prisma: PrismaClient, vendorId: st
         endsAt,
         title: s.title,
         classType: s.classType,
+        dayIndex: s.dayIndex ?? null,
         priceCents: s.priceCents,
         capacity: 12,
         enrolled: 0,
@@ -124,6 +139,7 @@ export async function upsertDemoClassSessions(prisma: PrismaClient, vendorId: st
         endsAt,
         title: s.title,
         classType: s.classType,
+        dayIndex: s.dayIndex ?? null,
         priceCents: s.priceCents,
         capacity: 12,
         timezone: "America/Los_Angeles",
@@ -132,7 +148,11 @@ export async function upsertDemoClassSessions(prisma: PrismaClient, vendorId: st
   }
 
   await prisma.classSession.deleteMany({
-    where: { id: "seed_demo_ccw_session_initial" },
+    where: {
+      id: {
+        in: ["seed_demo_ccw_session_initial", "seed_demo_ccw_session_5"],
+      },
+    },
   });
 }
 

@@ -76,6 +76,7 @@ async function signatureName(
 export async function sendBookingConfirmationEmail(input: {
   prismaVendorId: string;
   classSessionId: string;
+  bookingId?: string;
   customerName: string;
   customerFirstName?: string;
   customerEmail: string;
@@ -128,21 +129,77 @@ export async function sendBookingConfirmationEmail(input: {
     "See your instructor for location details";
   const studentName = input.customerName.trim() || "there";
 
+  let classDate = formatInTimezone(session.startsAt, tz, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  let classTime = formatInTimezone(session.startsAt, tz, {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  let classType = classTypeLabel(session.classType, session.title);
+
+  if (input.bookingId) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: input.bookingId },
+      select: {
+        classSession: {
+          select: { startsAt: true, title: true, classType: true, timezone: true, dayIndex: true },
+        },
+        bookingSessions: {
+          select: {
+            classSession: {
+              select: { startsAt: true, title: true, classType: true, timezone: true, dayIndex: true },
+            },
+          },
+        },
+      },
+    });
+    if (booking) {
+      const all = [
+        booking.classSession,
+        ...booking.bookingSessions.map((row) => row.classSession),
+      ];
+      const unique = [
+        ...new Map(
+          all.map((row) => [`${row.startsAt.toISOString()}|${row.classType}`, row])
+        ).values(),
+      ].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+      if (unique.length > 1) {
+        classType = unique
+          .map((row) => classTypeLabel(row.classType, row.title))
+          .join(" + ");
+        classDate = unique
+          .map((row) =>
+            formatInTimezone(row.startsAt, row.timezone || tz, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })
+          )
+          .join(" · ");
+        classTime = unique
+          .map((row) =>
+            formatInTimezone(row.startsAt, row.timezone || tz, {
+              hour: "numeric",
+              minute: "2-digit",
+              timeZoneName: "short",
+            })
+          )
+          .join(" · ");
+      }
+    }
+  }
+
   const values: Record<string, string> = {
     first_name: firstNameFrom(studentName, input.customerFirstName),
     student_name: studentName,
-    class_type: classTypeLabel(session.classType, session.title),
-    class_date: formatInTimezone(session.startsAt, tz, {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    }),
-    class_time: formatInTimezone(session.startsAt, tz, {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZoneName: "short",
-    }),
+    class_type: classType,
+    class_date: classDate,
+    class_time: classTime,
     company_name: companyName,
     instructor_name: instructorName,
     instructor_email: instructorEmail,

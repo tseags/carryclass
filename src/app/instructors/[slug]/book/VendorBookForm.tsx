@@ -5,11 +5,16 @@ import Link from "next/link";
 import { PLATFORM_SERVICE_FEE_PERCENT_LABEL } from "@/lib/booking-constants";
 import {
   PLATFORM_FEE_LINE_LABEL,
-  applicableFeeSnapshots,
-  buildCheckoutAmounts,
   formatCents,
   type FeeRule,
 } from "@/lib/instructor-catalog";
+import {
+  buildCartCheckoutAmounts,
+  dayIndexLabel,
+  sessionDisplayTitle,
+  validateInitialPair,
+  type CartSessionLike,
+} from "@/lib/booking-cart";
 import { BookingPaymentStep } from "./BookingPaymentStep";
 
 export type SerializableSession = {
@@ -18,6 +23,7 @@ export type SerializableSession = {
   endsAt: string | null;
   title: string | null;
   classType: string;
+  dayIndex: number | null;
   priceCents: number;
   spotsLeft: number;
   timezone: string;
@@ -32,6 +38,7 @@ type Props = {
   extraClassChoices?: { key: string; label: string }[];
   initialClassKey?: string | null;
   checkoutFees?: FeeRule[];
+  catalogInitialPriceCents?: number | null;
 };
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -112,11 +119,26 @@ function filterLabel(key: string, options: { key: string; label: string }[]) {
   return options.find((o) => o.key === key)?.label ?? key;
 }
 
-function defaultSessionTitle(classType: string) {
-  if (classType === "initial") return "16hr Initial";
-  if (classType === "add_a_gun") return "Add a gun";
-  if (classType === "renewal") return "8hr Renewal";
-  return "Class";
+function toCartSession(s: SerializableSession): CartSessionLike {
+  return {
+    id: s.id,
+    classType: s.classType,
+    startsAt: new Date(s.startsAt),
+    timezone: s.timezone,
+    priceCents: s.priceCents,
+    dayIndex: s.dayIndex,
+    enrolled: 0,
+    capacity: Math.max(s.spotsLeft, 1),
+    title: s.title,
+  };
+}
+
+function sessionTitle(s: SerializableSession) {
+  return sessionDisplayTitle({
+    title: s.title,
+    classType: s.classType,
+    dayIndex: s.dayIndex,
+  });
 }
 
 function formatDateKeyInTz(date: Date, timezone: string) {
@@ -212,6 +234,7 @@ export function VendorBookForm({
   extraClassChoices = [],
   initialClassKey = null,
   checkoutFees = [],
+  catalogInitialPriceCents = null,
 }: Props) {
   const filterOptions = [
     { key: "__all__", label: "All" },
@@ -220,11 +243,20 @@ export function VendorBookForm({
   ];
   const [classTypeStepComplete, setClassTypeStepComplete] = useState(Boolean(initialClassKey));
   const [selectedClassFilter, setSelectedClassFilter] = useState<string | null>(initialClassKey);
+  const [cartIds, setCartIds] = useState<string[]>([]);
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const [calendarCommitted, setCalendarCommitted] = useState(false);
 
   const sessionsForType = useMemo(() => {
     if (!classTypeStepComplete || selectedClassFilter === null) return [];
     return applyClassFilter(selectedClassFilter, sessions);
   }, [sessions, selectedClassFilter, classTypeStepComplete]);
+
+  const isInitialPick = selectedClassFilter === "initial";
+  const availableInitial = useMemo(
+    () => sessions.filter((s) => s.classType === "initial").map(toCartSession),
+    [sessions]
+  );
 
   const tzForType =
     sessionsForType[0]?.timezone || sessions[0]?.timezone || "America/Los_Angeles";
@@ -246,7 +278,6 @@ export function VendorBookForm({
 
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [selectedDateKey, setSelectedDateKey] = useState(firstAvailableDateKey);
-  const [classSessionId, setClassSessionId] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -266,13 +297,39 @@ export function VendorBookForm({
   );
   const calendarDays = useMemo(() => buildCalendarDays(currentMonth), [currentMonth]);
 
-  const selected = sessions.find((s) => s.id === classSessionId);
-  const classCents = selected?.priceCents ?? 0;
-  const passThrough = selected
-    ? applicableFeeSnapshots(checkoutFees, selected.classType)
-    : [];
-  const amounts = buildCheckoutAmounts(classCents, passThrough);
+  const pendingSessions = useMemo(
+    () =>
+      pendingIds
+        .map((id) => sessions.find((s) => s.id === id))
+        .filter((s): s is SerializableSession => Boolean(s)),
+    [pendingIds, sessions]
+  );
+  const cartSessions = useMemo(
+    () =>
+      cartIds
+        .map((id) => sessions.find((s) => s.id === id))
+        .filter((s): s is SerializableSession => Boolean(s)),
+    [cartIds, sessions]
+  );
+
+  const pendingReady = useMemo(() => {
+    if (isInitialPick) {
+      return validateInitialPair(
+        pendingSessions.map(toCartSession),
+        availableInitial
+      ).ok;
+    }
+    return pendingIds.length === 1;
+  }, [isInitialPick, pendingSessions, availableInitial, pendingIds.length]);
+
+  const amounts = buildCartCheckoutAmounts(
+    cartSessions.map(toCartSession),
+    checkoutFees,
+    catalogInitialPriceCents
+  );
   const feeNotes = new Map(checkoutFees.map((fee) => [fee.id, fee.note]));
+  /** Cart has at least one committed session (details stay available while adding more). */
+  const cartReady = cartIds.length > 0;
 
   function selectClassType(key: string) {
     const nextSessions = applyClassFilter(key, sessions);
@@ -288,21 +345,74 @@ export function VendorBookForm({
     setClassTypeStepComplete(true);
     setSelectedDateKey(nextDates[0] ?? "");
     setCurrentMonth(new Date(firstStartsAt.getFullYear(), firstStartsAt.getMonth(), 1));
-    setClassSessionId("");
+    setPendingIds([]);
+    setCalendarCommitted(false);
     setError(null);
   }
 
   function editClassTypeStep() {
     setClassTypeStepComplete(false);
     setSelectedClassFilter(null);
-    setClassSessionId("");
+    setPendingIds([]);
+    setCalendarCommitted(false);
     setError(null);
+  }
+
+  function commitPendingToCart() {
+    if (!pendingReady) {
+      setError(
+        isInitialPick
+          ? "Initial is 16 hours across two days — select both."
+          : "Choose a class session."
+      );
+      return;
+    }
+    setCartIds((prev) => {
+      // Replacing an Initial pair keeps the cart at exactly two Initial days.
+      const base = isInitialPick
+        ? prev.filter((id) => sessions.find((s) => s.id === id)?.classType !== "initial")
+        : prev.filter((id) => !pendingIds.includes(id));
+      return [...new Set([...base, ...pendingIds])];
+    });
+    setPendingIds([]);
+    setCalendarCommitted(true);
+    setError(null);
+  }
+
+  function addAnotherClass() {
+    setClassTypeStepComplete(false);
+    setSelectedClassFilter(null);
+    setPendingIds([]);
+    setCalendarCommitted(false);
+    setError(null);
+  }
+
+  function togglePendingSession(id: string) {
+    setCalendarCommitted(false);
+    setError(null);
+    if (isInitialPick) {
+      setPendingIds((prev) => {
+        if (prev.includes(id)) return prev.filter((x) => x !== id);
+        if (prev.length >= 2) return [prev[1]!, id];
+        return [...prev, id];
+      });
+      return;
+    }
+    setPendingIds([id]);
+  }
+
+  function removeFromCart(id: string) {
+    setCartIds((prev) => {
+      const next = prev.filter((x) => x !== id);
+      if (next.length === 0) setCalendarCommitted(false);
+      return next;
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!classSessionId) {
+    if (cartIds.length === 0) {
       setError("Choose a class session.");
       return;
     }
@@ -320,7 +430,8 @@ export function VendorBookForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vendorSlug,
-          classSessionId,
+          classSessionIds: cartIds,
+          classSessionId: cartIds[0],
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           customerEmail: customerEmail.trim(),
@@ -361,7 +472,10 @@ export function VendorBookForm({
     );
   }
 
-  if (paymentClientSecret && selected) {
+  if (paymentClientSecret && cartSessions.length > 0) {
+    const whenLabel = cartSessions
+      .map((s) => `${sessionTitle(s)}: ${formatSessionDateLong(s)} · ${formatSessionTime(s)}`)
+      .join(" · ");
     return (
       <BookingPaymentStep
         clientSecret={paymentClientSecret}
@@ -370,8 +484,8 @@ export function VendorBookForm({
           setError(null);
         }}
         summary={{
-          classTitle: selected.title ?? defaultSessionTitle(selected.classType),
-          whenLabel: `${formatSessionDateLong(selected)} · ${formatSessionTime(selected)}`,
+          classTitle: cartSessions.map((s) => sessionTitle(s)).join(" + "),
+          whenLabel,
           customerName: `${firstName.trim()} ${lastName.trim()}`,
           customerEmail: customerEmail.trim(),
           classAmountCents: amounts.classTuitionCents,
@@ -391,7 +505,7 @@ export function VendorBookForm({
   }
 
   const step1Expanded = !classTypeStepComplete;
-  const step2Active = classTypeStepComplete;
+  const step2Active = classTypeStepComplete && !calendarCommitted;
 
   const detailsLookFilled =
     Boolean(firstName.trim()) &&
@@ -399,10 +513,10 @@ export function VendorBookForm({
     Boolean(customerEmail.trim()) &&
     phoneTenDigits(customerPhone).length === 10;
 
-  /** 1 class type → 2 date/session → 3 details → 4 summary (light, after details look ready) */
+  /** 1 class type → 2 date/session → 3 details → 4 summary */
   const focusStep: 1 | 2 | 3 | 4 = !classTypeStepComplete
     ? 1
-    : !classSessionId
+    : !cartReady
       ? 2
       : detailsLookFilled
         ? 4
@@ -512,20 +626,64 @@ export function VendorBookForm({
             <CardIcon type="calendar" onTan={focusStep === 2} />
             <h2
               id="book-step-2-title"
-              className={`!mb-0 text-xs font-semibold ${step2Active ? "text-zinc-900" : "text-zinc-400"}`}
+              className={`!mb-0 text-xs font-semibold ${
+                classTypeStepComplete ? "text-zinc-900" : "text-zinc-400"
+              }`}
             >
-              Pick a date &amp; session
+              {isInitialPick ? "Pick two days & sessions" : "Pick a date & session"}
             </h2>
           </div>
 
-          {!step2Active && (
+          {!classTypeStepComplete && (
             <p className="mt-2 text-sm leading-snug text-zinc-500">
               Complete step 1 to see available dates and class times.
             </p>
           )}
 
+          {classTypeStepComplete && calendarCommitted && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm leading-snug text-zinc-700">
+                <span className="text-zinc-500">In your cart:</span>{" "}
+                <span className="font-medium text-zinc-900">
+                  {cartSessions.map((s) => sessionTitle(s)).join(" + ") || "—"}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={addAnotherClass}
+                className="text-xs font-medium text-[#C1440E] underline-offset-2 hover:underline"
+              >
+                Add another class
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCartIds([]);
+                  setCalendarCommitted(false);
+                  setPendingIds([]);
+                }}
+                className="ml-4 text-xs font-medium text-zinc-600 underline-offset-2 hover:underline"
+              >
+                Change dates
+              </button>
+            </div>
+          )}
+
           {step2Active && (
             <>
+              {isInitialPick && (
+                <p className="mt-2 text-sm leading-snug text-zinc-600">
+                  Initial is 16 hours across two days — select both.
+                  {pendingIds.length > 0 && (
+                    <span className="mt-1 block font-medium text-zinc-800">
+                      Selected {pendingIds.length}/2
+                      {pendingSessions.length > 0
+                        ? `: ${pendingSessions.map((s) => sessionTitle(s)).join(", ")}`
+                        : ""}
+                    </span>
+                  )}
+                </p>
+              )}
               <div className="mt-4 border-t border-zinc-100 pt-4">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <button
@@ -589,7 +747,6 @@ export function VendorBookForm({
                         disabled={!hasSessions}
                         onClick={() => {
                           setSelectedDateKey(key);
-                          setClassSessionId("");
                           setError(null);
                         }}
                         className={`group h-9 rounded-md border text-xs transition-colors ${
@@ -635,21 +792,19 @@ export function VendorBookForm({
                 ) : (
                   <div
                     className="mt-3 space-y-2"
-                    role="radiogroup"
+                    role={isInitialPick ? "group" : "radiogroup"}
                     aria-label="Class session"
                   >
                     {sessionsForDate.map((s) => {
-                      const checked = classSessionId === s.id;
+                      const checked = pendingIds.includes(s.id);
+                      const dayLabel = dayIndexLabel(s.dayIndex);
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          role="radio"
+                          role={isInitialPick ? "checkbox" : "radio"}
                           aria-checked={checked}
-                          onClick={() => {
-                            setClassSessionId(s.id);
-                            setError(null);
-                          }}
+                          onClick={() => togglePendingSession(s.id)}
                           className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors ${
                             checked
                               ? "border-[#C1440E] bg-[#fefcf9] ring-1 ring-[#C1440E]/30"
@@ -658,24 +813,31 @@ export function VendorBookForm({
                         >
                           <span
                             aria-hidden
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 bg-[#fefcf9] transition-colors ${
-                              checked ? "border-[#C1440E]" : "border-[#cfc7b8]"
-                            }`}
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 bg-[#fefcf9] transition-colors ${
+                              isInitialPick ? "rounded-md" : "rounded-full"
+                            } ${checked ? "border-[#C1440E]" : "border-[#cfc7b8]"}`}
                           >
                             <span
-                              className={`h-2.5 w-2.5 rounded-full bg-[#C1440E] transition-opacity ${
-                                checked ? "opacity-100" : "opacity-0"
-                              }`}
+                              className={`h-2.5 w-2.5 bg-[#C1440E] transition-opacity ${
+                                isInitialPick ? "rounded-sm" : "rounded-full"
+                              } ${checked ? "opacity-100" : "opacity-0"}`}
                             />
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
                               <p className="font-semibold text-zinc-900">
-                                {s.title ?? defaultSessionTitle(s.classType)}
+                                {sessionTitle(s)}
+                                {dayLabel ? (
+                                  <span className="ml-2 text-xs font-medium text-[#C1440E]">
+                                    {dayLabel}
+                                  </span>
+                                ) : null}
                               </p>
-                              <p className="shrink-0 font-semibold text-zinc-900">
-                                ${(s.priceCents / 100).toFixed(2)}
-                              </p>
+                              {!isInitialPick && (
+                                <p className="shrink-0 font-semibold text-zinc-900">
+                                  ${(s.priceCents / 100).toFixed(2)}
+                                </p>
+                              )}
                             </div>
                             <p className="mt-1 text-zinc-600">
                               {formatSessionTime(s)} - {s.spotsLeft} spot
@@ -694,6 +856,20 @@ export function VendorBookForm({
                     })}
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={commitPendingToCart}
+                  disabled={!pendingReady}
+                  className="mt-4 w-full rounded-lg bg-[#C1440E] px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isInitialPick
+                    ? pendingReady
+                      ? "Continue with these two days"
+                      : "Select two days to continue"
+                    : pendingReady
+                      ? "Add to cart"
+                      : "Select a session to continue"}
+                </button>
               </div>
             </>
           )}
@@ -723,7 +899,7 @@ export function VendorBookForm({
                   required
                   autoComplete="given-name"
                   value={firstName}
-                  disabled={!classSessionId}
+                  disabled={!cartReady}
                   onChange={(e) => setFirstName(e.target.value)}
                   className={FIELD_CLASS}
                 />
@@ -738,7 +914,7 @@ export function VendorBookForm({
                   required
                   autoComplete="family-name"
                   value={lastName}
-                  disabled={!classSessionId}
+                  disabled={!cartReady}
                   onChange={(e) => setLastName(e.target.value)}
                   className={FIELD_CLASS}
                 />
@@ -754,7 +930,7 @@ export function VendorBookForm({
                 required
                 autoComplete="email"
                 value={customerEmail}
-                disabled={!classSessionId}
+                disabled={!cartReady}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 className={FIELD_CLASS}
               />
@@ -771,7 +947,7 @@ export function VendorBookForm({
                 inputMode="tel"
                 placeholder="(555)555-5555"
                 value={customerPhone}
-                disabled={!classSessionId}
+                disabled={!cartReady}
                 aria-invalid={phoneError ? true : undefined}
                 aria-describedby={phoneError ? "phone-error" : undefined}
                 onChange={(e) => {
@@ -806,12 +982,41 @@ export function VendorBookForm({
             <CardIcon type="cart" onTan={focusStep === 4} />
             <h2 className="!mb-0 text-xs font-semibold text-zinc-900">Order summary</h2>
           </div>
+          {cartSessions.length > 0 && (
+            <ul
+              className="space-y-2 text-zinc-700"
+              style={{ listStyle: "none", margin: "1.25rem 0 0", padding: 0 }}
+            >
+              {cartSessions.map((s) => (
+                <li key={s.id} className="flex justify-between gap-3 text-xs">
+                  <span className="min-w-0">
+                    <span className="font-medium text-zinc-900">{sessionTitle(s)}</span>
+                    <span className="mt-0.5 block text-zinc-500">
+                      {formatSessionDateLong(s)} · {formatSessionTime(s)}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeFromCart(s.id)}
+                    className="shrink-0 text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <ul
             className="space-y-1.5 text-zinc-700"
             style={{ listStyle: "none", margin: "1.25rem 0 0", padding: 0 }}
           >
             <li className="flex justify-between gap-4">
-              <span className="text-zinc-600">Class price</span>
+              <span className="text-zinc-600">
+                {cartSessions.some((s) => s.classType === "initial") &&
+                cartSessions.filter((s) => s.classType === "initial").length === 2
+                  ? "Class price (Initial package)"
+                  : "Class price"}
+              </span>
               <span className="tabular-nums font-medium text-zinc-900">
                 {formatCents(amounts.classTuitionCents)}
               </span>
@@ -865,8 +1070,9 @@ export function VendorBookForm({
                 </p>
                 <p className="!mb-0">
                   Set by the instructor and applies to the class price and fees they add, such as
-                  range or ammo. The CarryClass transaction fee ({PLATFORM_SERVICE_FEE_PERCENT_LABEL}) is
-                  non-refundable.
+                  range or ammo. For multi-day bookings, the deadline is before your first class day.
+                  The CarryClass transaction fee ({PLATFORM_SERVICE_FEE_PERCENT_LABEL}) is
+                  non-refundable. Refunds cover the whole payment.
                 </p>
               </div>
             )}
@@ -879,9 +1085,19 @@ export function VendorBookForm({
           </p>
         )}
 
+        {cartReady && (
+          <button
+            type="button"
+            onClick={addAnotherClass}
+            className="w-full rounded-lg border border-[#cfc7b8] bg-white px-3 py-2.5 text-sm font-medium text-zinc-800 hover:border-[#C1440E]/50"
+          >
+            Add another class
+          </button>
+        )}
+
         <button
           type="submit"
-          disabled={submitting || !classSessionId}
+          disabled={submitting || !cartReady}
           className="btn-primary bg-secondary-2 small w-button w-full disabled:cursor-not-allowed"
         >
           {submitting ? "Preparing secure payment…" : "Continue to payment"}

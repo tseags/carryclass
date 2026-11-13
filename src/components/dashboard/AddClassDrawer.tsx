@@ -179,6 +179,11 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
   const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState(60);
   const [classType, setClassType] = useState("");
+  const [dayIndex, setDayIndex] = useState<"" | "1" | "2">("");
+  const [twoDayInitial, setTwoDayInitial] = useState(false);
+  const [date2, setDate2] = useState("");
+  const [startTime2, setStartTime2] = useState("");
+  const [duration2, setDuration2] = useState(480);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [rangeLocation, setRangeLocation] = useState("");
@@ -197,8 +202,13 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
     setDate("");
     setEndDate("");
     setStartTime("");
-    setDuration(60);
+    setDuration(first?.class_type === "initial" ? 480 : 60);
     setClassType(first?.class_type ?? "initial");
+    setDayIndex("");
+    setTwoDayInitial(false);
+    setDate2("");
+    setStartTime2("");
+    setDuration2(480);
     setDescription("");
     setLocation("");
     setRangeLocation("");
@@ -245,6 +255,16 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
       setError("Please fill in date and start time.");
       return;
     }
+    const schedulingTwoDays =
+      classType === "initial" && twoDayInitial && recurrence === "one-time";
+    if (schedulingTwoDays && (!date2 || !startTime2)) {
+      setError("Please fill in Day 2 date and start time.");
+      return;
+    }
+    if (schedulingTwoDays && date2 === date) {
+      setError("Day 1 and Day 2 must be on different dates.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -255,36 +275,67 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
       const selectedType = allClassTypes.find((ct) => ct.class_type === classType);
       const classroom = location.trim();
       const range = sameLocation ? classroom : rangeLocation.trim();
+      const baseTitle = isCustomClassKey(classType)
+        ? selectedType?.display_name?.trim() || "Class"
+        : CLASS_TYPE_LABELS[classType] ?? classType;
+
+      const payload: Record<string, unknown> = {
+        class_type: classType,
+        title: baseTitle,
+        description: description.trim(),
+        location: classroom,
+        range_location: range,
+        max_students: maxStudents,
+        price: isAddAGun ? "" : price,
+        gun_pricing: isAddAGun ? buildGunPricingPayload(gunPricing) : null,
+        is_recurring: recurrence !== "one-time",
+        recurrence_rule: recurrenceRule,
+      };
+
+      if (schedulingTwoDays) {
+        const start2 = new Date(`${date2}T${startTime2}`);
+        const end2 = new Date(start2.getTime() + duration2 * 60000);
+        payload.days = [
+          {
+            start_time: startDt.toISOString(),
+            end_time: endDt.toISOString(),
+            day_index: 1,
+            title: `${baseTitle} (Day 1)`,
+          },
+          {
+            start_time: start2.toISOString(),
+            end_time: end2.toISOString(),
+            day_index: 2,
+            title: `${baseTitle} (Day 2)`,
+          },
+        ];
+      } else {
+        payload.start_time = startDt.toISOString();
+        payload.end_time = endDt.toISOString();
+        payload.day_index =
+          classType === "initial" && dayIndex ? Number(dayIndex) : null;
+        if (classType === "initial" && dayIndex) {
+          payload.title = `${baseTitle} (Day ${dayIndex})`;
+        }
+      }
 
       const res = await fetch("/api/dashboard/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          class_type: classType,
-          title: isCustomClassKey(classType)
-            ? selectedType?.display_name?.trim() || "Class"
-            : CLASS_TYPE_LABELS[classType] ?? classType,
-          description: description.trim(),
-          location: classroom,
-          range_location: range,
-          start_time: startDt.toISOString(),
-          end_time: endDt.toISOString(),
-          max_students: maxStudents,
-          price: isAddAGun ? "" : price,
-          gun_pricing: isAddAGun ? buildGunPricingPayload(gunPricing) : null,
-          is_recurring: recurrence !== "one-time",
-          recurrence_rule: recurrenceRule,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Unable to add class.");
         return;
       }
-      onSaved(
+      const createdList = (data.classes as VendorCalendarClass[] | undefined) ?? [
         data.class as VendorCalendarClass,
-        (data.classTypes as VendorClassType[]) ?? []
-      );
+      ];
+      const updatedTypes = (data.classTypes as VendorClassType[]) ?? [];
+      for (const created of createdList) {
+        if (created) onSaved(created, updatedTypes);
+      }
       onClose();
     } catch {
       setError("Unable to add class.");
@@ -343,7 +394,11 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>
-              {recurrence === "one-time" ? "Date" : "Start date"}
+              {classType === "initial" && twoDayInitial && recurrence === "one-time"
+                ? "Day 1 date"
+                : recurrence === "one-time"
+                  ? "Date"
+                  : "Start date"}
             </label>
             <input
               type="date"
@@ -403,6 +458,12 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
               const val = e.target.value;
               setClassType(val);
               if (val !== "add_a_gun") setPrice(priceForType(val));
+              if (val === "initial") {
+                setDuration((d) => (d < 480 ? 480 : d));
+              } else {
+                setTwoDayInitial(false);
+                setDayIndex("");
+              }
             }}
             className={inputClass}
           >
@@ -413,6 +474,92 @@ export function AddClassDrawer({ open, onClose, classTypes, onSaved }: Props) {
             ))}
           </select>
         </div>
+
+        {classType === "initial" && recurrence === "one-time" && (
+          <div className="space-y-4 rounded-xl bg-[#F6F3EE] p-4">
+            <label className="flex items-center gap-2 text-xs font-medium text-[#5C554C]">
+              <input
+                type="checkbox"
+                checked={twoDayInitial}
+                onChange={(e) => {
+                  setTwoDayInitial(e.target.checked);
+                  if (e.target.checked) {
+                    setDayIndex("");
+                    setDuration(480);
+                    setDuration2(480);
+                  }
+                }}
+                className="h-4 w-4 rounded border-[#D6CEC3] text-[#C1440E] focus:ring-[#C1440E]"
+              />
+              Schedule both days (16 hours across two dates)
+            </label>
+
+            {twoDayInitial ? (
+              <div className="space-y-4">
+                <p className="!m-0 text-xs text-[#7A7268]">
+                  Creates Day 1 and Day 2 as separate calendar rows. Students book both for one
+                  Initial package price.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Day 2 date</label>
+                    <input
+                      type="date"
+                      value={date2}
+                      min={today}
+                      onChange={(e) => setDate2(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Day 2 start time</label>
+                    <input
+                      type="time"
+                      value={startTime2}
+                      onChange={(e) => setStartTime2(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Day 2 duration</label>
+                  <select
+                    value={duration2}
+                    onChange={(e) => setDuration2(Number(e.target.value))}
+                    className={inputClass}
+                  >
+                    {DURATION_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d >= 60 ? `${d / 60}h${d % 60 ? ` ${d % 60}m` : ""}` : `${d}m`}
+                      </option>
+                    ))}
+                  </select>
+                  {duration + duration2 !== 960 && (
+                    <p className="mt-1.5 text-xs text-[#7A7268]">
+                      Tip: Initial is usually 16 hours total (currently{" "}
+                      {(duration + duration2) / 60}h).
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className={labelClass}>
+                  Day label <span className="text-[#8A837A]">(optional)</span>
+                </label>
+                <select
+                  value={dayIndex}
+                  onChange={(e) => setDayIndex(e.target.value as "" | "1" | "2")}
+                  className={inputClass}
+                >
+                  <option value="">None</option>
+                  <option value="1">Day 1</option>
+                  <option value="2">Day 2</option>
+                </select>
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">

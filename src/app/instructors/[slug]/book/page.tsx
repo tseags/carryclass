@@ -110,10 +110,13 @@ export default async function VendorBookPage({ params, searchParams }: PageProps
       endsAt: s.endsAt?.toISOString() ?? null,
       title: s.title,
       classType: s.classType,
+      dayIndex: s.dayIndex,
       priceCents: s.priceCents,
       spotsLeft: s.spotsLeft,
       timezone: s.timezone,
     })) ?? [];
+  const catalogInitialPriceCents =
+    catalog?.ccw.find((card) => card.key === "initial")?.priceCents ?? null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -141,6 +144,7 @@ export default async function VendorBookPage({ params, searchParams }: PageProps
             extraClassChoices={extraClassChoices}
             initialClassKey={requestedClass}
             checkoutFees={catalog?.fees ?? []}
+            catalogInitialPriceCents={catalogInitialPriceCents}
           />
         </div>
       </main>

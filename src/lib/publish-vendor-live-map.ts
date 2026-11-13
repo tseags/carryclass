@@ -47,6 +47,8 @@ export type SessionScaffoldInput = {
   classType: string;
   priceCents: number;
   capacity: number;
+  /** Optional Initial day label: 1 | 2. */
+  dayIndex?: number | null;
 };
 
 export type PrismaVendorPublishData = {
@@ -340,6 +342,9 @@ export function calendarClassesToSessions(
       const key = `${occurrence.startsAt.getTime()}|${rawType}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      const dayIndex =
+        cls.day_index === 1 || cls.day_index === 2 ? cls.day_index : null;
+
       out.push({
         startsAt: occurrence.startsAt,
         endsAt: occurrence.endsAt,
@@ -347,6 +352,7 @@ export function calendarClassesToSessions(
         classType: rawType,
         priceCents,
         capacity,
+        dayIndex,
       });
     }
   }

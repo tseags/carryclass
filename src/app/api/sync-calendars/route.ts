@@ -219,11 +219,22 @@ async function handleCancelledClasses(vendor: VendorRow) {
 
     for (const booking of bookings as { id: string; studentEmail: string; stripePaymentIntentId: string }[]) {
       try {
-        // Issue full Stripe refund
+        // Issue full Stripe refund (whole cart / all linked sessions)
         if (booking.stripePaymentIntentId) {
           await getStripe().refunds.create({
             payment_intent: booking.stripePaymentIntentId,
           });
+        }
+        try {
+          const { markBookingRefundedAndFreeSeats } = await import(
+            "@/lib/refund-booking-seats"
+          );
+          await markBookingRefundedAndFreeSeats(booking.id);
+        } catch (seatErr) {
+          console.error(
+            `Failed to free seats after refund for booking ${booking.id}:`,
+            seatErr
+          );
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://getcarryclass.com";

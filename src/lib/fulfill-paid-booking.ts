@@ -54,15 +54,26 @@ function isUniqueViolation(error: unknown): boolean {
   return meta?.code === "23505" || `${meta?.message ?? ""} ${error.message}`.includes("23505");
 }
 
+function parseSessionIdsFromMetadata(md: Stripe.Metadata): string[] {
+  const fromList = (md.classSessionIds ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const primary = md.classSessionId?.trim();
+  if (fromList.length > 0) return [...new Set(fromList)];
+  return primary ? [primary] : [];
+}
+
 /**
- * Reserve the seat and insert the booking in one statement so pgBouncer
- * transaction mode cannot drop the commit.
- * Returns null when the class is missing or already full.
+ * Reserve seats on every selected session and insert the booking + BookingSession
+ * links in one statement so pgBouncer transaction mode cannot drop the commit.
+ * Returns null when any class is missing or already full.
  */
 async function insertPaidBooking(input: {
   id: string;
   vendorId: string;
-  classSessionId: string;
+  classSessionIds: string[];
+  primaryClassSessionId: string;
   stripeCheckoutSessionId: string;
   stripePaymentIntentId: string | null;
   confirmationCode: string;
@@ -76,68 +87,110 @@ async function insertPaidBooking(input: {
   passThroughCents: number;
   totalAmountCents: number;
 }): Promise<PaidBooking | null> {
+  const sessionIds = [...new Set(input.classSessionIds)];
+  if (sessionIds.length === 0) return null;
+  const primaryId = sessionIds.includes(input.primaryClassSessionId)
+    ? input.primaryClassSessionId
+    : sessionIds[0]!;
+  const linkIds = sessionIds.map(() => randomUUID());
+  const idList = Prisma.join(sessionIds.map((id) => Prisma.sql`${id}`));
+  const linkIdList = Prisma.join(linkIds.map((id) => Prisma.sql`${id}`));
+  const sessionIdListForUnnest = Prisma.join(sessionIds.map((id) => Prisma.sql`${id}`));
+
   const rows = await prisma.$queryRaw<PaidBooking[]>`
     WITH seat AS (
       UPDATE "ClassSession"
       SET enrolled = enrolled + 1
-      WHERE id = ${input.classSessionId}
+      WHERE id IN (${idList})
         AND "vendorId" = ${input.vendorId}
         AND enrolled < capacity
-      RETURNING id, "vendorId"
-    )
-    INSERT INTO "Booking" (
-      "id",
-      "vendorId",
-      "classSessionId",
-      "stripeCheckoutSessionId",
-      "stripePaymentIntentId",
-      "confirmationCode",
-      "customerEmail",
-      "customerName",
-      "customerPhone",
-      "clerkUserId",
-      "classAmountCents",
-      "serviceFeeCents",
-      "passThroughFees",
-      "passThroughCents",
-      "totalAmountCents",
-      "status",
-      "paidAt",
-      "createdAt"
+        AND (
+          SELECT COUNT(*)::int
+          FROM "ClassSession"
+          WHERE id IN (${idList})
+            AND "vendorId" = ${input.vendorId}
+            AND enrolled < capacity
+        ) = ${sessionIds.length}
+      RETURNING id
+    ),
+    booked AS (
+      INSERT INTO "Booking" (
+        "id",
+        "vendorId",
+        "classSessionId",
+        "stripeCheckoutSessionId",
+        "stripePaymentIntentId",
+        "confirmationCode",
+        "customerEmail",
+        "customerName",
+        "customerPhone",
+        "clerkUserId",
+        "classAmountCents",
+        "serviceFeeCents",
+        "passThroughFees",
+        "passThroughCents",
+        "totalAmountCents",
+        "status",
+        "paidAt",
+        "createdAt"
+      )
+      SELECT
+        ${input.id},
+        ${input.vendorId},
+        ${primaryId},
+        ${input.stripeCheckoutSessionId},
+        ${input.stripePaymentIntentId},
+        ${input.confirmationCode},
+        ${input.customerEmail},
+        ${input.customerName},
+        ${input.customerPhone},
+        ${input.clerkUserId},
+        ${input.classAmountCents},
+        ${input.serviceFeeCents},
+        CAST(${input.passThroughFeesJson} AS jsonb),
+        ${input.passThroughCents},
+        ${input.totalAmountCents},
+        CAST('PAID' AS "BookingStatus"),
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      WHERE (SELECT COUNT(*)::int FROM seat) = ${sessionIds.length}
+      RETURNING
+        "id",
+        "vendorId" AS "vendorId",
+        "classSessionId" AS "classSessionId",
+        "customerName" AS "customerName",
+        "customerEmail" AS "customerEmail",
+        "confirmationCode" AS "confirmationCode"
+    ),
+    links AS (
+      INSERT INTO "BookingSession" ("id", "bookingId", "classSessionId")
+      SELECT link_id, booked.id, session_id
+      FROM booked
+      CROSS JOIN LATERAL (
+        SELECT *
+        FROM unnest(
+          ARRAY[${linkIdList}]::text[],
+          ARRAY[${sessionIdListForUnnest}]::text[]
+        ) AS t(link_id, session_id)
+      ) pairs
+      RETURNING "bookingId"
     )
     SELECT
-      ${input.id},
-      seat."vendorId",
-      seat.id,
-      ${input.stripeCheckoutSessionId},
-      ${input.stripePaymentIntentId},
-      ${input.confirmationCode},
-      ${input.customerEmail},
-      ${input.customerName},
-      ${input.customerPhone},
-      ${input.clerkUserId},
-      ${input.classAmountCents},
-      ${input.serviceFeeCents},
-      CAST(${input.passThroughFeesJson} AS jsonb),
-      ${input.passThroughCents},
-      ${input.totalAmountCents},
-      CAST('PAID' AS "BookingStatus"),
-      CURRENT_TIMESTAMP,
-      CURRENT_TIMESTAMP
-    FROM seat
-    RETURNING
-      "id",
-      "vendorId" AS "vendorId",
-      "classSessionId" AS "classSessionId",
-      "customerName" AS "customerName",
-      "customerEmail" AS "customerEmail",
-      "confirmationCode" AS "confirmationCode"
+      booked."id",
+      booked."vendorId",
+      booked."classSessionId",
+      booked."customerName",
+      booked."customerEmail",
+      booked."confirmationCode"
+    FROM booked
   `;
   return rows[0] ?? null;
 }
 
 async function createPaidBooking(session: Stripe.Checkout.Session): Promise<PaidBooking> {
   const md = session.metadata ?? {};
+  const classSessionIds = parseSessionIdsFromMetadata(md);
+  const primaryClassSessionId = md.classSessionId?.trim() || classSessionIds[0] || "";
   let classAmountCents = parseInt(md.classAmountCents ?? "0", 10);
   let serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
   let passThroughFeesJson: string | null = null;
@@ -146,7 +199,7 @@ async function createPaidBooking(session: Stripe.Checkout.Session): Promise<Paid
     const snap = await prisma.checkoutFeeSnapshot.findUnique({
       where: { id: md.feeSnapshotId },
     });
-    if (snap && snap.classSessionId === md.classSessionId) {
+    if (snap && snap.classSessionId === primaryClassSessionId) {
       classAmountCents = snap.classAmountCents;
       serviceFeeCents = calculatePlatformServiceFeeCents(classAmountCents);
       const lines = parsePassThroughSnapshot(snap.passThroughFees);
@@ -166,7 +219,9 @@ async function createPaidBooking(session: Stripe.Checkout.Session): Promise<Paid
       const inserted = await insertPaidBooking({
         id: randomUUID(),
         vendorId: md.vendorId,
-        classSessionId: md.classSessionId,
+        classSessionIds:
+          classSessionIds.length > 0 ? classSessionIds : [primaryClassSessionId],
+        primaryClassSessionId,
         stripeCheckoutSessionId: session.id,
         stripePaymentIntentId: paymentIntentId(session),
         confirmationCode,
@@ -181,11 +236,22 @@ async function createPaidBooking(session: Stripe.Checkout.Session): Promise<Paid
         totalAmountCents,
       });
       if (!inserted) {
-        const cs = await prisma.classSession.findUnique({
-          where: { id: md.classSessionId },
+        const missing = await prisma.classSession.findMany({
+          where: {
+            id: {
+              in:
+                classSessionIds.length > 0
+                  ? classSessionIds
+                  : [primaryClassSessionId],
+            },
+          },
         });
-        if (!cs || cs.vendorId !== md.vendorId) throw new Error("ClassSession missing");
-        if (cs.enrolled >= cs.capacity) throw new Error("ClassSession full");
+        if (missing.length === 0 || missing.some((cs) => cs.vendorId !== md.vendorId)) {
+          throw new Error("ClassSession missing");
+        }
+        if (missing.some((cs) => cs.enrolled >= cs.capacity)) {
+          throw new Error("ClassSession full");
+        }
         throw new Error("Could not record booking");
       }
 
@@ -232,6 +298,7 @@ async function sendConfirmationOnce(
     const sent = await sendBookingConfirmationEmail({
       prismaVendorId: booking.vendorId,
       classSessionId: booking.classSessionId,
+      bookingId: booking.id,
       customerName: booking.customerName,
       customerFirstName,
       customerEmail: booking.customerEmail,

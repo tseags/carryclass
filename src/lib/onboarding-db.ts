@@ -108,6 +108,8 @@ export interface VendorCalendarClass {
   price: number | null;
   gun_pricing: GunPricing | null;
   is_active: boolean;
+  /** Optional Initial day label: 1 = Day 1, 2 = Day 2. */
+  day_index?: number | null;
 }
 
 export interface VendorEmailTemplate {
@@ -692,6 +694,13 @@ export async function insertCalendarClasses(
 }
 
 /** Insert a single calendar class and return the created row. */
+export function normalizeDayIndex(raw: unknown): number | null {
+  if (raw === "" || raw == null) return null;
+  const n = Number(raw);
+  if (n === 1 || n === 2) return n;
+  return null;
+}
+
 export async function createCalendarClass(
   vendorId: string,
   cls: {
@@ -707,6 +716,7 @@ export async function createCalendarClass(
     gun_pricing?: GunPricing | null;
     is_recurring?: boolean;
     recurrence_rule?: string | null;
+    day_index?: number | null;
   }
 ): Promise<VendorCalendarClass> {
   const { data, error } = await supabaseAdmin()
@@ -732,6 +742,7 @@ export async function updateCalendarClass(
     max_students?: number | null;
     price?: number | null;
     gun_pricing?: GunPricing | null;
+    day_index?: number | null;
   }
 ): Promise<VendorCalendarClass | null> {
   const { data, error } = await supabaseAdmin()

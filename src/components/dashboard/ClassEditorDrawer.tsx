@@ -46,6 +46,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
   const [endTime, setEndTime] = useState("");
   const [maxStudents, setMaxStudents] = useState("");
   const [price, setPrice] = useState("");
+  const [dayIndex, setDayIndex] = useState<"" | "1" | "2">("");
   const [saving, setSaving] = useState(false);
   const [polishing, setPolishing] = useState(false);
   const [error, setError] = useState("");
@@ -64,6 +65,9 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
     setEndTime(cls.end_time ? toTimeInput(cls.end_time) : "");
     setMaxStudents(cls.max_students != null ? String(cls.max_students) : "");
     setPrice(cls.price != null ? String(cls.price) : "");
+    setDayIndex(
+      cls.day_index === 1 || cls.day_index === 2 ? (String(cls.day_index) as "1" | "2") : ""
+    );
     setError("");
   }, [open, cls]);
 
@@ -117,6 +121,7 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
           end_time,
           max_students: maxStudents,
           price,
+          day_index: dayIndex ? Number(dayIndex) : null,
         }),
       });
       const data = await res.json();
@@ -172,6 +177,23 @@ export function ClassEditorDrawer({ open, onClose, cls, onSaved }: Props) {
             className={inputClass}
           />
         </div>
+
+        {cls.class_type === "initial" && (
+          <div>
+            <label className={labelClass}>
+              Day label <span className="text-[#8A837A]">(optional)</span>
+            </label>
+            <select
+              value={dayIndex}
+              onChange={(e) => setDayIndex(e.target.value as "" | "1" | "2")}
+              className={inputClass}
+            >
+              <option value="">None</option>
+              <option value="1">Day 1</option>
+              <option value="2">Day 2</option>
+            </select>
+          </div>
+        )}
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">

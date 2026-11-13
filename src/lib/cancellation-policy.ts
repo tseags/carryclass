@@ -8,11 +8,11 @@ export function cancellationPolicyLabel(
     case "none":
       return "No refunds — all sales are final";
     case "anytime":
-      return "Full refund anytime before class";
+      return "Full refund anytime before your first class day";
     case "full_hours_before":
-      return `Full refund up to ${hours} hours before class`;
+      return `Full refund up to ${hours} hours before your first class day`;
     case "partial_hours_before":
-      return `${refundPercent}% refund up to ${hours} hours before class`;
+      return `${refundPercent}% refund up to ${hours} hours before your first class day`;
     default:
       return null;
   }

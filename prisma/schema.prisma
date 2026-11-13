@@ -110,15 +110,31 @@ model ClassSession {
   endsAt     DateTime?
   title      String?
   classType  String // "initial" | "renewal"
+  /// Optional Initial day label: 1 = Day 1, 2 = Day 2.
+  dayIndex   Int?
   priceCents Int // Class tuition portion (USD cents)
   capacity   Int      @default(12)
   enrolled   Int      @default(0)
   timezone   String   @default("America/Los_Angeles")
   createdAt  DateTime @default(now())
 
-  bookings Booking[]
+  bookings        Booking[]
+  bookingSessions BookingSession[]
 
   @@index([vendorId, startsAt])
+}
+
+/// Extra class sessions covered by one Booking (Initial Day 2, cart add-ons).
+/// Booking.classSessionId remains the primary/earliest session for compat.
+model BookingSession {
+  id             String       @id @default(cuid())
+  bookingId      String
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  classSessionId String
+  classSession   ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, classSessionId])
+  @@index([classSessionId])
 }
 
 enum BookingStatus {
@@ -221,6 +237,8 @@ model OutreachContact {
   bookingCapabilityLocked Boolean @default(false)
   /// How they take bookings online: uscca, shootingclasses, onsite_checkout, etc.
   bookingTool       String?
+  /// Manual good-fit flag; never overwritten by directory sync.
+  starred           Boolean       @default(false)
   directorySlug     String?
   sourceListingIds  String[]
   tags              String[]
@@ -236,6 +254,7 @@ model OutreachContact {
 
   @@index([stage])
   @@index([nextActionAt])
+  @@index([starred])
 }
 
 model OutreachActivity {
@@ -295,6 +314,7 @@ model Booking {
   createdAt DateTime @default(now())
 
   rescheduleTokens BookingRescheduleToken[]
+  bookingSessions  BookingSession[]
 
   @@index([vendorId])
   @@index([classSessionId])

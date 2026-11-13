@@ -262,6 +262,7 @@ describe("calendarClassesToSessions", () => {
         price: 275,
         gun_pricing: null,
         is_active: true,
+        day_index: 1,
       },
       {
         id: "c2",
@@ -280,6 +281,7 @@ describe("calendarClassesToSessions", () => {
         price: 50,
         gun_pricing: null,
         is_active: true,
+        day_index: null,
       },
       {
         id: "c3",
@@ -298,6 +300,7 @@ describe("calendarClassesToSessions", () => {
         price: null,
         gun_pricing: null,
         is_active: true,
+        day_index: null,
       },
     ];
 
@@ -311,6 +314,7 @@ describe("calendarClassesToSessions", () => {
       priceCents: 27500,
       capacity: 8,
       title: "16hr Initial",
+      dayIndex: 1,
     });
     expect(sessions[1]).toMatchObject({
       classType: "renewal",
@@ -351,6 +355,7 @@ describe("calendarClassesToSessions", () => {
           price: 180,
           gun_pricing: null,
           is_active: true,
+          day_index: null,
         },
         {
           id: "c-off",
@@ -369,6 +374,7 @@ describe("calendarClassesToSessions", () => {
           price: 50,
           gun_pricing: null,
           is_active: true,
+          day_index: null,
         },
       ],
       [
@@ -411,6 +417,7 @@ describe("calendarClassesToSessions", () => {
           price: 275,
           gun_pricing: null,
           is_active: true,
+          day_index: null,
         },
       ],
       [classType({ class_type: "initial", price: 200 })],

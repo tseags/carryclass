@@ -82,6 +82,7 @@ async function upsertClassSessionsForVendor(
           title: session.title,
           priceCents: session.priceCents,
           capacity: session.capacity,
+          dayIndex: session.dayIndex ?? null,
           timezone: "America/Los_Angeles",
         },
       });
@@ -96,6 +97,7 @@ async function upsertClassSessionsForVendor(
           classType: session.classType,
           priceCents: session.priceCents,
           capacity: session.capacity,
+          dayIndex: session.dayIndex ?? null,
           enrolled: 0,
           timezone: "America/Los_Angeles",
         },
@@ -113,12 +115,14 @@ async function upsertClassSessionsForVendor(
       startsAt: true,
       classType: true,
       enrolled: true,
-      _count: { select: { bookings: true } },
+      _count: { select: { bookings: true, bookingSessions: true } },
     },
   });
   for (const row of existingFuture) {
     if (keepKeys.has(sessionMatchKey(row.startsAt, row.classType))) continue;
-    if (row.enrolled > 0 || row._count.bookings > 0) continue;
+    if (row.enrolled > 0 || row._count.bookings > 0 || row._count.bookingSessions > 0) {
+      continue;
+    }
     await prisma.classSession.delete({ where: { id: row.id } });
     removed += 1;
   }

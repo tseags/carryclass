@@ -47,6 +47,7 @@ export type PublicClassSession = {
   endsAt: Date | null;
   title: string | null;
   classType: string;
+  dayIndex: number | null;
   priceCents: number;
   capacity: number;
   enrolled: number;
@@ -138,6 +139,7 @@ export async function getUpcomingSessionsForVendorSlug(
       endsAt: r.endsAt,
       title: r.title,
       classType: r.classType,
+      dayIndex: r.dayIndex ?? null,
       priceCents: r.priceCents,
       capacity: r.capacity,
       enrolled: r.enrolled,
