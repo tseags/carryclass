@@ -229,7 +229,7 @@ export function RescheduleClient({ token }: { token: string }) {
       ) : (
         <>
           <p className="!mt-6 !mb-2 text-sm font-medium text-[#141413]">Available times</p>
-          <ul className="space-y-2">
+          <ul className="space-y-2" role="radiogroup" aria-label="Available class times">
             {sessions.map((session) => {
               const label = formatSession(session);
               const selected = selectedId === session.id;
@@ -237,19 +237,35 @@ export function RescheduleClient({ token }: { token: string }) {
                 <li key={session.id}>
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={selected}
                     onClick={() => setSelectedId(session.id)}
-                    className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                    className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                       selected
-                        ? "border-[#C1440E] bg-[#C1440E]/5"
-                        : "border-[rgba(17,24,39,0.12)] bg-[#fefcf9] hover:border-[rgba(17,24,39,0.22)]"
+                        ? "border-[#141413] bg-[#f2efe8] ring-1 ring-[#141413]/20"
+                        : "border-[rgba(17,24,39,0.18)] bg-white hover:border-[rgba(17,24,39,0.35)] hover:bg-[#faf9f6]"
                     }`}
                   >
-                    <span className="block text-sm font-medium text-[#141413]">{label.date}</span>
-                    <span className="mt-0.5 block text-sm text-[#5C554C]">
-                      {label.time}
-                      {session.spotsLeft <= 3
-                        ? ` · ${session.spotsLeft} spot${session.spotsLeft === 1 ? "" : "s"} left`
-                        : ""}
+                    <span
+                      aria-hidden
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 bg-white transition-colors ${
+                        selected ? "border-[#141413]" : "border-[#cfc7b8]"
+                      }`}
+                    >
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full bg-[#141413] transition-opacity ${
+                          selected ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-[#141413]">{label.date}</span>
+                      <span className="mt-0.5 block text-sm text-[#5C554C]">
+                        {label.time}
+                        {session.spotsLeft <= 3
+                          ? ` · ${session.spotsLeft} spot${session.spotsLeft === 1 ? "" : "s"} left`
+                          : ""}
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -263,7 +279,7 @@ export function RescheduleClient({ token }: { token: string }) {
             type="button"
             disabled={!selectedId || submitting}
             onClick={() => void onConfirm()}
-            className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-[#C1440E] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#A93B0C] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            className="btn-primary bg-secondary-2 small w-button mt-5 w-full disabled:cursor-not-allowed sm:w-auto"
           >
             {submitting ? "Moving your spot…" : "Confirm new time"}
           </button>

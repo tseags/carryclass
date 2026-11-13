@@ -18,7 +18,7 @@ export default async function ReschedulePage({ params }: PageProps) {
   return (
     <div className="flex min-h-screen flex-col bg-[#faf9f6]">
       <Header />
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 py-10 sm:px-6 sm:py-14">
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-16 pt-[calc(var(--header-offset)+1.5rem)] sm:px-6 sm:pb-20 sm:pt-[calc(var(--header-offset)+2rem)]">
         {rawToken ? (
           <RescheduleClient token={rawToken} />
         ) : (
