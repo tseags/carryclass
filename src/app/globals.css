@@ -2482,8 +2482,8 @@ h1.claim-page-title {
 
 @media (max-width: 991px) {
   .for-instructors-hero--centered.top-section-card.home {
-    margin-top: 32px;
-    padding: 68px 40px 72px;
+    margin-top: 40px;
+    padding: 80px 40px 72px;
   }
   .for-instructors-benefits,
   .for-instructors-steps,
@@ -2513,8 +2513,9 @@ h1.claim-page-title {
 
 @media (max-width: 767px) {
   .for-instructors-hero--centered.top-section-card.home {
-    margin-top: 24px;
-    padding: 56px 24px 60px;
+    /* Clear fixed header (~98px) so the eyebrow isn’t clipped */
+    margin-top: 40px;
+    padding: 100px 24px 60px;
   }
   .for-instructors-page .for-instructors-eyebrow,
   .for-instructors-page .for-instructors-heading,
