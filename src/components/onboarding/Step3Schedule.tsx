@@ -37,6 +37,8 @@ const DAYS_WINDOW_OPTIONS: { value: DaysWindow; label: string }[] = [
 
 type Recurrence = "one-time" | "weekly" | "biweekly" | "monthly";
 
+const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240, 300, 360, 480, 960];
+
 interface ManualSlot {
   id: string;
   title: string;
@@ -48,6 +50,34 @@ interface ManualSlot {
   price: string;
   recurrence: Recurrence;
   endDate: string;
+  /** Optional Day 1 / Day 2 label when adding a single Initial day. */
+  dayIndex: "" | "1" | "2";
+  /** Initial scheduled as two 8h days (package). */
+  twoDayInitial: boolean;
+  date2: string;
+  startTime2: string;
+  duration2: number;
+  /** Create a separate renewal row on Day 2's datetime. */
+  openDay2ToRenewals: boolean;
+  renewalPrice: string;
+  renewalMaxStudents: string;
+}
+
+function formatDurationMinutes(minutes: number): string {
+  if (minutes >= 60) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+  return `${minutes}m`;
+}
+
+function formatSlotTime(time: string): string {
+  if (!time) return "";
+  return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
@@ -99,12 +129,7 @@ function buildRecurrenceRule(
 
 /** Human-readable summary like "Every Monday at 9:00 AM". */
 function describeRecurrence(slot: ManualSlot): string {
-  const time = slot.startTime
-    ? new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : "";
+  const time = formatSlotTime(slot.startTime);
   const start = slot.date ? new Date(`${slot.date}T00:00:00`) : null;
   const weekday = start ? WEEKDAY_NAMES[start.getDay()] : "";
   switch (slot.recurrence) {
@@ -117,6 +142,114 @@ function describeRecurrence(slot: ManualSlot): string {
     default:
       return `${slot.date}${time ? ` at ${time}` : ""}`;
   }
+}
+
+function describeManualSlotSummary(slot: ManualSlot): string {
+  if (slot.twoDayInitial && slot.classType === "initial") {
+    const day1 = `${slot.date}${slot.startTime ? ` at ${formatSlotTime(slot.startTime)}` : ""} · ${formatDurationMinutes(slot.duration)}`;
+    const day2 = `${slot.date2}${slot.startTime2 ? ` at ${formatSlotTime(slot.startTime2)}` : ""} · ${formatDurationMinutes(slot.duration2)}`;
+    const total = formatDurationMinutes(slot.duration + slot.duration2);
+    const price = slot.price ? ` · $${slot.price}` : "";
+    const capacity = slot.maxStudents ? ` · Max ${slot.maxStudents}` : "";
+    const renewal = slot.openDay2ToRenewals
+      ? ` · Renewal also on Day 2${slot.renewalPrice ? ` ($${slot.renewalPrice})` : ""}`
+      : "";
+    return `Day 1: ${day1} · Day 2: ${day2} · ${total} total${price}${capacity}${renewal}`;
+  }
+  const day =
+    slot.classType === "initial" && slot.dayIndex ? ` · Day ${slot.dayIndex}` : "";
+  return `${describeRecurrence(slot)}${day} · ${formatDurationMinutes(slot.duration)}${
+    slot.maxStudents ? ` · Max ${slot.maxStudents} students` : ""
+  }${slot.price ? ` · $${slot.price}` : ""}`;
+}
+
+/** Expand a manual slot into calendar class rows for the step/3 API. */
+function expandManualSlotToClasses(
+  slot: ManualSlot,
+  classTypes: VendorClassType[]
+): object[] {
+  const baseTitle = slot.title.trim() || classLabel(classTypes, slot.classType);
+  const maxStudents = slot.maxStudents ? parseInt(slot.maxStudents, 10) : null;
+  const price = slot.price ? parseFloat(slot.price) : null;
+  const recurrenceRule = buildRecurrenceRule(slot.recurrence, slot.date, slot.endDate);
+  const isRecurring = slot.recurrence !== "one-time";
+
+  if (slot.twoDayInitial && slot.classType === "initial") {
+    const start1 = new Date(`${slot.date}T${slot.startTime}`);
+    const end1 = new Date(start1.getTime() + slot.duration * 60000);
+    const start2 = new Date(`${slot.date2}T${slot.startTime2}`);
+    const end2 = new Date(start2.getTime() + slot.duration2 * 60000);
+    const rows: object[] = [
+      {
+        class_type: "initial",
+        title: `${baseTitle} (Day 1)`,
+        start_time: start1.toISOString(),
+        end_time: end1.toISOString(),
+        max_students: maxStudents,
+        price,
+        is_recurring: false,
+        recurrence_rule: null,
+        day_index: 1,
+      },
+      {
+        class_type: "initial",
+        title: `${baseTitle} (Day 2)`,
+        start_time: start2.toISOString(),
+        end_time: end2.toISOString(),
+        max_students: maxStudents,
+        price,
+        is_recurring: false,
+        recurrence_rule: null,
+        day_index: 2,
+      },
+    ];
+    if (slot.openDay2ToRenewals) {
+      const renewalPrice = slot.renewalPrice
+        ? parseFloat(slot.renewalPrice)
+        : classTypes.find((ct) => ct.class_type === "renewal")?.price ?? null;
+      const renewalMax = slot.renewalMaxStudents
+        ? parseInt(slot.renewalMaxStudents, 10)
+        : maxStudents;
+      rows.push({
+        class_type: "renewal",
+        title: classLabel(classTypes, "renewal"),
+        start_time: start2.toISOString(),
+        end_time: end2.toISOString(),
+        max_students: renewalMax,
+        price:
+          renewalPrice != null && !Number.isNaN(Number(renewalPrice))
+            ? Number(renewalPrice)
+            : null,
+        is_recurring: false,
+        recurrence_rule: null,
+        day_index: null,
+      });
+    }
+    return rows;
+  }
+
+  const startDt = new Date(`${slot.date}T${slot.startTime}`);
+  const endDt = new Date(startDt.getTime() + slot.duration * 60000);
+  const dayIndex =
+    slot.classType === "initial" && slot.dayIndex ? Number(slot.dayIndex) : null;
+  const title =
+    slot.classType === "initial" && slot.dayIndex
+      ? `${baseTitle} (Day ${slot.dayIndex})`
+      : baseTitle;
+
+  return [
+    {
+      class_type: slot.classType,
+      title,
+      start_time: startDt.toISOString(),
+      end_time: endDt.toISOString(),
+      max_students: maxStudents,
+      price,
+      is_recurring: isRecurring,
+      recurrence_rule: recurrenceRule,
+      day_index: dayIndex,
+    },
+  ];
 }
 
 interface Props {
@@ -229,9 +362,65 @@ export function Step3Schedule({
     price: classTypes[0] ? String(classTypes[0].price) : "",
     recurrence: "one-time",
     endDate: "",
+    dayIndex: "",
+    twoDayInitial: false,
+    date2: "",
+    startTime2: "09:00",
+    duration2: 480,
+    openDay2ToRenewals: false,
+    renewalPrice: String(
+      classTypes.find((ct) => ct.class_type === "renewal")?.price ?? ""
+    ),
+    renewalMaxStudents: "",
   });
 
   const activeClassTypes = classTypes.filter((ct) => ct.is_active);
+  const renewalClassType = classTypes.find((ct) => ct.class_type === "renewal");
+  const schedulingTwoDays =
+    newSlot.classType === "initial" &&
+    newSlot.twoDayInitial &&
+    newSlot.recurrence === "one-time";
+
+  function priceForType(typeKey: string): string {
+    return String(classTypes.find((ct) => ct.class_type === typeKey)?.price ?? "");
+  }
+
+  function resetNewSlotForm(overrides: Partial<Omit<ManualSlot, "id">> = {}) {
+    const defaultType = activeClassTypes[0]?.class_type ?? "initial";
+    setNewSlot({
+      title: classLabel(classTypes, defaultType),
+      date: "",
+      startTime: "09:00",
+      duration: 480,
+      classType: defaultType,
+      maxStudents: "",
+      price: priceForType(defaultType),
+      recurrence: "one-time",
+      endDate: "",
+      dayIndex: "",
+      twoDayInitial: false,
+      date2: "",
+      startTime2: "09:00",
+      duration2: 480,
+      openDay2ToRenewals: false,
+      renewalPrice: String(renewalClassType?.price ?? ""),
+      renewalMaxStudents: "",
+      ...overrides,
+    });
+  }
+
+  function enableTwoDayInitial(slot: Omit<ManualSlot, "id">): Omit<ManualSlot, "id"> {
+    return {
+      ...slot,
+      twoDayInitial: true,
+      dayIndex: "",
+      recurrence: "one-time",
+      endDate: "",
+      duration: slot.duration >= 960 ? 480 : slot.duration < 480 ? 480 : slot.duration,
+      duration2: slot.duration2 || 480,
+      startTime2: slot.startTime2 || slot.startTime || "09:00",
+    };
+  }
 
   function mapFetchedEvents(raw: Omit<FetchedEvent, "class_type" | "price" | "include">[]) {
     return raw.map((e) => ({
@@ -431,11 +620,34 @@ export function Step3Schedule({
 
   function addManualSlot() {
     if (!newSlot.date || !newSlot.startTime) {
-      setError("Please fill in date and start time.");
+      setError(
+        schedulingTwoDays
+          ? "Please fill in Day 1 date and start time."
+          : "Please fill in date and start time."
+      );
       return;
     }
+    if (schedulingTwoDays) {
+      if (!newSlot.date2 || !newSlot.startTime2) {
+        setError("Please fill in Day 2 date and start time.");
+        return;
+      }
+      if (newSlot.date2 === newSlot.date) {
+        setError("Day 1 and Day 2 must be on different dates.");
+        return;
+      }
+    }
     setManualSlots((prev) => [...prev, { ...newSlot, id: Date.now().toString() }]);
-    setNewSlot((s) => ({ ...s, date: "", startTime: "09:00", endDate: "" }));
+    resetNewSlotForm({
+      classType: newSlot.classType,
+      title: classLabel(classTypes, newSlot.classType),
+      price: priceForType(newSlot.classType),
+      duration: newSlot.classType === "initial" ? 480 : newSlot.duration,
+      startTime: newSlot.startTime,
+      startTime2: newSlot.startTime2,
+      duration2: 480,
+      renewalPrice: String(renewalClassType?.price ?? newSlot.renewalPrice),
+    });
     setShowAddSlot(false);
     setError("");
   }
@@ -457,10 +669,6 @@ export function Step3Schedule({
     }
   }
 
-  function priceForType(typeKey: string): string {
-    return String(classTypes.find((ct) => ct.class_type === typeKey)?.price ?? "");
-  }
-
   async function handleSubmit() {
     setError("");
     if (!option) {
@@ -474,25 +682,9 @@ export function Step3Schedule({
       const calendarType = option;
 
       if (option === "manual") {
-        classesToSave = manualSlots.map((slot) => {
-          const startDt = new Date(`${slot.date}T${slot.startTime}`);
-          const endDt = new Date(startDt.getTime() + slot.duration * 60000);
-          const recurrenceRule = buildRecurrenceRule(
-            slot.recurrence,
-            slot.date,
-            slot.endDate
-          );
-          return {
-            class_type: slot.classType,
-            title: slot.title.trim() || classLabel(classTypes, slot.classType),
-            start_time: startDt.toISOString(),
-            end_time: endDt.toISOString(),
-            max_students: slot.maxStudents ? parseInt(slot.maxStudents) : null,
-            price: slot.price ? parseFloat(slot.price) : null,
-            is_recurring: slot.recurrence !== "one-time",
-            recurrence_rule: recurrenceRule,
-          };
-        });
+        classesToSave = manualSlots.flatMap((slot) =>
+          expandManualSlotToClasses(slot, classTypes)
+        );
       } else {
         classesToSave = events
           .filter((e) => e.include && e.class_type !== "skip")
@@ -891,6 +1083,16 @@ export function Step3Schedule({
                       <p className="text-sm font-medium text-zinc-800">
                         {slot.title.trim() || classLabel(classTypes, slot.classType)}
                       </p>
+                      {slot.twoDayInitial && slot.classType === "initial" && (
+                        <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
+                          2 days
+                        </span>
+                      )}
+                      {slot.openDay2ToRenewals && (
+                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                          + Renewal
+                        </span>
+                      )}
                       {slot.recurrence !== "one-time" && (
                         <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
                           Recurring
@@ -898,9 +1100,7 @@ export function Step3Schedule({
                       )}
                     </div>
                     <p className="text-xs text-zinc-500">
-                      {describeRecurrence(slot)} · {slot.duration} min
-                      {slot.maxStudents ? ` · Max ${slot.maxStudents} students` : ""}
-                      {slot.price ? ` · $${slot.price}` : ""}
+                      {describeManualSlotSummary(slot)}
                     </p>
                   </div>
                   <button
@@ -931,10 +1131,18 @@ export function Step3Schedule({
                 <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
                 <select
                   value={newSlot.recurrence}
-                  onChange={(e) =>
-                    setNewSlot((s) => ({ ...s, recurrence: e.target.value as Recurrence }))
-                  }
+                  onChange={(e) => {
+                    const recurrence = e.target.value as Recurrence;
+                    setNewSlot((s) => ({
+                      ...s,
+                      recurrence,
+                      ...(recurrence !== "one-time"
+                        ? { twoDayInitial: false, openDay2ToRenewals: false }
+                        : {}),
+                    }));
+                  }}
                   className="input-field w-full"
+                  disabled={schedulingTwoDays}
                 >
                   {RECURRENCE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -942,6 +1150,11 @@ export function Step3Schedule({
                     </option>
                   ))}
                 </select>
+                {schedulingTwoDays && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Two-day Initial packages are one-time (Day 1 + Day 2).
+                  </p>
+                )}
                 {newSlot.recurrence !== "one-time" && newSlot.date && (
                   <p className="mt-1 text-xs text-zinc-500">
                     {describeRecurrence({ ...newSlot, id: "preview" })}
@@ -951,7 +1164,11 @@ export function Step3Schedule({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs text-zinc-600 mb-1">
-                    {newSlot.recurrence === "one-time" ? "Date" : "Start date"}
+                    {schedulingTwoDays
+                      ? "Day 1 date"
+                      : newSlot.recurrence === "one-time"
+                        ? "Date"
+                        : "Start date"}
                   </label>
                   <input
                     type="date"
@@ -961,7 +1178,7 @@ export function Step3Schedule({
                     className="input-field w-full"
                   />
                 </div>
-                {newSlot.recurrence !== "one-time" && (
+                {newSlot.recurrence !== "one-time" && !schedulingTwoDays && (
                   <div>
                     <label className="block text-xs text-zinc-600 mb-1">
                       End date{" "}
@@ -977,70 +1194,34 @@ export function Step3Schedule({
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Start time</label>
-                  {(() => {
-                    const parts = parseTimeParts(newSlot.startTime);
-                    const setParts = (
-                      next: Partial<{ hour12: number; minute: number; period: "AM" | "PM" }>
-                    ) => {
-                      const merged = { ...parts, ...next };
-                      setNewSlot((s) => ({
-                        ...s,
-                        startTime: toTimeValue(merged.hour12, merged.minute, merged.period),
-                      }));
-                    };
-                    return (
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={parts.hour12}
-                          onChange={(e) => setParts({ hour12: Number(e.target.value) })}
-                          className="input-field min-w-0 flex-1"
-                          aria-label="Hour"
-                        >
-                          {HOUR_OPTIONS.map((h) => (
-                            <option key={h} value={h}>
-                              {h}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="text-sm text-zinc-500">:</span>
-                        <select
-                          value={parts.minute}
-                          onChange={(e) => setParts({ minute: Number(e.target.value) })}
-                          className="input-field min-w-0 flex-1"
-                          aria-label="Minute"
-                        >
-                          {MINUTE_OPTIONS.map((m) => (
-                            <option key={m} value={m}>
-                              {String(m).padStart(2, "0")}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={parts.period}
-                          onChange={(e) =>
-                            setParts({ period: e.target.value as "AM" | "PM" })
-                          }
-                          className="input-field min-w-0 flex-1"
-                          aria-label="AM or PM"
-                        >
-                          <option value="AM">AM</option>
-                          <option value="PM">PM</option>
-                        </select>
-                      </div>
-                    );
-                  })()}
+                  <label className="block text-xs text-zinc-600 mb-1">
+                    {schedulingTwoDays ? "Day 1 start time" : "Start time"}
+                  </label>
+                  <StartTimeSelect
+                    value={newSlot.startTime}
+                    onChange={(startTime) => setNewSlot((s) => ({ ...s, startTime }))}
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Duration</label>
+                  <label className="block text-xs text-zinc-600 mb-1">
+                    {schedulingTwoDays ? "Day 1 duration" : "Duration"}
+                  </label>
                   <select
                     value={newSlot.duration}
-                    onChange={(e) => setNewSlot((s) => ({ ...s, duration: Number(e.target.value) }))}
+                    onChange={(e) => {
+                      const duration = Number(e.target.value);
+                      setNewSlot((s) => {
+                        if (s.classType === "initial" && duration >= 960 && s.recurrence === "one-time") {
+                          return enableTwoDayInitial({ ...s, duration: 480, duration2: 480 });
+                        }
+                        return { ...s, duration };
+                      });
+                    }}
                     className="input-field w-full"
                   >
-                    {[30, 60, 90, 120, 180, 240, 300, 360, 480, 960].map((d) => (
+                    {DURATION_OPTIONS.filter((d) => !(schedulingTwoDays && d >= 960)).map((d) => (
                       <option key={d} value={d}>
-                        {d >= 60 ? `${d / 60}h${d % 60 ? ` ${d % 60}m` : ""}` : `${d}m`}
+                        {formatDurationMinutes(d)}
                       </option>
                     ))}
                   </select>
@@ -1056,11 +1237,23 @@ export function Step3Schedule({
                         const prevLabel = classLabel(classTypes, s.classType);
                         const titleStillDefault =
                           !s.title.trim() || s.title.trim() === prevLabel;
-                        return {
+                        const next = {
                           ...s,
                           classType: val,
                           price: priceForType(val),
                           title: titleStillDefault ? nextLabel : s.title,
+                        };
+                        if (val === "initial") {
+                          return {
+                            ...next,
+                            duration: next.duration < 480 ? 480 : next.duration,
+                          };
+                        }
+                        return {
+                          ...next,
+                          twoDayInitial: false,
+                          dayIndex: "",
+                          openDay2ToRenewals: false,
                         };
                       });
                     }}
@@ -1085,7 +1278,9 @@ export function Step3Schedule({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Price ($)</label>
+                  <label className="block text-xs text-zinc-600 mb-1">
+                    {schedulingTwoDays ? "Initial package price ($)" : "Price ($)"}
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -1097,6 +1292,182 @@ export function Step3Schedule({
                   />
                 </div>
               </div>
+
+              {newSlot.classType === "initial" && newSlot.recurrence === "one-time" && (
+                <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4">
+                  <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
+                    <input
+                      type="checkbox"
+                      checked={newSlot.twoDayInitial}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNewSlot((s) =>
+                          checked
+                            ? enableTwoDayInitial(s)
+                            : {
+                                ...s,
+                                twoDayInitial: false,
+                                openDay2ToRenewals: false,
+                                date2: "",
+                              }
+                        );
+                      }}
+                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-[#c96442] focus:ring-[#c96442]"
+                    />
+                    <span>
+                      Schedule both days (16 hours across two dates)
+                      <span className="mt-0.5 block font-normal text-zinc-500">
+                        Creates Day 1 and Day 2 as separate slots. Students book both for one
+                        Initial package price.
+                      </span>
+                    </span>
+                  </label>
+
+                  {schedulingTwoDays ? (
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="block text-xs text-zinc-600 mb-1">Day 2 date</label>
+                          <input
+                            type="date"
+                            value={newSlot.date2}
+                            min={new Date().toISOString().split("T")[0]}
+                            onChange={(e) =>
+                              setNewSlot((s) => ({ ...s, date2: e.target.value }))
+                            }
+                            className="input-field w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-zinc-600 mb-1">
+                            Day 2 start time
+                          </label>
+                          <StartTimeSelect
+                            value={newSlot.startTime2}
+                            onChange={(startTime2) =>
+                              setNewSlot((s) => ({ ...s, startTime2 }))
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-zinc-600 mb-1">
+                            Day 2 duration
+                          </label>
+                          <select
+                            value={newSlot.duration2}
+                            onChange={(e) =>
+                              setNewSlot((s) => ({
+                                ...s,
+                                duration2: Number(e.target.value),
+                              }))
+                            }
+                            className="input-field w-full"
+                          >
+                            {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
+                              <option key={d} value={d}>
+                                {formatDurationMinutes(d)}
+                              </option>
+                            ))}
+                          </select>
+                          {newSlot.duration + newSlot.duration2 !== 960 && (
+                            <p className="mt-1 text-xs text-zinc-500">
+                              Tip: Initial is usually 16 hours total (currently{" "}
+                              {formatDurationMinutes(newSlot.duration + newSlot.duration2)}).
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
+                        <input
+                          type="checkbox"
+                          checked={newSlot.openDay2ToRenewals}
+                          onChange={(e) =>
+                            setNewSlot((s) => ({
+                              ...s,
+                              openDay2ToRenewals: e.target.checked,
+                              renewalPrice:
+                                s.renewalPrice ||
+                                String(renewalClassType?.price ?? ""),
+                            }))
+                          }
+                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-[#c96442] focus:ring-[#c96442]"
+                        />
+                        <span>
+                          Also open Day 2 to renewal students
+                          <span className="mt-0.5 block font-normal text-zinc-500">
+                            Adds a separate Renewal listing on the same Day 2 date and time
+                            (own price and capacity).
+                          </span>
+                        </span>
+                      </label>
+
+                      {newSlot.openDay2ToRenewals && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-xs text-zinc-600 mb-1">
+                              Renewal price ($)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={newSlot.renewalPrice}
+                              onChange={(e) =>
+                                setNewSlot((s) => ({
+                                  ...s,
+                                  renewalPrice: e.target.value,
+                                }))
+                              }
+                              placeholder="0.00"
+                              className="input-field w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-zinc-600 mb-1">
+                              Renewal max students
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={newSlot.renewalMaxStudents}
+                              onChange={(e) =>
+                                setNewSlot((s) => ({
+                                  ...s,
+                                  renewalMaxStudents: e.target.value,
+                                }))
+                              }
+                              placeholder={newSlot.maxStudents || "Optional"}
+                              className="input-field w-full"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">
+                        Day label <span className="text-zinc-400">(optional)</span>
+                      </label>
+                      <select
+                        value={newSlot.dayIndex}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({
+                            ...s,
+                            dayIndex: e.target.value as "" | "1" | "2",
+                          }))
+                        }
+                        className="input-field w-full"
+                      >
+                        <option value="">None</option>
+                        <option value="1">Day 1</option>
+                        <option value="2">Day 2</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -1157,6 +1528,60 @@ export function Step3Schedule({
           {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function StartTimeSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const parts = parseTimeParts(value);
+  const setParts = (
+    next: Partial<{ hour12: number; minute: number; period: "AM" | "PM" }>
+  ) => {
+    const merged = { ...parts, ...next };
+    onChange(toTimeValue(merged.hour12, merged.minute, merged.period));
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <select
+        value={parts.hour12}
+        onChange={(e) => setParts({ hour12: Number(e.target.value) })}
+        className="input-field min-w-0 flex-1"
+        aria-label="Hour"
+      >
+        {HOUR_OPTIONS.map((h) => (
+          <option key={h} value={h}>
+            {h}
+          </option>
+        ))}
+      </select>
+      <span className="text-sm text-zinc-500">:</span>
+      <select
+        value={parts.minute}
+        onChange={(e) => setParts({ minute: Number(e.target.value) })}
+        className="input-field min-w-0 flex-1"
+        aria-label="Minute"
+      >
+        {MINUTE_OPTIONS.map((m) => (
+          <option key={m} value={m}>
+            {String(m).padStart(2, "0")}
+          </option>
+        ))}
+      </select>
+      <select
+        value={parts.period}
+        onChange={(e) => setParts({ period: e.target.value as "AM" | "PM" })}
+        className="input-field min-w-0 flex-1"
+        aria-label="AM or PM"
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
     </div>
   );
 }

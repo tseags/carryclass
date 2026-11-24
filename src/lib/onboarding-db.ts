@@ -669,6 +669,13 @@ export async function getCalendarClasses(
   return (data ?? []) as VendorCalendarClass[];
 }
 
+export function normalizeDayIndex(raw: unknown): number | null {
+  if (raw === "" || raw == null) return null;
+  const n = Number(raw);
+  if (n === 1 || n === 2) return n;
+  return null;
+}
+
 export async function insertCalendarClasses(
   vendorId: string,
   classes: Array<{
@@ -683,22 +690,19 @@ export async function insertCalendarClasses(
     gun_pricing?: GunPricing | null;
     is_recurring?: boolean;
     recurrence_rule?: string | null;
+    day_index?: number | null;
   }>
 ): Promise<void> {
   if (!classes.length) return;
-  const rows = classes.map((c) => ({ vendor_id: vendorId, ...c }));
+  const rows = classes.map((c) => ({
+    vendor_id: vendorId,
+    ...c,
+    day_index: normalizeDayIndex(c.day_index),
+  }));
   const { error } = await supabaseAdmin()
     .from("vendor_calendar_classes")
     .insert(rows);
   if (error) throw new Error(`Failed to insert calendar classes: ${error.message}`);
-}
-
-/** Insert a single calendar class and return the created row. */
-export function normalizeDayIndex(raw: unknown): number | null {
-  if (raw === "" || raw == null) return null;
-  const n = Number(raw);
-  if (n === 1 || n === 2) return n;
-  return null;
 }
 
 export async function createCalendarClass(
