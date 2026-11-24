@@ -383,6 +383,7 @@ export function Step3Schedule({
   const [hideAllDay, setHideAllDay] = useState(false);
   const [manualSlots, setManualSlots] = useState<ManualSlot[]>([]);
   const [showAddSlot, setShowAddSlot] = useState(false);
+  const [slotFormKey, setSlotFormKey] = useState(0);
   const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>(EMPTY_NEW_SLOT);
 
   const activeClassTypes = classTypes.filter((ct) => ct.is_active);
@@ -390,21 +391,16 @@ export function Step3Schedule({
   /** Initial always requires Day 1 + Day 2. */
   const schedulingTwoDays = newSlot.classType === "initial";
 
-  function priceForType(typeKey: string): string {
-    if (!typeKey) return "";
-    return String(classTypes.find((ct) => ct.class_type === typeKey)?.price ?? "");
-  }
-
   function resetNewSlotForm(overrides: Partial<Omit<ManualSlot, "id">> = {}) {
     setNewSlot({
       ...EMPTY_NEW_SLOT,
-      renewalPrice: String(renewalClassType?.price ?? ""),
       ...overrides,
     });
   }
 
   function openAddSlotForm() {
     resetNewSlotForm();
+    setSlotFormKey((k) => k + 1);
     setError("");
     setShowAddSlot(true);
   }
@@ -1120,53 +1116,22 @@ export function Step3Schedule({
           )}
 
           {showAddSlot ? (
-            <div className="space-y-3 border border-zinc-100 rounded-lg p-4 bg-zinc-50">
+            <div
+              key={slotFormKey}
+              className="space-y-3 border border-zinc-100 rounded-lg p-4 bg-zinc-50"
+            >
               <h3 className="text-sm font-medium text-zinc-700">Add a class slot</h3>
               <div>
                 <label className="block text-xs text-zinc-600 mb-1">Event name</label>
                 <input
                   type="text"
+                  name="event-name"
                   value={newSlot.title}
                   onChange={(e) => setNewSlot((s) => ({ ...s, title: e.target.value }))}
                   placeholder="type here"
+                  autoComplete="off"
                   className="input-field w-full placeholder:text-zinc-400"
                 />
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
-                <select
-                  value={schedulingTwoDays ? "one-time" : newSlot.recurrence}
-                  onChange={(e) => {
-                    const recurrence = e.target.value as Recurrence | "";
-                    setNewSlot((s) => ({
-                      ...s,
-                      recurrence,
-                      endDate: recurrence === "one-time" || !recurrence ? "" : s.endDate,
-                    }));
-                  }}
-                  className="input-field w-full"
-                  disabled={schedulingTwoDays}
-                >
-                  <option value="">Select…</option>
-                  {RECURRENCE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {schedulingTwoDays && (
-                  <p className="mt-1 text-xs text-zinc-500">
-                    Initial classes are one-time across two dates (Day 1 + Day 2).
-                  </p>
-                )}
-                {!schedulingTwoDays &&
-                  newSlot.recurrence &&
-                  newSlot.recurrence !== "one-time" &&
-                  newSlot.date && (
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {describeRecurrence({ ...newSlot, id: "preview" })}
-                  </p>
-                )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -1180,37 +1145,68 @@ export function Step3Schedule({
                           return {
                             ...s,
                             classType: val,
-                            price: priceForType(val),
+                            // Keep price blank until they enter it; only lock two-day flow.
                             twoDayInitial: true,
                             recurrence: "one-time",
                             endDate: "",
                             dayIndex: "",
-                            duration: s.duration > 0 && s.duration < 960 ? s.duration : 0,
-                            duration2: s.duration2 > 0 && s.duration2 < 960 ? s.duration2 : 0,
+                            duration: 0,
+                            duration2: 0,
+                            date2: "",
+                            startTime2: "",
                           };
                         }
                         return {
                           ...s,
                           classType: val,
-                          price: priceForType(val),
                           twoDayInitial: false,
                           dayIndex: "",
                           openDay2ToRenewals: false,
                           date2: "",
                           startTime2: "",
                           duration2: 0,
+                          // Non-initial can keep one-time/recurring choice; clear forced one-time.
+                          recurrence: s.recurrence === "one-time" && s.classType === "initial" ? "" : s.recurrence,
                         };
                       });
                     }}
                     className="input-field w-full"
                   >
-                    <option value="">Select…</option>
+                    <option value="">—</option>
                     {activeClassTypes.map((ct) => (
                       <option key={ct.class_type} value={ct.class_type}>
                         {classLabel(classTypes, ct.class_type)}
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
+                  <select
+                    value={schedulingTwoDays ? "one-time" : newSlot.recurrence}
+                    onChange={(e) => {
+                      const recurrence = e.target.value as Recurrence | "";
+                      setNewSlot((s) => ({
+                        ...s,
+                        recurrence,
+                        endDate: recurrence === "one-time" || !recurrence ? "" : s.endDate,
+                      }));
+                    }}
+                    className="input-field w-full"
+                    disabled={schedulingTwoDays}
+                  >
+                    <option value="">—</option>
+                    {RECURRENCE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  {schedulingTwoDays && (
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Initial requires Day 1 and Day 2 (one-time package).
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs text-zinc-600 mb-1">
@@ -1220,10 +1216,12 @@ export function Step3Schedule({
                     type="number"
                     min="0"
                     step="0.01"
+                    name="class-price"
                     value={newSlot.price}
                     onChange={(e) => setNewSlot((s) => ({ ...s, price: e.target.value }))}
                     placeholder="0.00"
-                    className="input-field w-full"
+                    autoComplete="off"
+                    className="input-field w-full placeholder:text-zinc-400"
                   />
                 </div>
                 <div>
@@ -1282,7 +1280,7 @@ export function Step3Schedule({
                     }
                     className="input-field w-full"
                   >
-                    <option value="">Select…</option>
+                    <option value="">—</option>
                     {DURATION_OPTIONS.filter((d) => !(schedulingTwoDays && d >= 960)).map(
                       (d) => (
                         <option key={d} value={d}>
@@ -1329,7 +1327,7 @@ export function Step3Schedule({
                         }
                         className="input-field w-full"
                       >
-                        <option value="">Select…</option>
+                        <option value="">—</option>
                         {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
                           <option key={d} value={d}>
                             {formatDurationMinutes(d)}
