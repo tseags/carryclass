@@ -44,11 +44,12 @@ interface ManualSlot {
   title: string;
   date: string;
   startTime: string;
+  /** 0 = not selected yet in the add form. */
   duration: number;
   classType: string;
   maxStudents: string;
   price: string;
-  recurrence: Recurrence;
+  recurrence: Recurrence | "";
   endDate: string;
   /** Optional Day 1 / Day 2 label when adding a single Initial day. */
   dayIndex: "" | "1" | "2";
@@ -62,6 +63,26 @@ interface ManualSlot {
   renewalPrice: string;
   renewalMaxStudents: string;
 }
+
+const EMPTY_NEW_SLOT: Omit<ManualSlot, "id"> = {
+  title: "",
+  date: "",
+  startTime: "",
+  duration: 0,
+  classType: "",
+  maxStudents: "",
+  price: "",
+  recurrence: "",
+  endDate: "",
+  dayIndex: "",
+  twoDayInitial: false,
+  date2: "",
+  startTime2: "",
+  duration2: 0,
+  openDay2ToRenewals: false,
+  renewalPrice: "",
+  renewalMaxStudents: "",
+};
 
 function formatDurationMinutes(minutes: number): string {
   if (minutes >= 60) {
@@ -100,11 +121,11 @@ const WEEKDAY_NAMES = [
 
 /** Build an iCal RRULE string from a recurrence choice + start date. */
 function buildRecurrenceRule(
-  recurrence: Recurrence,
+  recurrence: Recurrence | "",
   startDate: string,
   endDate: string
 ): string | null {
-  if (recurrence === "one-time" || !startDate) return null;
+  if (!recurrence || recurrence === "one-time" || !startDate) return null;
   const start = new Date(`${startDate}T00:00:00`);
   if (Number.isNaN(start.getTime())) return null;
 
@@ -139,16 +160,19 @@ function describeRecurrence(slot: ManualSlot): string {
       return `Every other ${weekday}${time ? ` at ${time}` : ""}`;
     case "monthly":
       return `Monthly on day ${start ? start.getDate() : ""}${time ? ` at ${time}` : ""}`;
+    case "one-time":
     default:
       return `${slot.date}${time ? ` at ${time}` : ""}`;
   }
 }
 
 function describeManualSlotSummary(slot: ManualSlot): string {
-  if (slot.twoDayInitial && slot.classType === "initial") {
-    const day1 = `${slot.date}${slot.startTime ? ` at ${formatSlotTime(slot.startTime)}` : ""} · ${formatDurationMinutes(slot.duration)}`;
-    const day2 = `${slot.date2}${slot.startTime2 ? ` at ${formatSlotTime(slot.startTime2)}` : ""} · ${formatDurationMinutes(slot.duration2)}`;
-    const total = formatDurationMinutes(slot.duration + slot.duration2);
+  if (slot.classType === "initial") {
+    const d1 = slot.duration > 0 ? slot.duration : 480;
+    const d2 = slot.duration2 > 0 ? slot.duration2 : 480;
+    const day1 = `${slot.date}${slot.startTime ? ` at ${formatSlotTime(slot.startTime)}` : ""} · ${formatDurationMinutes(d1)}`;
+    const day2 = `${slot.date2}${slot.startTime2 ? ` at ${formatSlotTime(slot.startTime2)}` : ""} · ${formatDurationMinutes(d2)}`;
+    const total = formatDurationMinutes(d1 + d2);
     const price = slot.price ? ` · $${slot.price}` : "";
     const capacity = slot.maxStudents ? ` · Max ${slot.maxStudents}` : "";
     const renewal = slot.openDay2ToRenewals
@@ -172,13 +196,15 @@ function expandManualSlotToClasses(
   const maxStudents = slot.maxStudents ? parseInt(slot.maxStudents, 10) : null;
   const price = slot.price ? parseFloat(slot.price) : null;
   const recurrenceRule = buildRecurrenceRule(slot.recurrence, slot.date, slot.endDate);
-  const isRecurring = slot.recurrence !== "one-time";
+  const isRecurring = Boolean(slot.recurrence && slot.recurrence !== "one-time");
+  const day1Minutes = slot.duration > 0 ? slot.duration : 480;
+  const day2Minutes = slot.duration2 > 0 ? slot.duration2 : 480;
 
-  if (slot.twoDayInitial && slot.classType === "initial") {
+  if (slot.classType === "initial") {
     const start1 = new Date(`${slot.date}T${slot.startTime}`);
-    const end1 = new Date(start1.getTime() + slot.duration * 60000);
+    const end1 = new Date(start1.getTime() + day1Minutes * 60000);
     const start2 = new Date(`${slot.date2}T${slot.startTime2}`);
-    const end2 = new Date(start2.getTime() + slot.duration2 * 60000);
+    const end2 = new Date(start2.getTime() + day2Minutes * 60000);
     const rows: object[] = [
       {
         class_type: "initial",
@@ -229,7 +255,7 @@ function expandManualSlotToClasses(
   }
 
   const startDt = new Date(`${slot.date}T${slot.startTime}`);
-  const endDt = new Date(startDt.getTime() + slot.duration * 60000);
+  const endDt = new Date(startDt.getTime() + day1Minutes * 60000);
   const dayIndex =
     slot.classType === "initial" && slot.dayIndex ? Number(slot.dayIndex) : null;
   const title =
@@ -274,16 +300,16 @@ function classLabel(classTypes: VendorClassType[], key: string | null | undefine
 
 /** Parse "HH:MM" (24h) into 12-hour parts for the time selects. */
 function parseTimeParts(value: string): {
-  hour12: number;
-  minute: number;
-  period: "AM" | "PM";
+  hour12: number | "";
+  minute: number | "";
+  period: "AM" | "PM" | "";
 } {
-  if (!value) return { hour12: 9, minute: 0, period: "AM" };
+  if (!value) return { hour12: "", minute: "", period: "" };
   const [hStr, mStr = "0"] = value.split(":");
   const h24 = Number(hStr);
   const minute = Number(mStr.slice(0, 2));
   if (Number.isNaN(h24) || Number.isNaN(minute)) {
-    return { hour12: 9, minute: 0, period: "AM" };
+    return { hour12: "", minute: "", period: "" };
   }
   const period: "AM" | "PM" = h24 >= 12 ? "PM" : "AM";
   const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
@@ -291,8 +317,13 @@ function parseTimeParts(value: string): {
   return { hour12, minute: snapped, period };
 }
 
-/** Build "HH:MM" (24h) from 12-hour select parts. */
-function toTimeValue(hour12: number, minute: number, period: "AM" | "PM"): string {
+/** Build "HH:MM" (24h) from 12-hour select parts. Empty until all parts are chosen. */
+function toTimeValue(
+  hour12: number | "",
+  minute: number | "",
+  period: "AM" | "PM" | ""
+): string {
+  if (hour12 === "" || minute === "" || period === "") return "";
   let h24 = hour12 % 12;
   if (period === "PM") h24 += 12;
   return `${String(h24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
@@ -352,86 +383,30 @@ export function Step3Schedule({
   const [hideAllDay, setHideAllDay] = useState(false);
   const [manualSlots, setManualSlots] = useState<ManualSlot[]>([]);
   const [showAddSlot, setShowAddSlot] = useState(false);
-  const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>({
-    title: classLabel(classTypes, classTypes[0]?.class_type ?? "initial"),
-    date: "",
-    startTime: "09:00",
-    duration: 480,
-    classType: classTypes[0]?.class_type ?? "initial",
-    maxStudents: "",
-    price: classTypes[0] ? String(classTypes[0].price) : "",
-    recurrence: "one-time",
-    endDate: "",
-    dayIndex: "",
-    twoDayInitial: false,
-    date2: "",
-    startTime2: "09:00",
-    duration2: 480,
-    openDay2ToRenewals: false,
-    renewalPrice: String(
-      classTypes.find((ct) => ct.class_type === "renewal")?.price ?? ""
-    ),
-    renewalMaxStudents: "",
-  });
+  const [newSlot, setNewSlot] = useState<Omit<ManualSlot, "id">>(EMPTY_NEW_SLOT);
 
   const activeClassTypes = classTypes.filter((ct) => ct.is_active);
   const renewalClassType = classTypes.find((ct) => ct.class_type === "renewal");
-  const schedulingTwoDays =
-    newSlot.classType === "initial" &&
-    newSlot.twoDayInitial &&
-    newSlot.recurrence === "one-time";
+  /** Initial always requires Day 1 + Day 2. */
+  const schedulingTwoDays = newSlot.classType === "initial";
 
   function priceForType(typeKey: string): string {
+    if (!typeKey) return "";
     return String(classTypes.find((ct) => ct.class_type === typeKey)?.price ?? "");
   }
 
   function resetNewSlotForm(overrides: Partial<Omit<ManualSlot, "id">> = {}) {
-    const defaultType = activeClassTypes[0]?.class_type ?? "initial";
     setNewSlot({
-      title: classLabel(classTypes, defaultType),
-      date: "",
-      startTime: "09:00",
-      duration: 480,
-      classType: defaultType,
-      maxStudents: "",
-      price: priceForType(defaultType),
-      recurrence: "one-time",
-      endDate: "",
-      dayIndex: "",
-      twoDayInitial: false,
-      date2: "",
-      startTime2: "09:00",
-      duration2: 480,
-      openDay2ToRenewals: false,
+      ...EMPTY_NEW_SLOT,
       renewalPrice: String(renewalClassType?.price ?? ""),
-      renewalMaxStudents: "",
       ...overrides,
     });
   }
 
-  function enableTwoDayInitial(slot: Omit<ManualSlot, "id">): Omit<ManualSlot, "id"> {
-    return {
-      ...slot,
-      twoDayInitial: true,
-      dayIndex: "",
-      recurrence: "one-time",
-      endDate: "",
-      duration: slot.duration >= 960 ? 480 : slot.duration < 480 ? 480 : slot.duration,
-      duration2: slot.duration2 || 480,
-      startTime2: slot.startTime2 || slot.startTime || "09:00",
-    };
-  }
-
-  function disableTwoDayInitial(slot: Omit<ManualSlot, "id">): Omit<ManualSlot, "id"> {
-    return {
-      ...slot,
-      twoDayInitial: false,
-      openDay2ToRenewals: false,
-      date2: "",
-      dayIndex: "",
-      duration: 480,
-      duration2: 480,
-    };
+  function openAddSlotForm() {
+    resetNewSlotForm();
+    setError("");
+    setShowAddSlot(true);
   }
 
   function mapFetchedEvents(raw: Omit<FetchedEvent, "class_type" | "price" | "include">[]) {
@@ -631,6 +606,22 @@ export function Step3Schedule({
   }
 
   function addManualSlot() {
+    if (!newSlot.classType) {
+      setError("Please select a class type.");
+      return;
+    }
+    if (!newSlot.recurrence) {
+      setError("Please select how the class repeats.");
+      return;
+    }
+    if (!newSlot.duration) {
+      setError(
+        schedulingTwoDays
+          ? "Please select Day 1 duration."
+          : "Please select a duration."
+      );
+      return;
+    }
     if (!newSlot.date || !newSlot.startTime) {
       setError(
         schedulingTwoDays
@@ -640,6 +631,10 @@ export function Step3Schedule({
       return;
     }
     if (schedulingTwoDays) {
+      if (!newSlot.duration2) {
+        setError("Please select Day 2 duration.");
+        return;
+      }
       if (!newSlot.date2 || !newSlot.startTime2) {
         setError("Please fill in Day 2 date and start time.");
         return;
@@ -649,17 +644,14 @@ export function Step3Schedule({
         return;
       }
     }
-    setManualSlots((prev) => [...prev, { ...newSlot, id: Date.now().toString() }]);
-    resetNewSlotForm({
-      classType: newSlot.classType,
-      title: classLabel(classTypes, newSlot.classType),
-      price: priceForType(newSlot.classType),
-      duration: newSlot.classType === "initial" ? 480 : newSlot.duration,
-      startTime: newSlot.startTime,
-      startTime2: newSlot.startTime2,
-      duration2: 480,
-      renewalPrice: String(renewalClassType?.price ?? newSlot.renewalPrice),
-    });
+    const slotToSave: ManualSlot = {
+      ...newSlot,
+      id: Date.now().toString(),
+      twoDayInitial: schedulingTwoDays,
+      recurrence: schedulingTwoDays ? "one-time" : newSlot.recurrence,
+    };
+    setManualSlots((prev) => [...prev, slotToSave]);
+    resetNewSlotForm();
     setShowAddSlot(false);
     setError("");
   }
@@ -1095,7 +1087,7 @@ export function Step3Schedule({
                       <p className="text-sm font-medium text-zinc-800">
                         {slot.title.trim() || classLabel(classTypes, slot.classType)}
                       </p>
-                      {slot.twoDayInitial && slot.classType === "initial" && (
+                      {slot.classType === "initial" && (
                         <span className="rounded-full bg-[#c96442]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#c96442]">
                           2 days
                         </span>
@@ -1136,26 +1128,26 @@ export function Step3Schedule({
                   type="text"
                   value={newSlot.title}
                   onChange={(e) => setNewSlot((s) => ({ ...s, title: e.target.value }))}
-                  className="input-field w-full"
+                  placeholder="type here"
+                  className="input-field w-full placeholder:text-zinc-400"
                 />
               </div>
               <div>
                 <label className="block text-xs text-zinc-600 mb-1">Repeats</label>
                 <select
-                  value={newSlot.recurrence}
+                  value={schedulingTwoDays ? "one-time" : newSlot.recurrence}
                   onChange={(e) => {
-                    const recurrence = e.target.value as Recurrence;
+                    const recurrence = e.target.value as Recurrence | "";
                     setNewSlot((s) => ({
                       ...s,
                       recurrence,
-                      ...(recurrence !== "one-time"
-                        ? { twoDayInitial: false, openDay2ToRenewals: false }
-                        : {}),
+                      endDate: recurrence === "one-time" || !recurrence ? "" : s.endDate,
                     }));
                   }}
                   className="input-field w-full"
                   disabled={schedulingTwoDays}
                 >
+                  <option value="">Select…</option>
                   {RECURRENCE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
@@ -1164,10 +1156,13 @@ export function Step3Schedule({
                 </select>
                 {schedulingTwoDays && (
                   <p className="mt-1 text-xs text-zinc-500">
-                    Two-day Initial packages are one-time (Day 1 + Day 2).
+                    Initial classes are one-time across two dates (Day 1 + Day 2).
                   </p>
                 )}
-                {newSlot.recurrence !== "one-time" && newSlot.date && (
+                {!schedulingTwoDays &&
+                  newSlot.recurrence &&
+                  newSlot.recurrence !== "one-time" &&
+                  newSlot.date && (
                   <p className="mt-1 text-xs text-zinc-500">
                     {describeRecurrence({ ...newSlot, id: "preview" })}
                   </p>
@@ -1175,10 +1170,67 @@ export function Step3Schedule({
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
+                  <label className="block text-xs text-zinc-600 mb-1">Class type</label>
+                  <select
+                    value={newSlot.classType}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewSlot((s) => {
+                        if (val === "initial") {
+                          return {
+                            ...s,
+                            classType: val,
+                            price: priceForType(val),
+                            twoDayInitial: true,
+                            recurrence: "one-time",
+                            endDate: "",
+                            dayIndex: "",
+                            duration: s.duration > 0 && s.duration < 960 ? s.duration : 0,
+                            duration2: s.duration2 > 0 && s.duration2 < 960 ? s.duration2 : 0,
+                          };
+                        }
+                        return {
+                          ...s,
+                          classType: val,
+                          price: priceForType(val),
+                          twoDayInitial: false,
+                          dayIndex: "",
+                          openDay2ToRenewals: false,
+                          date2: "",
+                          startTime2: "",
+                          duration2: 0,
+                        };
+                      });
+                    }}
+                    className="input-field w-full"
+                  >
+                    <option value="">Select…</option>
+                    {activeClassTypes.map((ct) => (
+                      <option key={ct.class_type} value={ct.class_type}>
+                        {classLabel(classTypes, ct.class_type)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-600 mb-1">
+                    {schedulingTwoDays ? "Initial package price ($)" : "Price ($)"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newSlot.price}
+                    onChange={(e) => setNewSlot((s) => ({ ...s, price: e.target.value }))}
+                    placeholder="0.00"
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs text-zinc-600 mb-1">
                     {schedulingTwoDays
                       ? "Day 1 date"
-                      : newSlot.recurrence === "one-time"
+                      : newSlot.recurrence === "one-time" || !newSlot.recurrence
                         ? "Date"
                         : "Start date"}
                   </label>
@@ -1190,7 +1242,9 @@ export function Step3Schedule({
                     className="input-field w-full"
                   />
                 </div>
-                {newSlot.recurrence !== "one-time" && !schedulingTwoDays && (
+                {newSlot.recurrence &&
+                  newSlot.recurrence !== "one-time" &&
+                  !schedulingTwoDays && (
                   <div>
                     <label className="block text-xs text-zinc-600 mb-1">
                       End date{" "}
@@ -1215,148 +1269,31 @@ export function Step3Schedule({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Duration</label>
-                  <select
-                    value={schedulingTwoDays ? 960 : newSlot.duration}
-                    onChange={(e) => {
-                      const duration = Number(e.target.value);
-                      setNewSlot((s) => {
-                        if (s.classType === "initial" && duration >= 960 && s.recurrence === "one-time") {
-                          return enableTwoDayInitial({ ...s, duration: 480, duration2: 480 });
-                        }
-                        if (s.twoDayInitial && duration < 960) {
-                          return disableTwoDayInitial({ ...s, duration });
-                        }
-                        return { ...s, duration };
-                      });
-                    }}
-                    className="input-field w-full"
-                  >
-                    {DURATION_OPTIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {formatDurationMinutes(d)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Class type</label>
-                  <select
-                    value={newSlot.classType}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const nextLabel = classLabel(classTypes, val);
-                      setNewSlot((s) => {
-                        const prevLabel = classLabel(classTypes, s.classType);
-                        const titleStillDefault =
-                          !s.title.trim() || s.title.trim() === prevLabel;
-                        const next = {
-                          ...s,
-                          classType: val,
-                          price: priceForType(val),
-                          title: titleStillDefault ? nextLabel : s.title,
-                        };
-                        if (val === "initial") {
-                          return {
-                            ...next,
-                            duration: next.duration < 480 ? 480 : next.duration,
-                          };
-                        }
-                        return {
-                          ...next,
-                          twoDayInitial: false,
-                          dayIndex: "",
-                          openDay2ToRenewals: false,
-                        };
-                      });
-                    }}
-                    className="input-field w-full"
-                  >
-                    {activeClassTypes.map((ct) => (
-                      <option key={ct.class_type} value={ct.class_type}>
-                        {classLabel(classTypes, ct.class_type)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-zinc-600 mb-1">Max students</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newSlot.maxStudents}
-                    onChange={(e) => setNewSlot((s) => ({ ...s, maxStudents: e.target.value }))}
-                    placeholder="Optional"
-                    className="input-field w-full"
-                  />
-                </div>
-                <div>
                   <label className="block text-xs text-zinc-600 mb-1">
-                    {schedulingTwoDays ? "Initial package price ($)" : "Price ($)"}
+                    {schedulingTwoDays ? "Day 1 duration" : "Duration"}
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newSlot.price}
-                    onChange={(e) => setNewSlot((s) => ({ ...s, price: e.target.value }))}
-                    placeholder="0.00"
+                  <select
+                    value={newSlot.duration || ""}
+                    onChange={(e) =>
+                      setNewSlot((s) => ({
+                        ...s,
+                        duration: e.target.value ? Number(e.target.value) : 0,
+                      }))
+                    }
                     className="input-field w-full"
-                  />
+                  >
+                    <option value="">Select…</option>
+                    {DURATION_OPTIONS.filter((d) => !(schedulingTwoDays && d >= 960)).map(
+                      (d) => (
+                        <option key={d} value={d}>
+                          {formatDurationMinutes(d)}
+                        </option>
+                      )
+                    )}
+                  </select>
                 </div>
-              </div>
-
-              {schedulingTwoDays && (
-                <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4">
-                  <div>
-                    <p className="text-xs font-medium text-zinc-700">
-                      Schedule both days (16 hours across two dates)
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      Creates Day 1 and Day 2 as separate slots. Students book both for one
-                      Initial package price.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs text-zinc-600 mb-1">Day 1 duration</label>
-                      <select
-                        value={newSlot.duration}
-                        onChange={(e) =>
-                          setNewSlot((s) => ({
-                            ...s,
-                            duration: Number(e.target.value),
-                          }))
-                        }
-                        className="input-field w-full"
-                      >
-                        {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
-                          <option key={d} value={d}>
-                            {formatDurationMinutes(d)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-600 mb-1">Day 2 duration</label>
-                      <select
-                        value={newSlot.duration2}
-                        onChange={(e) =>
-                          setNewSlot((s) => ({
-                            ...s,
-                            duration2: Number(e.target.value),
-                          }))
-                        }
-                        className="input-field w-full"
-                      >
-                        {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
-                          <option key={d} value={d}>
-                            {formatDurationMinutes(d)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {schedulingTwoDays && (
+                  <>
                     <div>
                       <label className="block text-xs text-zinc-600 mb-1">Day 2 date</label>
                       <input
@@ -1380,13 +1317,73 @@ export function Step3Schedule({
                         }
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">Day 2 duration</label>
+                      <select
+                        value={newSlot.duration2 || ""}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({
+                            ...s,
+                            duration2: e.target.value ? Number(e.target.value) : 0,
+                          }))
+                        }
+                        className="input-field w-full"
+                      >
+                        <option value="">Select…</option>
+                        {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
+                          <option key={d} value={d}>
+                            {formatDurationMinutes(d)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">Max students</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newSlot.maxStudents}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({ ...s, maxStudents: e.target.value }))
+                        }
+                        placeholder="Optional"
+                        className="input-field w-full"
+                      />
+                    </div>
+                  </>
+                )}
+                {!schedulingTwoDays && (
+                  <div>
+                    <label className="block text-xs text-zinc-600 mb-1">Max students</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newSlot.maxStudents}
+                      onChange={(e) =>
+                        setNewSlot((s) => ({ ...s, maxStudents: e.target.value }))
+                      }
+                      placeholder="Optional"
+                      className="input-field w-full"
+                    />
                   </div>
-                  {newSlot.duration + newSlot.duration2 !== 960 && (
-                    <p className="text-xs text-zinc-500">
-                      Tip: Initial is usually 16 hours total (currently{" "}
-                      {formatDurationMinutes(newSlot.duration + newSlot.duration2)}).
-                    </p>
-                  )}
+                )}
+              </div>
+
+              {schedulingTwoDays && (
+                <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4">
+                  <p className="text-xs text-zinc-500">
+                    Initial creates Day 1 and Day 2 as separate slots. Students book both for
+                    one package price.
+                    {newSlot.duration > 0 &&
+                      newSlot.duration2 > 0 &&
+                      newSlot.duration + newSlot.duration2 !== 960 && (
+                        <>
+                          {" "}
+                          Tip: usually 16 hours total (currently{" "}
+                          {formatDurationMinutes(newSlot.duration + newSlot.duration2)}).
+                        </>
+                      )}
+                  </p>
 
                   <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
                     <input
@@ -1465,7 +1462,11 @@ export function Step3Schedule({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddSlot(false)}
+                  onClick={() => {
+                    resetNewSlotForm();
+                    setShowAddSlot(false);
+                    setError("");
+                  }}
                   className="btn-secondary small w-button"
                 >
                   Cancel
@@ -1476,7 +1477,7 @@ export function Step3Schedule({
             <div className="flex flex-col gap-6">
               <button
                 type="button"
-                onClick={() => setShowAddSlot(true)}
+                onClick={openAddSlotForm}
                 className="btn-secondary small w-button"
               >
                 + Add class
@@ -1528,7 +1529,7 @@ function StartTimeSelect({
 }) {
   const parts = parseTimeParts(value);
   const setParts = (
-    next: Partial<{ hour12: number; minute: number; period: "AM" | "PM" }>
+    next: Partial<{ hour12: number | ""; minute: number | ""; period: "AM" | "PM" | "" }>
   ) => {
     const merged = { ...parts, ...next };
     onChange(toTimeValue(merged.hour12, merged.minute, merged.period));
@@ -1536,11 +1537,14 @@ function StartTimeSelect({
   return (
     <div className="flex items-center gap-1.5">
       <select
-        value={parts.hour12}
-        onChange={(e) => setParts({ hour12: Number(e.target.value) })}
+        value={parts.hour12 === "" ? "" : parts.hour12}
+        onChange={(e) =>
+          setParts({ hour12: e.target.value === "" ? "" : Number(e.target.value) })
+        }
         className="input-field min-w-0 flex-1"
         aria-label="Hour"
       >
+        <option value="">—</option>
         {HOUR_OPTIONS.map((h) => (
           <option key={h} value={h}>
             {h}
@@ -1549,11 +1553,14 @@ function StartTimeSelect({
       </select>
       <span className="text-sm text-zinc-500">:</span>
       <select
-        value={parts.minute}
-        onChange={(e) => setParts({ minute: Number(e.target.value) })}
+        value={parts.minute === "" ? "" : parts.minute}
+        onChange={(e) =>
+          setParts({ minute: e.target.value === "" ? "" : Number(e.target.value) })
+        }
         className="input-field min-w-0 flex-1"
         aria-label="Minute"
       >
+        <option value="">—</option>
         {MINUTE_OPTIONS.map((m) => (
           <option key={m} value={m}>
             {String(m).padStart(2, "0")}
@@ -1562,10 +1569,13 @@ function StartTimeSelect({
       </select>
       <select
         value={parts.period}
-        onChange={(e) => setParts({ period: e.target.value as "AM" | "PM" })}
+        onChange={(e) =>
+          setParts({ period: (e.target.value || "") as "AM" | "PM" | "" })
+        }
         className="input-field min-w-0 flex-1"
         aria-label="AM or PM"
       >
+        <option value="">—</option>
         <option value="AM">AM</option>
         <option value="PM">PM</option>
       </select>
