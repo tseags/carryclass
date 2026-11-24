@@ -422,6 +422,18 @@ export function Step3Schedule({
     };
   }
 
+  function disableTwoDayInitial(slot: Omit<ManualSlot, "id">): Omit<ManualSlot, "id"> {
+    return {
+      ...slot,
+      twoDayInitial: false,
+      openDay2ToRenewals: false,
+      date2: "",
+      dayIndex: "",
+      duration: 480,
+      duration2: 480,
+    };
+  }
+
   function mapFetchedEvents(raw: Omit<FetchedEvent, "class_type" | "price" | "include">[]) {
     return raw.map((e) => ({
       ...e,
@@ -1203,23 +1215,24 @@ export function Step3Schedule({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-600 mb-1">
-                    {schedulingTwoDays ? "Day 1 duration" : "Duration"}
-                  </label>
+                  <label className="block text-xs text-zinc-600 mb-1">Duration</label>
                   <select
-                    value={newSlot.duration}
+                    value={schedulingTwoDays ? 960 : newSlot.duration}
                     onChange={(e) => {
                       const duration = Number(e.target.value);
                       setNewSlot((s) => {
                         if (s.classType === "initial" && duration >= 960 && s.recurrence === "one-time") {
                           return enableTwoDayInitial({ ...s, duration: 480, duration2: 480 });
                         }
+                        if (s.twoDayInitial && duration < 960) {
+                          return disableTwoDayInitial({ ...s, duration });
+                        }
                         return { ...s, duration };
                       });
                     }}
                     className="input-field w-full"
                   >
-                    {DURATION_OPTIONS.filter((d) => !(schedulingTwoDays && d >= 960)).map((d) => (
+                    {DURATION_OPTIONS.map((d) => (
                       <option key={d} value={d}>
                         {formatDurationMinutes(d)}
                       </option>
@@ -1293,176 +1306,150 @@ export function Step3Schedule({
                 </div>
               </div>
 
-              {newSlot.classType === "initial" && newSlot.recurrence === "one-time" && (
+              {schedulingTwoDays && (
                 <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4">
-                  <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
-                    <input
-                      type="checkbox"
-                      checked={newSlot.twoDayInitial}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setNewSlot((s) =>
-                          checked
-                            ? enableTwoDayInitial(s)
-                            : {
-                                ...s,
-                                twoDayInitial: false,
-                                openDay2ToRenewals: false,
-                                date2: "",
-                              }
-                        );
-                      }}
-                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-[#c96442] focus:ring-[#c96442]"
-                    />
-                    <span>
+                  <div>
+                    <p className="text-xs font-medium text-zinc-700">
                       Schedule both days (16 hours across two dates)
-                      <span className="mt-0.5 block font-normal text-zinc-500">
-                        Creates Day 1 and Day 2 as separate slots. Students book both for one
-                        Initial package price.
-                      </span>
-                    </span>
-                  </label>
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      Creates Day 1 and Day 2 as separate slots. Students book both for one
+                      Initial package price.
+                    </p>
+                  </div>
 
-                  {schedulingTwoDays ? (
-                    <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-xs text-zinc-600 mb-1">Day 2 date</label>
-                          <input
-                            type="date"
-                            value={newSlot.date2}
-                            min={new Date().toISOString().split("T")[0]}
-                            onChange={(e) =>
-                              setNewSlot((s) => ({ ...s, date2: e.target.value }))
-                            }
-                            className="input-field w-full"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-zinc-600 mb-1">
-                            Day 2 start time
-                          </label>
-                          <StartTimeSelect
-                            value={newSlot.startTime2}
-                            onChange={(startTime2) =>
-                              setNewSlot((s) => ({ ...s, startTime2 }))
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-zinc-600 mb-1">
-                            Day 2 duration
-                          </label>
-                          <select
-                            value={newSlot.duration2}
-                            onChange={(e) =>
-                              setNewSlot((s) => ({
-                                ...s,
-                                duration2: Number(e.target.value),
-                              }))
-                            }
-                            className="input-field w-full"
-                          >
-                            {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
-                              <option key={d} value={d}>
-                                {formatDurationMinutes(d)}
-                              </option>
-                            ))}
-                          </select>
-                          {newSlot.duration + newSlot.duration2 !== 960 && (
-                            <p className="mt-1 text-xs text-zinc-500">
-                              Tip: Initial is usually 16 hours total (currently{" "}
-                              {formatDurationMinutes(newSlot.duration + newSlot.duration2)}).
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
-                        <input
-                          type="checkbox"
-                          checked={newSlot.openDay2ToRenewals}
-                          onChange={(e) =>
-                            setNewSlot((s) => ({
-                              ...s,
-                              openDay2ToRenewals: e.target.checked,
-                              renewalPrice:
-                                s.renewalPrice ||
-                                String(renewalClassType?.price ?? ""),
-                            }))
-                          }
-                          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-[#c96442] focus:ring-[#c96442]"
-                        />
-                        <span>
-                          Also open Day 2 to renewal students
-                          <span className="mt-0.5 block font-normal text-zinc-500">
-                            Adds a separate Renewal listing on the same Day 2 date and time
-                            (own price and capacity).
-                          </span>
-                        </span>
-                      </label>
-
-                      {newSlot.openDay2ToRenewals && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="block text-xs text-zinc-600 mb-1">
-                              Renewal price ($)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={newSlot.renewalPrice}
-                              onChange={(e) =>
-                                setNewSlot((s) => ({
-                                  ...s,
-                                  renewalPrice: e.target.value,
-                                }))
-                              }
-                              placeholder="0.00"
-                              className="input-field w-full"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-zinc-600 mb-1">
-                              Renewal max students
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={newSlot.renewalMaxStudents}
-                              onChange={(e) =>
-                                setNewSlot((s) => ({
-                                  ...s,
-                                  renewalMaxStudents: e.target.value,
-                                }))
-                              }
-                              placeholder={newSlot.maxStudents || "Optional"}
-                              className="input-field w-full"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs text-zinc-600 mb-1">
-                        Day label <span className="text-zinc-400">(optional)</span>
-                      </label>
+                      <label className="block text-xs text-zinc-600 mb-1">Day 1 duration</label>
                       <select
-                        value={newSlot.dayIndex}
+                        value={newSlot.duration}
                         onChange={(e) =>
                           setNewSlot((s) => ({
                             ...s,
-                            dayIndex: e.target.value as "" | "1" | "2",
+                            duration: Number(e.target.value),
                           }))
                         }
                         className="input-field w-full"
                       >
-                        <option value="">None</option>
-                        <option value="1">Day 1</option>
-                        <option value="2">Day 2</option>
+                        {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
+                          <option key={d} value={d}>
+                            {formatDurationMinutes(d)}
+                          </option>
+                        ))}
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">Day 2 duration</label>
+                      <select
+                        value={newSlot.duration2}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({
+                            ...s,
+                            duration2: Number(e.target.value),
+                          }))
+                        }
+                        className="input-field w-full"
+                      >
+                        {DURATION_OPTIONS.filter((d) => d < 960).map((d) => (
+                          <option key={d} value={d}>
+                            {formatDurationMinutes(d)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">Day 2 date</label>
+                      <input
+                        type="date"
+                        value={newSlot.date2}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({ ...s, date2: e.target.value }))
+                        }
+                        className="input-field w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-600 mb-1">
+                        Day 2 start time
+                      </label>
+                      <StartTimeSelect
+                        value={newSlot.startTime2}
+                        onChange={(startTime2) =>
+                          setNewSlot((s) => ({ ...s, startTime2 }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  {newSlot.duration + newSlot.duration2 !== 960 && (
+                    <p className="text-xs text-zinc-500">
+                      Tip: Initial is usually 16 hours total (currently{" "}
+                      {formatDurationMinutes(newSlot.duration + newSlot.duration2)}).
+                    </p>
+                  )}
+
+                  <label className="flex items-start gap-2 text-xs font-medium text-zinc-700">
+                    <input
+                      type="checkbox"
+                      checked={newSlot.openDay2ToRenewals}
+                      onChange={(e) =>
+                        setNewSlot((s) => ({
+                          ...s,
+                          openDay2ToRenewals: e.target.checked,
+                          renewalPrice:
+                            s.renewalPrice || String(renewalClassType?.price ?? ""),
+                        }))
+                      }
+                      className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-[#c96442] focus:ring-[#c96442]"
+                    />
+                    <span>
+                      Also open Day 2 to renewal students
+                      <span className="mt-0.5 block font-normal text-zinc-500">
+                        Adds a separate Renewal listing on the same Day 2 date and time
+                        (own price and capacity).
+                      </span>
+                    </span>
+                  </label>
+
+                  {newSlot.openDay2ToRenewals && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs text-zinc-600 mb-1">
+                          Renewal price ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newSlot.renewalPrice}
+                          onChange={(e) =>
+                            setNewSlot((s) => ({
+                              ...s,
+                              renewalPrice: e.target.value,
+                            }))
+                          }
+                          placeholder="0.00"
+                          className="input-field w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-600 mb-1">
+                          Renewal max students
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={newSlot.renewalMaxStudents}
+                          onChange={(e) =>
+                            setNewSlot((s) => ({
+                              ...s,
+                              renewalMaxStudents: e.target.value,
+                            }))
+                          }
+                          placeholder={newSlot.maxStudents || "Optional"}
+                          className="input-field w-full"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
