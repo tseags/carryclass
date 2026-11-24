@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { VENDOR_SIGNUP_INTENT_COOKIE } from "@/lib/auth/signup-intent";
 import { outreachSurfaceAllowed } from "@/lib/outreach/access";
+import {
+  lookupProfileSlugForVanity,
+  vanitySegmentFromPathname,
+} from "@/lib/vanity-redirect";
 
 const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
 /** `/onboard` and subpaths only — must not match `/onboarding` */
@@ -48,6 +52,18 @@ export default clerkMiddleware(async (auth, req) => {
     !outreachSurfaceAllowed(req.headers.get("host"))
   ) {
     return new NextResponse(null, { status: 404 });
+  }
+
+  // Vanity short links: /mcbride → /instructors/<profile_slug> (307, query preserved).
+  // Runs inside clerkMiddleware so auth matchers stay intact for real routes.
+  const vanity = vanitySegmentFromPathname(pathname);
+  if (vanity) {
+    const profileSlug = await lookupProfileSlugForVanity(vanity);
+    if (profileSlug) {
+      const dest = req.nextUrl.clone();
+      dest.pathname = `/instructors/${profileSlug}`;
+      return NextResponse.redirect(dest, 307);
+    }
   }
 
   const { userId } = await auth();
