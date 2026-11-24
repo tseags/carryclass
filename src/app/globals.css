@@ -38,6 +38,13 @@
   outline: none;
   -webkit-appearance: none;
 }
+/* Native time/date/select controls need browser chrome to stay usable. */
+.input-field[type="time"],
+.input-field[type="date"],
+select.input-field {
+  -webkit-appearance: auto;
+  appearance: auto;
+}
 .input-field::placeholder {
   color: #a1a1aa;
 }

@@ -298,40 +298,6 @@ function classLabel(classTypes: VendorClassType[], key: string | null | undefine
   return classTypes.find((ct) => ct.class_type === key)?.display_name?.trim() || "Other class";
 }
 
-/** Parse "HH:MM" (24h) into 12-hour parts for the time selects. */
-function parseTimeParts(value: string): {
-  hour12: number | "";
-  minute: number | "";
-  period: "AM" | "PM" | "";
-} {
-  if (!value) return { hour12: "", minute: "", period: "" };
-  const [hStr, mStr = "0"] = value.split(":");
-  const h24 = Number(hStr);
-  const minute = Number(mStr.slice(0, 2));
-  if (Number.isNaN(h24) || Number.isNaN(minute)) {
-    return { hour12: "", minute: "", period: "" };
-  }
-  const period: "AM" | "PM" = h24 >= 12 ? "PM" : "AM";
-  const hour12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  const snapped = Math.min(55, Math.round(minute / 5) * 5);
-  return { hour12, minute: snapped, period };
-}
-
-/** Build "HH:MM" (24h) from 12-hour select parts. Empty until all parts are chosen. */
-function toTimeValue(
-  hour12: number | "",
-  minute: number | "",
-  period: "AM" | "PM" | ""
-): string {
-  if (hour12 === "" || minute === "" || period === "") return "";
-  let h24 = hour12 % 12;
-  if (period === "PM") h24 += 12;
-  return `${String(h24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
-const HOUR_OPTIONS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => i * 5);
-
 const CALENDAR_ERROR_MESSAGES: Record<string, string> = {
   google_not_configured:
     "Google Calendar isn’t set up on this server yet. Try again later, or use iCal / add classes manually.",
@@ -1261,9 +1227,13 @@ export function Step3Schedule({
                   <label className="block text-xs text-zinc-600 mb-1">
                     {schedulingTwoDays ? "Day 1 start time" : "Start time"}
                   </label>
-                  <StartTimeSelect
-                    value={newSlot.startTime}
-                    onChange={(startTime) => setNewSlot((s) => ({ ...s, startTime }))}
+                  <input
+                    type="time"
+                    value={newSlot.startTime || "09:00"}
+                    onChange={(e) =>
+                      setNewSlot((s) => ({ ...s, startTime: e.target.value || "09:00" }))
+                    }
+                    className="input-field w-full"
                   />
                 </div>
                 <div>
@@ -1308,11 +1278,16 @@ export function Step3Schedule({
                       <label className="block text-xs text-zinc-600 mb-1">
                         Day 2 start time
                       </label>
-                      <StartTimeSelect
-                        value={newSlot.startTime2}
-                        onChange={(startTime2) =>
-                          setNewSlot((s) => ({ ...s, startTime2 }))
+                      <input
+                        type="time"
+                        value={newSlot.startTime2 || "09:00"}
+                        onChange={(e) =>
+                          setNewSlot((s) => ({
+                            ...s,
+                            startTime2: e.target.value || "09:00",
+                          }))
                         }
+                        className="input-field w-full"
                       />
                     </div>
                     <div>
@@ -1514,81 +1489,6 @@ export function Step3Schedule({
           {saving ? "Saving…" : "Save & Continue"}
         </button>
       </div>
-    </div>
-  );
-}
-
-function StartTimeSelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-}) {
-  // Keep partial picks in local state. Writing "" back to the parent on every
-  // partial change was wiping the selects and made them look uneditable.
-  const [parts, setParts] = useState(() => parseTimeParts(value));
-
-  useEffect(() => {
-    setParts(parseTimeParts(value));
-  }, [value]);
-
-  function update(
-    next: Partial<{ hour12: number | ""; minute: number | ""; period: "AM" | "PM" | "" }>
-  ) {
-    const merged = { ...parts, ...next };
-    // If the user picks one piece, fill sensible defaults so the control commits.
-    if (merged.hour12 !== "" || merged.minute !== "" || merged.period !== "") {
-      if (merged.hour12 === "") merged.hour12 = 9;
-      if (merged.minute === "") merged.minute = 0;
-      if (merged.period === "") merged.period = "AM";
-    }
-    setParts(merged);
-    onChange(toTimeValue(merged.hour12, merged.minute, merged.period));
-  }
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <select
-        value={parts.hour12 === "" ? "" : parts.hour12}
-        onChange={(e) =>
-          update({ hour12: e.target.value === "" ? "" : Number(e.target.value) })
-        }
-        className="input-field min-w-0 flex-1"
-        aria-label="Hour"
-      >
-        {HOUR_OPTIONS.map((h) => (
-          <option key={h} value={h}>
-            {h}
-          </option>
-        ))}
-      </select>
-      <span className="text-sm text-zinc-500">:</span>
-      <select
-        value={parts.minute === "" ? "" : parts.minute}
-        onChange={(e) =>
-          update({ minute: e.target.value === "" ? "" : Number(e.target.value) })
-        }
-        className="input-field min-w-0 flex-1"
-        aria-label="Minute"
-      >
-        {MINUTE_OPTIONS.map((m) => (
-          <option key={m} value={m}>
-            {String(m).padStart(2, "0")}
-          </option>
-        ))}
-      </select>
-      <select
-        value={parts.period || "AM"}
-        onChange={(e) =>
-          update({ period: (e.target.value || "AM") as "AM" | "PM" })
-        }
-        className="input-field min-w-0 flex-1"
-        aria-label="AM or PM"
-      >
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
     </div>
   );
 }
