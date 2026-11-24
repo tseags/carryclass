@@ -67,7 +67,7 @@ interface ManualSlot {
 const EMPTY_NEW_SLOT: Omit<ManualSlot, "id"> = {
   title: "",
   date: "",
-  startTime: "",
+  startTime: "09:00",
   duration: 0,
   classType: "",
   maxStudents: "",
@@ -77,7 +77,7 @@ const EMPTY_NEW_SLOT: Omit<ManualSlot, "id"> = {
   dayIndex: "",
   twoDayInitial: false,
   date2: "",
-  startTime2: "",
+  startTime2: "09:00",
   duration2: 0,
   openDay2ToRenewals: false,
   renewalPrice: "",
@@ -1153,7 +1153,8 @@ export function Step3Schedule({
                             duration: 0,
                             duration2: 0,
                             date2: "",
-                            startTime2: "",
+                            startTime: s.startTime || "09:00",
+                            startTime2: s.startTime2 || "09:00",
                           };
                         }
                         return {
@@ -1163,7 +1164,6 @@ export function Step3Schedule({
                           dayIndex: "",
                           openDay2ToRenewals: false,
                           date2: "",
-                          startTime2: "",
                           duration2: 0,
                           // Non-initial can keep one-time/recurring choice; clear forced one-time.
                           recurrence: s.recurrence === "one-time" && s.classType === "initial" ? "" : s.recurrence,
@@ -1525,24 +1525,38 @@ function StartTimeSelect({
   value: string;
   onChange: (next: string) => void;
 }) {
-  const parts = parseTimeParts(value);
-  const setParts = (
+  // Keep partial picks in local state. Writing "" back to the parent on every
+  // partial change was wiping the selects and made them look uneditable.
+  const [parts, setParts] = useState(() => parseTimeParts(value));
+
+  useEffect(() => {
+    setParts(parseTimeParts(value));
+  }, [value]);
+
+  function update(
     next: Partial<{ hour12: number | ""; minute: number | ""; period: "AM" | "PM" | "" }>
-  ) => {
+  ) {
     const merged = { ...parts, ...next };
+    // If the user picks one piece, fill sensible defaults so the control commits.
+    if (merged.hour12 !== "" || merged.minute !== "" || merged.period !== "") {
+      if (merged.hour12 === "") merged.hour12 = 9;
+      if (merged.minute === "") merged.minute = 0;
+      if (merged.period === "") merged.period = "AM";
+    }
+    setParts(merged);
     onChange(toTimeValue(merged.hour12, merged.minute, merged.period));
-  };
+  }
+
   return (
     <div className="flex items-center gap-1.5">
       <select
         value={parts.hour12 === "" ? "" : parts.hour12}
         onChange={(e) =>
-          setParts({ hour12: e.target.value === "" ? "" : Number(e.target.value) })
+          update({ hour12: e.target.value === "" ? "" : Number(e.target.value) })
         }
         className="input-field min-w-0 flex-1"
         aria-label="Hour"
       >
-        <option value="">—</option>
         {HOUR_OPTIONS.map((h) => (
           <option key={h} value={h}>
             {h}
@@ -1553,12 +1567,11 @@ function StartTimeSelect({
       <select
         value={parts.minute === "" ? "" : parts.minute}
         onChange={(e) =>
-          setParts({ minute: e.target.value === "" ? "" : Number(e.target.value) })
+          update({ minute: e.target.value === "" ? "" : Number(e.target.value) })
         }
         className="input-field min-w-0 flex-1"
         aria-label="Minute"
       >
-        <option value="">—</option>
         {MINUTE_OPTIONS.map((m) => (
           <option key={m} value={m}>
             {String(m).padStart(2, "0")}
@@ -1566,14 +1579,13 @@ function StartTimeSelect({
         ))}
       </select>
       <select
-        value={parts.period}
+        value={parts.period || "AM"}
         onChange={(e) =>
-          setParts({ period: (e.target.value || "") as "AM" | "PM" | "" })
+          update({ period: (e.target.value || "AM") as "AM" | "PM" })
         }
         className="input-field min-w-0 flex-1"
         aria-label="AM or PM"
       >
-        <option value="">—</option>
         <option value="AM">AM</option>
         <option value="PM">PM</option>
       </select>
