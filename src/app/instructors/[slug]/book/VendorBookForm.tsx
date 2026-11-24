@@ -860,7 +860,7 @@ export function VendorBookForm({
                   type="button"
                   onClick={commitPendingToCart}
                   disabled={!pendingReady}
-                  className="mt-4 w-full rounded-lg bg-[#C1440E] px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mt-4 w-full rounded-lg bg-black px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isInitialPick
                     ? pendingReady
